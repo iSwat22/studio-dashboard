@@ -1,7 +1,6 @@
 {
   "name": "studio-dashboard",
   "version": "1.0.0",
-  "description": "Studio dashboard app",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
