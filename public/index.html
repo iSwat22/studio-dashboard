@@ -1,25 +1,92 @@
-const express = require("express");
-const path = require("path");
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Studio Dashboard</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">StudioDash</div>
 
-const app = express();
+      <nav class="nav">
+        <a class="nav-item active" href="/">Home</a>
+        <a class="nav-item" href="/projects">Projects</a>
+        <a class="nav-item" href="/uploads">Uploads</a>
+      </nav>
 
-app.use(express.urlencoded({ extended: true }));
+      <div class="sidebar-footer">
+        <div class="pill">Status: Online</div>
+      </div>
+    </aside>
 
-// Serve static files (public folder)
-app.use(express.static(path.join(__dirname, "public")));
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="crumb">Home</div>
+        </div>
+        <div class="topbar-right">
+          <div class="pill">Standard Plan</div>
+        </div>
+      </header>
 
-// Routes
-const projectsRouter = require("./routes/projects");
-const uploadsRouter = require("./routes/uploads");
+      <section class="hero">
+        <h1>What Would You Like To Create Today?</h1>
+        <p>Pick a workflow below. This is your “MagicLight-style” dashboard starter.</p>
+      </section>
 
-app.use("/projects", projectsRouter);
-app.use("/uploads", uploadsRouter);
+      <section class="cards">
+        <article class="card">
+          <div class="card-media card-media-1"></div>
+          <div class="card-body">
+            <h2>Projects</h2>
+            <p>Create and manage your movie projects.</p>
+            <a class="btn" href="/projects">Create</a>
+          </div>
+        </article>
 
-// Home page (public/index.html)
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+        <article class="card">
+          <div class="card-media card-media-2"></div>
+          <div class="card-body">
+            <h2>Uploads</h2>
+            <p>Upload images, videos, and audio files.</p>
+            <a class="btn" href="/uploads">Create</a>
+          </div>
+        </article>
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        <article class="card">
+          <div class="card-media card-media-3"></div>
+          <div class="card-body">
+            <h2>Image → Video</h2>
+            <p>Turn a set of images into clips (next step).</p>
+            <button class="btn" disabled>Coming Soon</button>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-media card-media-4"></div>
+          <div class="card-body">
+            <h2>Music Video</h2>
+            <p>Auto-cut clips to music (later).</p>
+            <button class="btn" disabled>Coming Soon</button>
+          </div>
+        </article>
+      </section>
+
+      <section class="quick">
+        <a class="chip" href="/projects">Religious Story</a>
+        <a class="chip" href="/projects">AI Video Agent</a>
+        <a class="chip" href="/uploads">Image To Video</a>
+        <a class="chip" href="/uploads">AI Character</a>
+        <a class="chip" href="/projects">Explainer</a>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
+
 
