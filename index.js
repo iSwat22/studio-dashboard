@@ -1,11 +1,19 @@
 const express = require("express");
-const router = express.Router();
+const app = express();
 
-// In-memory storage (temporary). We'll add a database later.
+app.use(express.urlencoded({ extended: true }));
+
+// In-memory storage (temporary). We'll add a database soon.
 const projects = [];
 
-// List projects + form
-router.get("/", (req, res) => {
+// Home
+app.get("/", (req, res) => {
+  res.send(`🎬 Studio server is running.<br><br>
+  Go to <a href="/projects">Projects</a>`);
+});
+
+// Projects page with form + list
+app.get("/projects", (req, res) => {
   const list = projects
     .map(
       (p, i) =>
@@ -34,8 +42,8 @@ router.get("/", (req, res) => {
   `);
 });
 
-// Create project
-router.post("/create", (req, res) => {
+// Create project (POST from form)
+app.post("/projects/create", (req, res) => {
   const name = (req.body.name || "").trim();
   if (!name) return res.status(400).send("Missing project name.");
 
@@ -46,12 +54,16 @@ router.post("/create", (req, res) => {
 });
 
 // Delete project
-router.get("/delete", (req, res) => {
+app.get("/projects/delete", (req, res) => {
   const id = (req.query.id || "").trim();
   const idx = projects.findIndex((p) => p.id === id);
   if (idx !== -1) projects.splice(idx, 1);
   res.redirect("/projects");
 });
 
-module.exports = router;
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
+
 
