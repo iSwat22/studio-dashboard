@@ -1,6 +1,4 @@
-/* =========================
-   RESET
-========================= */
+/* Reset */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -15,49 +13,38 @@ body {
   padding: 24px;
 }
 
-/* =========================
-   HERO / TOP HEADER
-========================= */
+/* Top Header (Hero) */
 .top-header {
   background-image:
-    linear-gradient(
-      rgba(10, 15, 30, 0.75),
-      rgba(10, 15, 30, 0.9)
-    ),
+    linear-gradient(rgba(10, 15, 30, 0.75), rgba(10, 15, 30, 0.75)),
     url("/hero.jpg");
-
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 
-  padding: 48px 24px;
+  padding: 40px 24px;
+  border-radius: 12px;
   margin-bottom: 24px;
-  border-radius: 16px;
 }
 
-/* Header inner layout */
 .header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-/* Header title */
 .top-header h1 {
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
 
-/* Online status */
 .status {
   font-size: 13px;
   color: #22c55e;
 }
 
-/* =========================
-   NAVIGATION
-========================= */
+/* Navigation */
 .nav {
   display: flex;
   gap: 16px;
@@ -74,9 +61,7 @@ body {
   color: #38bdf8;
 }
 
-/* =========================
-   DASHBOARD CARDS
-========================= */
+/* Cards */
 .card {
   background: linear-gradient(180deg, #020617, #030712);
   border: 1px solid rgba(255,255,255,0.08);
@@ -96,9 +81,7 @@ body {
   opacity: 0.85;
 }
 
-/* =========================
-   BUTTONS
-========================= */
+/* Buttons */
 .btn {
   display: inline-block;
   margin-top: 12px;
@@ -115,7 +98,6 @@ body {
   transform: translateY(-1px);
   box-shadow: 0 0 20px rgba(56,189,248,0.6);
 }
-
 
 
 
