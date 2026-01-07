@@ -1,25 +1,24 @@
-body {
+body{
   font-family: Arial, sans-serif;
   max-width: 900px;
   margin: 40px auto;
   padding: 0 16px;
+  line-height: 1.5;
 }
 
-h1 { margin-bottom: 10px; }
+h1{
+  margin-bottom: 10px;
+}
 
-.nav a {
-  display: inline-block;
-  margin-right: 12px;
-  padding: 10px 14px;
-  border: 1px solid #ccc;
+ul{
+  padding-left: 18px;
+}
+
+a{
   text-decoration: none;
-  border-radius: 6px;
 }
 
-.card {
-  margin-top: 20px;
-  padding: 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+a:hover{
+  text-decoration: underline;
 }
 
