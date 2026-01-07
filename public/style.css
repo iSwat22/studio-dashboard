@@ -105,6 +105,19 @@ body {
   box-shadow: 0 0 20px rgba(56,189,248,0.6);
 }
 
+/* Hero header background */
+.top-header {
+  background-image: linear-gradient(
+      rgba(10, 15, 30, 0.75),
+      rgba(10, 15, 30, 0.75)
+    ),
+    url("/hero.jpg");
+  background-size: cover;
+  background-position: center;
+  padding: 40px 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
 
 
 
