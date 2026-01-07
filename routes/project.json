@@ -1,0 +1,39 @@
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+
+const router = express.Router();
+const DATA_FILE = path.join(__dirname, "../data/projects.json");
+
+// GET all projects
+router.get("/", (req, res) => {
+  try {
+    const data = fs.readFileSync(DATA_FILE, "utf-8");
+    res.json(JSON.parse(data));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to read projects" });
+  }
+});
+
+// POST new project
+router.post("/", (req, res) => {
+  try {
+    const data = fs.readFileSync(DATA_FILE, "utf-8");
+    const projects = JSON.parse(data);
+
+    const newProject = {
+      id: Date.now(),
+      name: req.body.name || "Untitled Project",
+      createdAt: new Date().toISOString()
+    };
+
+    projects.push(newProject);
+    fs.writeFileSync(DATA_FILE, JSON.stringify(projects, null, 2));
+
+    res.status(201).json(newProject);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to save project" });
+  }
+});
+
+module.exports = router;
