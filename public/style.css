@@ -20,16 +20,19 @@ body {
       to bottom,
       rgba(2,6,23,0.85),
       rgba(2,6,23,0.95)
-    ),
-    url("/hero.jpg");
+    )
+   .top-header {
+  background-image: url("/hero.jpg");
   background-size: cover;
   background-position: center;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 16px;
-  padding: 28px 32px;
-  margin-bottom: 28px;
-  box-shadow: 0 0 40px rgba(56,189,248,0.25);
+  background-repeat: no-repeat;
+
+  padding: 40px 20px;
+  margin-bottom: 20px;
+
+  border-radius: 12px;
 }
+
 
 }
 
