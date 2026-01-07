@@ -1,4 +1,4 @@
-/* Reset */
+/* RESET */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -13,20 +13,21 @@ body {
   padding: 24px;
 }
 
-/* Top Header (Hero) */
+/* HERO HEADER */
 .top-header {
   background-image:
-    linear-gradient(rgba(10, 15, 30, 0.75), rgba(10, 15, 30, 0.75)),
+    linear-gradient(rgba(10,15,30,0.75), rgba(10,15,30,0.85)),
     url("/hero.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 
-  padding: 40px 24px;
-  border-radius: 12px;
-  margin-bottom: 24px;
+  padding: 48px 28px;
+  border-radius: 14px;
+  margin-bottom: 32px;
 }
 
+/* HEADER INNER */
 .header-inner {
   display: flex;
   align-items: center;
@@ -44,11 +45,11 @@ body {
   color: #22c55e;
 }
 
-/* Navigation */
+/* NAV */
 .nav {
   display: flex;
-  gap: 16px;
-  margin: 16px 0 28px;
+  gap: 18px;
+  margin: 18px 0 26px;
 }
 
 .nav a {
@@ -61,7 +62,20 @@ body {
   color: #38bdf8;
 }
 
-/* Cards */
+/* HERO TEXT */
+.hero-title {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.hero-subtitle {
+  margin-top: 10px;
+  font-size: 15px;
+  opacity: 0.9;
+}
+
+/* CARDS */
 .card {
   background: linear-gradient(180deg, #020617, #030712);
   border: 1px solid rgba(255,255,255,0.08);
@@ -81,7 +95,7 @@ body {
   opacity: 0.85;
 }
 
-/* Buttons */
+/* BUTTON */
 .btn {
   display: inline-block;
   margin-top: 12px;
