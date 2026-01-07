@@ -1,19 +1,25 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Studio Dashboard</title>
-    <link rel="stylesheet" href="/style.css" />
-  </head>
-  <body>
-    <h1>Studio Dashboard</h1>
+const express = require("express");
+const path = require("path");
 
-    <p>Pick a page:</p>
+const app = express();
 
-    <ul>
-      <li><a href="/projects">Projects</a></li>
-      <li><a href="/uploads">Uploads</a></li>
-    </ul>
-  </body>
-</html>
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files (public folder)
+app.use(express.static(path.join(__dirname, "public")));
+
+// Routes
+const projectsRouter = require("./routes/projects");
+const uploadsRouter = require("./routes/uploads");
+
+app.use("/projects", projectsRouter);
+app.use("/uploads", uploadsRouter);
+
+// Home page (public/index.html)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
