@@ -1,7 +1,7 @@
 const express = require("express");
 const path = require("path");
 require("dotenv").config();
-
+console.log("KEY PRESENT:",process.env.GOOGLE_API_KEY?"YES":"NO");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
