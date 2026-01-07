@@ -5,17 +5,16 @@ const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend files (PUBLIC folder)
+// Serve public frontend
 app.use(express.static(path.join(__dirname, "public")));
 
-// Routes (your backend)
+// Routes
 const projectsRouter = require("./routes/projects");
 const uploadsRouter = require("./routes/uploads");
-
 app.use("/projects", projectsRouter);
 app.use("/uploads", uploadsRouter);
 
-// Home page = public/index.html
+// (Optional) Force / to load index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
