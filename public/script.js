@@ -48,17 +48,41 @@ t2iBtn.disabled = false;
 });
 }
 
-/* ---------- IMAGE → VIDEO (TEST CLICK) ---------- */
+/* ---------- IMAGE → VIDEO (CALL BACKEND TEST) ---------- */
 const i2vBtn = document.getElementById("i2vBtn");
 const i2vStatus = document.getElementById("i2vStatus");
 
 if (i2vBtn) {
-i2vBtn.addEventListener("click", () => {
-console.log("🎬 Image → Video button clicked");
-i2vStatus.textContent = "✅ Button works. Video logic coming next.";
+i2vBtn.addEventListener("click", async () => {
+i2vStatus.textContent = "Testing backend…";
+i2vBtn.disabled = true;
+
+try {
+const res = await fetch("/api/image-to-video", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ test: true })
+});
+
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok) {
+throw new Error(data.error || `HTTP ${res.status}`);
+}
+
+// Show whatever message the backend returns
+i2vStatus.textContent = data.message
+? `✅ ${data.message}`
+: "✅ Backend responded (no message field)";
+
+} catch (err) {
+console.error(err);
+i2vStatus.textContent = `❌ Backend error: ${err.message}`;
+} finally {
+i2vBtn.disabled = false;
+}
 });
 }
 
 });
-
 
