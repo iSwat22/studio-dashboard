@@ -1,52 +1,64 @@
-// FRONTEND SCRIPT (runs in the browser only)
+// FRONTEND SCRIPT (browser only)
 console.log("✅ Frontend script loaded");
 
 document.addEventListener("DOMContentLoaded", () => {
-const promptBox = document.getElementById("t2iPrompt");
-const button = document.getElementById("t2iBtn");
-const status = document.getElementById("t2iStatus");
-const img = document.getElementById("t2iImg");
 
-if (!promptBox || !button || !status || !img) {
-console.error("❌ Missing Text→Image elements");
-return;
-}
+/* ---------- TEXT → IMAGE ---------- */
+const t2iPrompt = document.getElementById("t2iPrompt");
+const t2iBtn = document.getElementById("t2iBtn");
+const t2iStatus = document.getElementById("t2iStatus");
+const t2iImg = document.getElementById("t2iImg");
 
-button.addEventListener("click", async () => {
-console.log("✅ t2iBtn clicked");
+if (t2iBtn) {
+t2iBtn.addEventListener("click", async () => {
+const prompt = t2iPrompt.value.trim();
 
-const prompt = promptBox.value.trim();
 if (!prompt) {
-status.textContent = "Please enter a prompt.";
+t2iStatus.textContent = "Please enter a prompt.";
 return;
 }
 
-status.textContent = "Generating image…";
-button.disabled = true;
-img.style.display = "none";
+t2iStatus.textContent = "Generating image…";
+t2iBtn.disabled = true;
+t2iImg.style.display = "none";
 
 try {
 const res = await fetch("/api/text-to-image", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt }),
+body: JSON.stringify({ prompt })
 });
 
-const data = await res.json().catch(() => null);
+const data = await res.json();
 
-if (!res.ok || !data?.ok) {
-const msg = data?.error || `Request failed (${res.status})`;
-throw new Error(msg);
+if (!res.ok || !data.ok) {
+throw new Error(data.error || "Generation failed");
 }
 
-img.src = `data:${data.mimeType};base64,${data.base64}`;
-img.style.display = "block";
-status.textContent = "✅ Image generated";
+t2iImg.src = `data:${data.mimeType};base64,${data.base64}`;
+t2iImg.style.display = "block";
+t2iStatus.textContent = "✅ Image generated";
+
 } catch (err) {
 console.error(err);
-status.textContent = "❌ " + (err.message || "Error generating image");
+t2iStatus.textContent = "❌ Error generating image";
 } finally {
-button.disabled = false;
+t2iBtn.disabled = false;
 }
 });
+}
+
+/* ---------- IMAGE → VIDEO (TEST CLICK) ---------- */
+const i2vBtn = document.getElementById("i2vBtn");
+const i2vStatus = document.getElementById("i2vStatus");
+
+if (i2vBtn) {
+i2vBtn.addEventListener("click", () => {
+console.log("🎬 Image → Video button clicked");
+i2vStatus.textContent = "✅ Button works. Video logic coming next.";
 });
+}
+
+});
+
+
