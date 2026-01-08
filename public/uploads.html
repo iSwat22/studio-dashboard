@@ -1,47 +1,50 @@
-console.log("✅ public/uploads.js loaded");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Uploads • Quanna Leap AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("i2vGenerate");
-  const status = document.getElementById("i2vStatus");
-  const fileInput = document.getElementById("i2vFiles");
+<!-- CSS -->
+<link rel="stylesheet" href="/style.css" />
+</head>
 
-  if (!btn || !status || !fileInput) {
-    console.log("❌ Missing uploads elements");
-    return;
-  }
+<body>
+<header class="top-header">
+<div class="header-inner">
+<h1>Quanna Leap AI</h1>
+<span class="status">● Online</span>
 
-  btn.addEventListener("click", async () => {
-    const files = fileInput.files;
+<nav>
+<a href="/">Home</a>
+<a href="/projects.html">Projects</a>
+<a href="/uploads.html">Uploads</a>
+</nav>
+</div>
+</header>
 
-    if (!files || files.length === 0) {
-      status.textContent = "❌ Please choose at least 1 image.";
-      return;
-    }
+<main>
+<h2 class="hero-title">Uploads</h2>
+<p class="hero-sub">Upload images, then generate your Image → Video request.</p>
 
-    status.textContent = "Uploading…";
-    btn.disabled = true;
+<section class="cards">
+<div class="card" style="min-width: 320px;">
+<h3>Upload Images</h3>
+<p>Select multiple images (PNG/JPG), then click “Generate Video”.</p>
 
-    try {
-      const form = new FormData();
-      for (const f of files) form.append("images", f);
+<input id="i2vFiles" type="file" accept="image/*" multiple />
 
-      const res = await fetch("/api/image-to-video", {
-        method: "POST",
-        body: form
-      });
+<div style="margin-top:12px;">
+<button class="btn" id="i2vGenerate" type="button">Generate Video</button>
+</div>
 
-      const data = await res.json();
-      if (!res.ok || !data.ok) throw new Error(data.error || "Backend error");
+<p id="i2vStatus" style="margin-top:10px; opacity:.9;"></p>
+</div>
+</section>
+</main>
 
-      status.textContent = "✅ Video started/created!";
-    } catch (e) {
-      console.error(e);
-      status.textContent = "❌ Backend error";
-    } finally {
-      btn.disabled = false;
-    }
-  });
-});
-
-
-
+<!-- IMPORTANT: this must point to the PUBLIC frontend file -->
+<script src="/uploads.js"></script>
+</body>
+</html>
+      
