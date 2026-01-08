@@ -1,61 +1,66 @@
-const express = require("express");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+console.log("✅ uploads.js loaded");
 
-const router = express.Router();
+document.addEventListener("DOMContentLoaded", () => {
+  const fileInput = document.getElementById("i2vFiles");
+  const btn = document.getElementById("i2vGenerateBtn");
+  const status = document.getElementById("i2vStatus");
+  const video = document.getElementById("i2vVideo");
 
-// Ensure uploads folder exists
-const uploadDir = path.join(__dirname, "..", "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+  if (!fileInput || !btn || !status || !video) return;
 
-// Store files on disk
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const unique = Date.now() + "-" + Math.random().toString(36).slice(2);
-    cb(null, `${unique}-${safeName}`);
-  },
+  btn.addEventListener("click", async () => {
+    const files = fileInput.files;
+
+    if (!files || files.length === 0) {
+      status.innerHTML = `<span class="bad">✖ Please choose at least 1 image.</span>`;
+      return;
+    }
+
+    status.textContent = "Uploading images…";
+    btn.disabled = true;
+    video.style.display = "none";
+    video.removeAttribute("src");
+
+    try {
+      const form = new FormData();
+
+      // ✅ Field name MUST be "images"
+      // If your backend uses upload.array("images"), this will match.
+      for (const f of files) {
+        form.append("images", f);
+      }
+
+      const res = await fetch("/api/image-to-video", {
+        method: "POST",
+        body: form
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.error || "Backend error");
+      }
+
+      // Try common keys the backend might return
+      const url =
+        data.videoUrl ||
+        data.url ||
+        data.path ||
+        data.outputUrl ||
+        null;
+
+      if (url) {
+        video.src = url;
+        video.style.display = "block";
+        status.innerHTML = `<span class="ok">✔ Video generated</span>`;
+      } else {
+        status.innerHTML = `<span class="ok">✔ Request sent</span> (No video URL returned yet)`;
+      }
+    } catch (err) {
+      console.error(err);
+      status.innerHTML = `<span class="bad">✖ Backend error: ${err.message}</span>`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
 });
-
-const upload = multer({ storage });
-
-// Upload page + list of uploaded files
-router.get("/", (req, res) => {
-  const files = fs.readdirSync(uploadDir);
-
-  const list = files
-    .map((f) => `<li><a href="/uploads/file/${encodeURIComponent(f)}">${f}</a></li>`)
-    .join("");
-
-  res.send(`
-    <h1>Uploads</h1>
-
-    <form method="POST" action="/uploads" enctype="multipart/form-data">
-      <input type="file" name="files" multiple required />
-      <button type="submit">Upload</button>
-    </form>
-
-    <hr>
-
-    <h3>Files</h3>
-    <ul>${list || "<li>No files uploaded yet</li>"}</ul>
-
-    <p><a href="/">Back home</a></p>
-  `);
-});
-
-// Handle upload
-router.post("/", upload.array("files", 20), (req, res) => {
-  res.redirect("/uploads");
-});
-
-// Serve uploaded file
-router.get("/file/:name", (req, res) => {
-  const filePath = path.join(uploadDir, req.params.name);
-  if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
-  res.sendFile(filePath);
-});
-
-module.exports = router;
