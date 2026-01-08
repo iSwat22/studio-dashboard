@@ -1,4 +1,5 @@
 const express = require("express");
+app.use(express();
 const path = require("path");
 require("dotenv").config();
 
