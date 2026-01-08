@@ -194,7 +194,89 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
- 
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quanna Leap AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="top-header">
+    <div class="header-inner">
+      <h1>Quanna Leap AI</h1>
+      <span class="status">● Online</span>
+
+      <nav>
+        <a href="/">Home</a>
+        <a href="/projects.html">Projects</a>
+        <a href="/uploads.html">Uploads</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <h2 class="hero-title">What Would You Like To Create Today?</h2>
+    <p class="hero-sub">
+      Pick a workflow below. This is your “Quanna Leap AI” dashboard starter.
+    </p>
+
+    <section class="cards">
+      <div class="card">
+        <h3>Projects</h3>
+        <p>Create and manage your movie projects.</p>
+        <button class="btn" onclick="location.href='/projects.html'">Create</button>
+      </div>
+
+      <div class="card">
+        <h3>Uploads</h3>
+        <p>Upload images, videos, and audio files.</p>
+        <button class="btn" onclick="location.href='/uploads.html'">Create</button>
+      </div>
+
+      <div class="card">
+        <h3>Text → Image</h3>
+        <p>Generate images from text prompts.</p>
+
+        <textarea
+          id="t2iPrompt"
+          rows="4"
+          placeholder='Example: "A cinematic 3D ark at sunrise"'
+        ></textarea>
+
+        <button class="btn" id="t2iBtn" type="button">Generate</button>
+
+        <p id="t2iStatus" style="margin-top:10px; opacity:.9;"></p>
+
+        <img
+          id="t2iImg"
+          alt="Generated image will appear here"
+          style="display:none; width:100%; margin-top:10px; border-radius:12px;"
+        />
+      </div>
+
+      <div class="card">
+        <h3>Image → Video</h3>
+        <p>Turn a set of images into clips.</p>
+        <button class="btn">Create</button>
+      </div>
+
+      <div class="card">
+        <h3>Music Video</h3>
+        <p>Auto-cut clips to music.</p>
+        <button class="btn">Create</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- JS (make sure this file exists in /public) -->
+  <script src="script.js" defer></script>
+</body>
+</html>
 
 
 
