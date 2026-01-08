@@ -4,10 +4,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const status = document.getElementById("t2iStatus");
   const img = document.getElementById("t2iImg");
 
-  if (!promptBox || !button) {
+  if (!promptBox || !button || !status || !img) {
     console.error("Text-to-image elements not found");
     return;
   }
+
+  // Make sure the image is styled/hidden by default
+  img.style.display = "none";
+  img.style.maxWidth = "100%";
+  img.style.borderRadius = "12px";
+  img.style.marginTop = "10px";
 
   button.addEventListener("click", async () => {
     const prompt = promptBox.value.trim();
@@ -28,21 +34,39 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ prompt })
       });
 
-      const data = await res.json();
+      // ✅ SAFER: read raw text first
+      const raw = await res.text();
+
+      // ✅ SAFER: parse JSON only if it is JSON
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        throw new Error("Server did not return JSON. Check Render logs.");
+      }
 
       if (!res.ok) {
         throw new Error(data.error || "Generation failed");
       }
 
-      // For now, backend returns placeholder
-      // Next step we will return a real image
-      status.textContent = data.message || "Request sent successfully.";
-
-      // When real image is returned, this will work automatically
-      if (data.base64) {
-        img.src = `data:${data.mimeType};base64,${data.base64}`;
+      // ✅ Support URL response
+      if (data.imageUrl) {
+        img.src = data.imageUrl;
         img.style.display = "block";
+        status.textContent = "Done ✅";
+        return;
       }
+
+      // ✅ Support base64 response
+      if (data.base64) {
+        img.src = `data:${data.mimeType || "image/png"};base64,${data.base64}`;
+        img.style.display = "block";
+        status.textContent = "Done ✅";
+        return;
+      }
+
+      // If neither exists, tell you clearly
+      throw new Error("No image returned. Backend must return imageUrl or base64.");
 
     } catch (err) {
       console.error(err);
@@ -52,4 +76,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
