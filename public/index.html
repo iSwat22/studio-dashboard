@@ -17,8 +17,8 @@
 
       <nav>
         <a href="/">Home</a>
-        <a href="#">Projects</a>
-        <a href="#">Uploads</a>
+        <a href="/projects.html">Projects</a>
+        <a href="/uploads.html">Uploads</a>
       </nav>
     </div>
   </header>
@@ -33,13 +33,13 @@
       <div class="card">
         <h3>Projects</h3>
         <p>Create and manage your movie projects.</p>
-        <button class="btn">Create</button>
+        <button class="btn" onclick="location.href='/projects.html'">Create</button>
       </div>
 
       <div class="card">
         <h3>Uploads</h3>
         <p>Upload images, videos, and audio files.</p>
-        <button class="btn">Create</button>
+        <button class="btn" onclick="location.href='/uploads.html'">Create</button>
       </div>
 
       <div class="card">
@@ -49,12 +49,18 @@
         <textarea
           id="t2iPrompt"
           rows="4"
-          placeholder='Example: "A cinematic 3D ark at sunrise"'></textarea>
+          placeholder='Example: "A cinematic 3D ark at sunrise"'
+        ></textarea>
 
-        <button class="btn" id="t2iBtn">Generate</button>
+        <button class="btn" id="t2iBtn" type="button">Generate</button>
 
-        <p id="t2iStatus"></p>
-        <img id="t2iImg" />
+        <p id="t2iStatus" style="margin-top:10px; opacity:.9;"></p>
+
+        <img
+          id="t2iImg"
+          alt="Generated image will appear here"
+          style="display:none; width:100%; margin-top:10px; border-radius:12px;"
+        />
       </div>
 
       <div class="card">
@@ -71,8 +77,8 @@
     </section>
   </main>
 
-  <!-- JS -->
-  <script src="script.js"></script>
+  <!-- JS (make sure this file exists in /public) -->
+  <script src="script.js" defer></script>
 </body>
 </html>
 
