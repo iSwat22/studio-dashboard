@@ -1,4 +1,3 @@
-
 // FRONTEND SCRIPT (runs in the browser only)
 console.log("✅ Frontend script loaded");
 
