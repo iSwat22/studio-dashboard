@@ -1,47 +1,47 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Uploads • Quanna Leap AI</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="/style.css" />
-</head>
+console.log("✅ public/uploads.js loaded");
 
-<body>
-  <header class="top-header">
-    <div class="header-inner">
-      <h1>Quanna Leap AI</h1>
-      <span class="status">● Online</span>
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("i2vGenerate");
+  const status = document.getElementById("i2vStatus");
+  const fileInput = document.getElementById("i2vFiles");
 
-      <nav>
-        <a href="/">Home</a>
-        <a href="/projects.html">Projects</a>
-        <a href="/uploads.html">Uploads</a>
-      </nav>
-    </div>
-  </header>
+  if (!btn || !status || !fileInput) {
+    console.log("❌ Missing uploads elements");
+    return;
+  }
 
-  <main>
-    <h2 class="hero-title">Uploads</h2>
-    <p class="hero-sub">Upload images, then generate your Image → Video request.</p>
+  btn.addEventListener("click", async () => {
+    const files = fileInput.files;
 
-    <div class="card upload-box">
-      <h3>Image → Video</h3>
-      <p class="small">Select multiple images (PNG/JPG). Then click “Generate Video”.</p>
+    if (!files || files.length === 0) {
+      status.textContent = "❌ Please choose at least 1 image.";
+      return;
+    }
 
-      <input id="i2vFiles" type="file" accept="image/*" multiple />
-      <div style="height:10px;"></div>
+    status.textContent = "Uploading…";
+    btn.disabled = true;
 
-      <button class="btn" id="i2vGenerateBtn" type="button">Generate Video</button>
+    try {
+      const form = new FormData();
+      for (const f of files) form.append("images", f);
 
-      <p id="i2vStatus" style="margin-top:12px;"></p>
+      const res = await fetch("/api/image-to-video", {
+        method: "POST",
+        body: form
+      });
 
-      <video id="i2vVideo" controls style="display:none; width:100%; margin-top:12px; border-radius:12px;"></video>
-    </div>
-  </main>
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Backend error");
 
-  <script src="/uploads.js"></script>
-</body>
-</html>
+      status.textContent = "✅ Video started/created!";
+    } catch (e) {
+      console.error(e);
+      status.textContent = "❌ Backend error";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+});
+
 
 
