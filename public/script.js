@@ -1,53 +1,54 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const promptBox = document.querySelector("#t2iPrompt");
-  const genBtn = document.querySelector("#t2iGenerate");
-  const out = document.querySelector("#t2iOutput");
-  const status = document.querySelector("#t2iStatus");
+  const promptBox = document.getElementById("t2iPrompt");
+  const button = document.getElementById("t2iBtn");
+  const status = document.getElementById("t2iStatus");
+  const img = document.getElementById("t2iImg");
 
-  if (!promptBox || !genBtn || !out) return;
+  if (!promptBox || !button) {
+    console.error("Text-to-image elements not found");
+    return;
+  }
 
-  genBtn.addEventListener("click", async () => {
-    const prompt = (promptBox.value || "").trim();
+  button.addEventListener("click", async () => {
+    const prompt = promptBox.value.trim();
 
     if (!prompt) {
-      alert("Type a prompt first.");
+      status.textContent = "Please enter a prompt first.";
       return;
     }
 
-    genBtn.disabled = true;
-    if (status) status.textContent = "Generating...";
-
-    out.innerHTML = "";
+    status.textContent = "Generating image...";
+    img.style.display = "none";
+    button.disabled = true;
 
     try {
-      const r = await fetch("/api/text-to-image", {
+      const res = await fetch("/api/text-to-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt })
       });
 
-      const data = await r.json();
+      const data = await res.json();
 
-      if (!data.ok) {
-        console.error(data);
-        alert(data.error || "Failed to generate image.");
-        return;
+      if (!res.ok) {
+        throw new Error(data.error || "Generation failed");
       }
 
-      // show first image
-      const img = document.createElement("img");
-      img.src = data.images[0];
-      img.style.maxWidth = "100%";
-      img.style.borderRadius = "12px";
-      img.style.marginTop = "10px";
-      out.appendChild(img);
+      // For now, backend returns placeholder
+      // Next step we will return a real image
+      status.textContent = data.message || "Request sent successfully.";
 
-      if (status) status.textContent = "Done ✅";
-    } catch (e) {
-      console.error(e);
-      alert("Error calling the server. Check Render logs.");
+      // When real image is returned, this will work automatically
+      if (data.base64) {
+        img.src = `data:${data.mimeType};base64,${data.base64}`;
+        img.style.display = "block";
+      }
+
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Error: " + err.message;
     } finally {
-      genBtn.disabled = false;
+      button.disabled = false;
     }
   });
 });
