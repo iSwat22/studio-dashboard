@@ -1,58 +1,38 @@
-const express = require("express");
-const path = require("path");
+document.addEventListener("DOMContentLoaded", () => {
+  // ✅ PROOF the JS file is loading
+  console.log("✅ script.js loaded");
+  alert("✅ script.js loaded"); // temporary - remove after test
 
-const app = express();
-const PORT = process.env.PORT || 10000;
+  const promptBox = document.getElementById("t2iPrompt");
+  const button = document.getElementById("t2iBtn");
+  const status = document.getElementById("t2iStatus");
 
-/* =========================
-   Middleware
-========================= */
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+  console.log("promptBox:", !!promptBox, "button:", !!button, "status:", !!status);
 
-/* =========================
-   Health check
-========================= */
-app.get("/health", (req, res) => {
-  res.json({ status: "ok" });
-});
-
-/* =========================
-   TEXT → IMAGE API (TEST MODE)
-   This MUST exist or frontend breaks
-========================= */
-app.post("/api/text-to-image", async (req, res) => {
-  try {
-    const { prompt } = req.body;
-
-    if (!prompt) {
-      return res.status(400).json({ error: "Prompt is required" });
-    }
-
-    // 🚧 TEMP RESPONSE (until Google Imagen is wired)
-    return res.json({
-      message: "Text-to-image API working",
-      promptReceived: prompt
-    });
-
-  } catch (err) {
-    console.error("Text-to-image error:", err);
-    res.status(500).json({ error: "Internal server error" });
+  if (!promptBox || !button || !status) {
+    alert("❌ Missing HTML IDs (t2iPrompt / t2iBtn / t2iStatus)");
+    return;
   }
-});
 
-/* =========================
-   Frontend fallback
-========================= */
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+  button.addEventListener("click", async () => {
+    alert("✅ Button click detected"); // proof click works
+    status.textContent = "✅ Click worked. Sending request...";
 
-/* =========================
-   Start server
-========================= */
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    try {
+      const res = await fetch("/api/text-to-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: promptBox.value.trim() || "test" })
+      });
+
+      const text = await res.text(); // safer than res.json for debugging
+      status.textContent = `✅ Server replied (${res.status}): ${text}`;
+      console.log("Server reply:", text);
+    } catch (err) {
+      console.error(err);
+      status.textContent = "❌ Fetch error: " + err.message;
+    }
+  });
 });
 
 
