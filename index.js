@@ -1,26 +1,32 @@
 const express = require("express");
 const path = require("path");
 require("dotenv").config();
-console.log("KEY PRESENT:",process.env.GOOGLE_API_KEY?"YES":"NO");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
 
-// Serve static frontend files
+// Serve frontend files
 app.use(express.static(path.join(__dirname, "public")));
 
-// Root route → serve dashboard
+// Home route → loads public/index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Health check (optional)
+app.get("/health", (req, res) => {
+  res.send("OK");
 });
 
-  
+// Start server
+app.listen(PORT, () => {
+  console.log("Server running on port:", PORT);
+});
+
+
+
  
 
