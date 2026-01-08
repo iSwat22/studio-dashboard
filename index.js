@@ -1,4 +1,3 @@
-
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -13,7 +12,7 @@ const __dirname = path.dirname(__filename);
 // ---- Middleware ----
 app.use(express.json({ limit: "2mb" })); // IMPORTANT: this fixes missing JSON body issues
 
-// Serve your frontend (adjust if your public folder is different)
+// Serve your frontend
 app.use(express.static(path.join(__dirname, "public")));
 
 // ---- Health check ----
@@ -41,19 +40,13 @@ app.post("/api/text-to-image", async (req, res) => {
       });
     }
 
-    // Gemini API endpoint (image generation model)
     const url =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent";
 
     const payload = {
-      contents: [
-        {
-          parts: [{ text: prompt }],
-        },
-      ],
+      contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         imageConfig: {
-          // you can change these later
           aspectRatio: "1:1",
           imageSize: "1024",
         },
@@ -89,7 +82,6 @@ app.post("/api/text-to-image", async (req, res) => {
       });
     }
 
-    // Find the first inline image in the response
     const parts = data?.candidates?.[0]?.content?.parts || [];
     const imagePart = parts.find((p) => p.inlineData && p.inlineData.data);
 
@@ -113,6 +105,19 @@ app.post("/api/text-to-image", async (req, res) => {
   } catch (err) {
     console.error("text-to-image error:", err);
     return res.status(500).json({ ok: false, error: err.message || "Server error" });
+  }
+});
+
+// ---- Image -> Video (placeholder, wiring test) ----
+app.post("/api/image-to-video", async (req, res) => {
+  try {
+    return res.json({
+      ok: true,
+      message: "Image-to-video route reached successfully (not generating video yet)",
+    });
+  } catch (err) {
+    console.error("image-to-video error:", err);
+    return res.status(500).json({ ok: false, error: "Server error" });
   }
 });
 
