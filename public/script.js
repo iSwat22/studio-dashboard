@@ -1,80 +1,58 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const promptBox = document.getElementById("t2iPrompt");
-  const button = document.getElementById("t2iBtn");
-  const status = document.getElementById("t2iStatus");
-  const img = document.getElementById("t2iImg");
+const express = require("express");
+const path = require("path");
 
-  if (!promptBox || !button || !status || !img) {
-    console.error("Text-to-image elements not found");
-    return;
-  }
+const app = express();
+const PORT = process.env.PORT || 10000;
 
-  // Make sure the image is styled/hidden by default
-  img.style.display = "none";
-  img.style.maxWidth = "100%";
-  img.style.borderRadius = "12px";
-  img.style.marginTop = "10px";
+/* =========================
+   Middleware
+========================= */
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-  button.addEventListener("click", async () => {
-    const prompt = promptBox.value.trim();
+/* =========================
+   Health check
+========================= */
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+/* =========================
+   TEXT → IMAGE API (TEST MODE)
+   This MUST exist or frontend breaks
+========================= */
+app.post("/api/text-to-image", async (req, res) => {
+  try {
+    const { prompt } = req.body;
 
     if (!prompt) {
-      status.textContent = "Please enter a prompt first.";
-      return;
+      return res.status(400).json({ error: "Prompt is required" });
     }
 
-    status.textContent = "Generating image...";
-    img.style.display = "none";
-    button.disabled = true;
+    // 🚧 TEMP RESPONSE (until Google Imagen is wired)
+    return res.json({
+      message: "Text-to-image API working",
+      promptReceived: prompt
+    });
 
-    try {
-      const res = await fetch("/api/text-to-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt })
-      });
+  } catch (err) {
+    console.error("Text-to-image error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
-      // ✅ SAFER: read raw text first
-      const raw = await res.text();
+/* =========================
+   Frontend fallback
+========================= */
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
-      // ✅ SAFER: parse JSON only if it is JSON
-      let data = {};
-      try {
-        data = raw ? JSON.parse(raw) : {};
-      } catch (e) {
-        throw new Error("Server did not return JSON. Check Render logs.");
-      }
-
-      if (!res.ok) {
-        throw new Error(data.error || "Generation failed");
-      }
-
-      // ✅ Support URL response
-      if (data.imageUrl) {
-        img.src = data.imageUrl;
-        img.style.display = "block";
-        status.textContent = "Done ✅";
-        return;
-      }
-
-      // ✅ Support base64 response
-      if (data.base64) {
-        img.src = `data:${data.mimeType || "image/png"};base64,${data.base64}`;
-        img.style.display = "block";
-        status.textContent = "Done ✅";
-        return;
-      }
-
-      // If neither exists, tell you clearly
-      throw new Error("No image returned. Backend must return imageUrl or base64.");
-
-    } catch (err) {
-      console.error(err);
-      status.textContent = "Error: " + err.message;
-    } finally {
-      button.disabled = false;
-    }
-  });
+/* =========================
+   Start server
+========================= */
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
 
 
