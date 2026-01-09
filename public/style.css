@@ -50,7 +50,7 @@ body{
   color:var(--text);
 }
 .brand-logo{
-  height:56px;
+  height:90px;
   width:auto;
   object-fit:contain;
 }
