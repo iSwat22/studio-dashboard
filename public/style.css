@@ -82,7 +82,7 @@ min-width: 0;
 }
 
 .brand-logo{
-height: 48px; /* keeps it clean like Standard Plan height */
+height: 60px; /* keeps it clean like Standard Plan height */
 width: auto;
 object-fit: contain;
 filter: drop-shadow(0 0 10px rgba(56,189,248,.20));
