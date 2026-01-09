@@ -11,9 +11,7 @@ const card = v.closest(".card");
 if (!card) return;
 
 card.addEventListener("mouseenter", () => {
-// load video only once, on first hover
-if (!v.src) v.src = src;
-
+if (!v.src) v.src = src; // set once
 v.style.opacity = "1";
 v.play().catch(() => {});
 });
