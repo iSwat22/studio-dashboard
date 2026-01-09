@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Text → Image • QuannaLeap.AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body class="bg-stars">
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="brand" href="./index.html">
+        <img class="brand-logo" src="./images/brand/logo.png" alt="QuannaLeap.AI logo" />
+      </a>
+    </div>
+    <div class="topbar-right">
+      <div class="pill"><span class="dot dot-green"></span><span>Standard Plan</span></div>
+      <div class="pill"><span class="star">★</span><span id="creditsCount">430</span></div>
+      <button class="icon-btn" type="button">🔔</button>
+      <button class="profile-btn" type="button"><img src="./images/ui/empty-projects.png" alt="Profile" /></button>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <nav class="side-nav">
+        <a class="side-link" href="./index.html">🏠 Home</a>
+        <a class="side-link" href="./assets.html">🗂️ Assets</a>
+        <a class="side-link" href="./characters.html">🧑‍🎨 Characters</a>
+      </nav>
+      <div class="side-footer"><div class="tiny">QuannaLeap.AI • v0.1</div></div>
+    </aside>
+
+    <main class="main">
+      <div class="hero">
+        <h1>Text → Image</h1>
+        <p>Generate images from prompts. (Using your existing /api/text-to-image)</p>
+      </div>
+
+      <div class="card" style="max-width:900px;">
+        <div class="card-media" style="height:260px;">
+          <img src="./images/heroes/hero-text-to-image.jpg" alt="Text to Image hero" />
+        </div>
+
+        <div class="card-body">
+          <textarea id="t2iPrompt" rows="5" placeholder='Example: "A cinematic 3D ark at sunrise"'></textarea>
+          <button class="icon-btn" id="t2iBtn" style="width:180px;">Generate</button>
+          <div id="t2iStatus" style="margin-top:10px; opacity:.9;"></div>
+          <img id="t2iImg" alt="Generated image will appear here" style="display:none; width:100%; margin-top:12px; border-radius:14px;" />
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
