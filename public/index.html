@@ -12,16 +12,14 @@
 <header class="topbar">
 <div class="topbar-left">
 <a class="brand" href="./index.html" aria-label="QuannaLeap.AI Home">
-<!-- ✅ keep logo in /public -->
 <img class="brand-logo" src="./logo.png" alt="QuannaLeap.AI logo" />
 </a>
 
-<!-- ✅ MOVED NAV INTO TOP BAR -->
-<nav class="topnav" aria-label="Primary">
+<!-- ✅ TOP NAV LINKS (this is what you want in the main bar) -->
+<nav class="topnav" aria-label="Main navigation">
 <a class="active" href="./index.html">🏠 Home</a>
 <a href="./assets.html">🗂️ Assets</a>
 <a href="./characters.html">🧑‍🎨 Characters</a>
-<a href="./company.html">🏢 Company</a>
 </nav>
 </div>
 
@@ -39,14 +37,27 @@
 <button class="icon-btn" type="button" aria-label="Notifications">🔔</button>
 
 <button class="profile-btn" type="button" aria-label="Profile">
-<!-- ✅ profile placeholder in /public -->
 <img src="./empty-projects.png" alt="Profile" />
 </button>
 </div>
 </header>
 
-<!-- APP SHELL (no sidebar) -->
+<!-- APP SHELL -->
 <div class="app">
+<!-- SIDEBAR (kept, but CSS hides it right now) -->
+<aside class="sidebar">
+<nav class="side-nav">
+<a class="side-link active" href="./index.html">🏠 Home</a>
+<a class="side-link" href="./assets.html">🗂️ Assets</a>
+<a class="side-link" href="./characters.html">🧑‍🎨 Characters</a>
+</nav>
+
+<div class="side-footer">
+<div class="tiny">QuannaLeap.AI • v0.1</div>
+</div>
+</aside>
+
+<!-- MAIN -->
 <main class="main">
 <div class="hero">
 <h1>What Would You Like To Create Today?</h1>
@@ -58,7 +69,8 @@
 <a class="card" href="./create.html?mode=image-to-video">
 <div class="card-media">
 <img src="./card-image-to-video.png" alt="Image to Video" />
-<video class="card-video" muted loop playsinline preload="metadata" data-src="./hover-image-to-video.mp4"></video>
+<video class="card-video" muted loop playsinline preload="metadata"
+data-src="./hover-image-to-video.mp4"></video>
 </div>
 <div class="card-body">
 <h2>Image → Video</h2>
@@ -71,7 +83,8 @@
 <a class="card" href="./create.html?mode=text-to-video">
 <div class="card-media">
 <img src="./card-text-to-video.png" alt="Text to Video" />
-<video class="card-video" muted loop playsinline preload="metadata" data-src="./hover-text-to-video.mp4"></video>
+<video class="card-video" muted loop playsinline preload="metadata"
+data-src="./hover-text-to-video.mp4"></video>
 </div>
 <div class="card-body">
 <h2>Text → Video</h2>
@@ -84,7 +97,8 @@
 <a class="card" href="./text-to-image.html">
 <div class="card-media">
 <img src="./card-text-to-image.png" alt="Text to Image" />
-<video class="card-video" muted loop playsinline preload="metadata" data-src="./hover-text-to-image.mp4"></video>
+<video class="card-video" muted loop playsinline preload="metadata"
+data-src="./hover-text-to-image.mp4"></video>
 </div>
 <div class="card-body">
 <h2>Text → Image</h2>
@@ -96,7 +110,6 @@
 <!-- Text -> Voice -->
 <a class="card" href="./text-to-voice.html">
 <div class="card-media">
-<!-- use existing image so it never breaks -->
 <img src="./card-text-to-video.png" alt="Text to Voice" />
 </div>
 <div class="card-body">
@@ -112,7 +125,3 @@
 <script src="./app.js"></script>
 </body>
 </html>
-      
-        
-       
- 
