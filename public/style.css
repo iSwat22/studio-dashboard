@@ -1,36 +1,50 @@
-/* Base */
+/* =========================
+QuannaLeap.AI — style.css
+Neon-Tech UI (FULL FILE)
+Paste this entire file into /public/style.css
+========================= */
+
+/* Base reset */
 *{ box-sizing:border-box; margin:0; padding:0; }
+
 :root{
 --bg1:#020617;
 --bg2:#0b1224;
---card:#071023cc;
---stroke:rgba(255,255,255,.10);
+
+--card: rgba(2,6,23,.58);
+--stroke: rgba(255,255,255,.10);
 --text:#e5e7eb;
---muted:rgba(229,231,235,.75);
+--muted: rgba(229,231,235,.78);
+
 --blue:#38bdf8;
 --blue2:#2563eb;
+--cyan:#22d3ee;
+
 --radius:16px;
 }
 
 html,body{ height:100%; }
+
 body{
 font-family: Inter, Arial, sans-serif;
 color:var(--text);
 background: radial-gradient(circle at top, #0f172a, #020617);
 }
 
-/* ✅ Background helper (FILE IS IN /public) */
+/* =========================
+Background helpers
+========================= */
 .bg-stars{
 background:
 radial-gradient(circle at top, rgba(56,189,248,.10), transparent 45%),
 linear-gradient(180deg, rgba(2,6,23,.85), rgba(2,6,23,.95)),
-url("./bg-star.jpg");
+url("./images/backgrounds/bg-stars.jpg");
 background-size: cover;
 background-position:center;
 background-attachment: fixed;
 }
 
-/* Optional background */
+/* Optional alternate background */
 .bg-gradient{
 background:
 radial-gradient(circle at top, rgba(56,189,248,.12), transparent 48%),
@@ -41,9 +55,11 @@ background-position:center;
 background-attachment: fixed;
 }
 
-/* Topbar */
+/* =========================
+Topbar
+========================= */
 .topbar{
-height:96px;
+height:72px;
 display:flex;
 align-items:center;
 justify-content:space-between;
@@ -53,6 +69,8 @@ background: rgba(2,6,23,.55);
 backdrop-filter: blur(10px);
 }
 
+.topbar-left{ display:flex; align-items:center; gap:10px; }
+
 .brand{
 display:flex;
 align-items:center;
@@ -61,11 +79,12 @@ text-decoration:none;
 color:var(--text);
 }
 
-/* ✅ This WILL apply as long as the img has class="brand-logo" */
+/* ✅ Logo size fix (matches “Standard Plan” height vibe) */
 .brand-logo{
-height:70px; /* change this to 70 if you want bigger */
+height:44px; /* change only this number if needed */
 width:auto;
 object-fit:contain;
+display:block;
 }
 
 .topbar-right{
@@ -80,10 +99,11 @@ align-items:center;
 gap:8px;
 padding:10px 12px;
 border-radius:999px;
-border:1px solid var(--stroke);
+border:1px solid rgba(56,189,248,.22);
 background: rgba(2,6,23,.55);
-font-weight:700;
+font-weight:800;
 font-size:13px;
+box-shadow: 0 0 10px rgba(56,189,248,.08);
 }
 
 .dot{ width:8px; height:8px; border-radius:99px; display:inline-block; }
@@ -91,32 +111,36 @@ font-size:13px;
 .star{ color:#fbbf24; }
 
 .icon-btn{
-border:1px solid var(--stroke);
+border:1px solid rgba(56,189,248,.20);
 background: rgba(2,6,23,.55);
 color:var(--text);
 height:42px;
 width:42px;
 border-radius:12px;
 cursor:pointer;
+box-shadow: 0 0 10px rgba(56,189,248,.08);
 }
 
 .profile-btn{
-border:1px solid var(--stroke);
+border:1px solid rgba(56,189,248,.20);
 background: rgba(2,6,23,.55);
 height:42px;
 width:42px;
 border-radius:12px;
 cursor:pointer;
 overflow:hidden;
+box-shadow: 0 0 10px rgba(56,189,248,.08);
 }
 .profile-btn img{
 width:100%;
 height:100%;
 object-fit:cover;
-opacity:.90;
+opacity:.92;
 }
 
-/* App layout */
+/* =========================
+App layout
+========================= */
 .app{
 display:grid;
 grid-template-columns: 260px 1fr;
@@ -146,29 +170,33 @@ padding:12px 12px;
 border-radius:12px;
 border:1px solid transparent;
 background: transparent;
-font-weight:700;
-opacity:.9;
+font-weight:800;
+opacity:.95;
 }
+
 .side-link:hover{
 background: rgba(56,189,248,.10);
-border-color: rgba(56,189,248,.18);
+border-color: rgba(56,189,248,.22);
+box-shadow: 0 0 16px rgba(56,189,248,.12);
 }
+
 .side-link.active{
 background: rgba(56,189,248,.14);
-border-color: rgba(56,189,248,.22);
+border-color: rgba(56,189,248,.30);
+box-shadow: 0 0 18px rgba(56,189,248,.14);
 }
 
 .side-footer{
 margin-top:auto;
-opacity:.65;
+opacity:.70;
 font-size:12px;
 }
 
-/* Main */
-.main{
-padding: 26px;
-}
+.main{ padding: 26px; }
 
+/* =========================
+Hero
+========================= */
 .hero{
 max-width: 1100px;
 margin-bottom: 18px;
@@ -184,25 +212,44 @@ color: var(--muted);
 font-size: 15px;
 }
 
-/* Cards grid */
+/* =========================
+Cards grid + Neon-Tech cards
+========================= */
 .grid{
 display:grid;
-grid-template-columns: repeat(4, minmax(220px, 1fr));
+grid-template-columns: repeat(3, minmax(220px, 1fr));
 gap:16px;
-max-width: 1200px;
+max-width: 1100px;
 }
 
+/* Neon card (always glowing) */
 .card{
+position:relative;
 display:flex;
 flex-direction:column;
 border-radius: var(--radius);
-border:1px solid var(--stroke);
-background: rgba(2,6,23,.55);
+border: 2px solid rgba(56,189,248,.75);
+background:
+linear-gradient(180deg, rgba(56,189,248,.10), rgba(2,6,23,.72));
 overflow:hidden;
 text-decoration:none;
 color:var(--text);
-box-shadow: 0 16px 50px rgba(0,0,0,.45);
-transform: translateZ(0);
+box-shadow:
+0 0 12px rgba(56,189,248,.35),
+0 18px 60px rgba(0,0,0,.65);
+transition: all .3s ease;
+}
+
+/* Glow aura */
+.card::before{
+content:"";
+position:absolute;
+inset:-2px;
+border-radius:inherit;
+background: linear-gradient(135deg, var(--blue), var(--blue2), var(--cyan));
+opacity:.22;
+filter: blur(14px);
+z-index:-1;
 }
 
 .card-media{
@@ -210,14 +257,19 @@ position:relative;
 height: 210px;
 overflow:hidden;
 background: #000;
+border-bottom: 1px solid rgba(255,255,255,.08);
 }
+
 .card-media img{
 width:100%;
 height:100%;
 object-fit:cover;
 transform: scale(1.03);
-filter: saturate(1.1) contrast(1.05);
-transition: transform .35s ease, filter .35s ease, opacity .35s ease;
+filter:
+brightness(1.15)
+saturate(1.25)
+contrast(1.1);
+transition: transform .35s ease, opacity .35s ease, filter .35s ease;
 }
 
 .card-video{
@@ -254,23 +306,117 @@ align-self:flex-start;
 padding: 10px 14px;
 border-radius: 12px;
 font-weight: 900;
+color:#061018;
 background: linear-gradient(135deg, var(--blue), var(--blue2));
+box-shadow:
+0 0 12px rgba(56,189,248,.85),
+inset 0 0 6px rgba(255,255,255,.25);
 }
 
-/* Hover effect (video-ready) */
+/* Hover = POP */
+.card:hover{
+border-color:#38bdf8;
+box-shadow:
+0 0 25px rgba(56,189,248,.95),
+0 0 60px rgba(56,189,248,.55),
+0 30px 90px rgba(0,0,0,.8);
+transform: translateY(-6px) scale(1.01);
+}
 .card:hover img{
 transform: scale(1.08);
-filter: saturate(1.15) contrast(1.10);
-opacity:.95;
-}
-.card:hover{
-border-color: rgba(56,189,248,.30);
+opacity:.98;
 }
 
-/* Responsive */
-@media (max-width: 1100px){
+/* =========================
+Create / Text-to-Image layout
+✅ Preview ABOVE prompt (your sketch)
+========================= */
+
+/* Optional page hero image area */
+.hero-image{ padding: 14px 0 8px 0; }
+
+/* Main create panel */
+.create-panel{
+max-width: 1100px;
+margin-top: 18px;
+border: 1px solid rgba(56,189,248,.25);
+border-radius: var(--radius);
+background: rgba(2,6,23,.55);
+box-shadow:
+0 0 18px rgba(56,189,248,.14),
+0 16px 50px rgba(0,0,0,.45);
+padding: 16px;
+display: grid;
+gap: 14px;
+}
+
+/* Preview area (TOP) */
+.result-area{
+border-radius: 14px;
+border: 1px solid rgba(56,189,248,.22);
+background: rgba(0,0,0,.25);
+overflow: hidden;
+min-height: 320px;
+display:flex;
+align-items:center;
+justify-content:center;
+box-shadow: inset 0 0 30px rgba(56,189,248,.08);
+}
+
+.result-preview{
+width: 100%;
+height: auto;
+display:block;
+opacity: .95;
+}
+
+/* Prompt (BOTTOM) */
+.prompt-input{
+width: 100%;
+min-height: 140px;
+resize: vertical;
+border-radius: 14px;
+border: 1px solid rgba(56,189,248,.22);
+background: rgba(2,6,23,.70);
+color: var(--text);
+padding: 14px;
+font-size: 14px;
+line-height: 1.4;
+outline: none;
+}
+
+.prompt-input:focus{
+border-color: rgba(56,189,248,.55);
+box-shadow: 0 0 0 3px rgba(56,189,248,.12);
+}
+
+.create-actions{
+display:flex;
+gap:12px;
+align-items:center;
+}
+
+.primary-btn{
+border: 0;
+cursor: pointer;
+font-weight: 900;
+padding: 12px 16px;
+border-radius: 12px;
+color: #061018;
+background: linear-gradient(135deg, var(--blue), var(--blue2));
+box-shadow:
+0 0 14px rgba(56,189,248,.55),
+inset 0 0 6px rgba(255,255,255,.20);
+}
+.primary-btn:hover{ filter: brightness(1.05); }
+
+/* =========================
+Responsive
+========================= */
+@media (max-width: 1050px){
 .grid{ grid-template-columns: 1fr; }
 .app{ grid-template-columns: 1fr; }
 .sidebar{ display:none; }
+.brand-logo{ height:40px; }
 }
  
