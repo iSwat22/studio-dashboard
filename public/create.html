@@ -12,74 +12,83 @@
 <header class="topbar">
 <div class="topbar-left">
 <a class="brand" href="./index.html" aria-label="QuannaLeap.AI Home">
+<!-- ✅ MATCHES index.html -->
 <img class="brand-logo" src="./logo.png" alt="QuannaLeap.AI logo" />
 </a>
 
-<nav class="topnav" aria-label="Primary">
+<!-- ✅ TOP NAV LINKS (same as index) -->
+<nav class="topnav" aria-label="Main navigation">
 <a href="./index.html">🏠 Home</a>
 <a href="./assets.html">🗂️ Assets</a>
 <a href="./characters.html">🧑‍🎨 Characters</a>
-<a href="./company.html">🏢 Company</a>
 </nav>
 </div>
 
 <div class="topbar-right">
 <div class="pill"><span class="dot dot-green"></span><span>Standard Plan</span></div>
-<div class="pill"><span class="star">★</span><span id="creditsCount">Unlimited</span></div>
+<div class="pill"><span class="star">★</span><span id="creditsCount">430</span></div>
 <button class="icon-btn" type="button" aria-label="Notifications">🔔</button>
 <button class="profile-btn" type="button" aria-label="Profile">
+<!-- ✅ MATCHES index.html -->
 <img src="./empty-projects.png" alt="Profile" />
 </button>
 </div>
 </header>
 
 <div class="app">
+<!-- Sidebar kept (CSS hides it). Safe to leave. -->
+<aside class="sidebar">
+<nav class="side-nav">
+<a class="side-link" href="./index.html">🏠 Home</a>
+<a class="side-link" href="./assets.html">🗂️ Assets</a>
+<a class="side-link" href="./characters.html">🧑‍🎨 Characters</a>
+</nav>
+<div class="side-footer"><div class="tiny">QuannaLeap.AI • v0.1</div></div>
+</aside>
+
 <main class="main">
 <div class="hero">
 <h1 id="pageTitle">Create</h1>
 <p id="pageDesc">Choose your workflow.</p>
 </div>
 
-<!-- Centered create panel -->
-<div class="page-wrap">
+<!-- Centered like your sketch -->
 <div class="create-panel">
-<!-- Preview FIRST (per your sketch) -->
 <div class="preview-shell">
-<img id="heroImg" class="result-preview" src="./hero-image-to-video.jpg" alt="Preview" />
+<!-- You can swap img/video depending on mode -->
+<img id="heroImg" class="result-preview" src="./card-image-to-video.png" alt="Preview" />
 </div>
 
 <div class="prompt-shell">
 <!-- IMAGE -> VIDEO -->
 <div id="panelI2V">
-<div class="help-text">Image → Video</div>
-
-<input id="i2vFiles" type="file" accept="image/*" multiple />
+<h2 style="font-size:20px; font-weight:900;">Image → Video</h2>
+<p class="help-text">Upload images and generate a clip.</p>
 
 <div class="actions-row">
+<input id="i2vFiles" type="file" accept="image/*" multiple />
 <button class="primary-btn" id="i2vGenerate" type="button">Generate Video</button>
 <button class="ghost-btn" id="i2vClear" type="button">Clear</button>
 </div>
 
-<div id="i2vStatus" class="help-text"></div>
-
+<div id="i2vStatus" class="help-text" style="margin-top:10px;"></div>
 <video id="i2vResult" controls style="display:none; width:100%; margin-top:12px; border-radius:14px;"></video>
 </div>
 
 <!-- TEXT -> VIDEO -->
 <div id="panelT2V" style="display:none;">
-<div class="help-text">Text → Video</div>
+<h2 style="font-size:20px; font-weight:900;">Text → Video</h2>
+<p class="help-text">Enter a prompt and generate a scene.</p>
 
-<textarea id="t2vPrompt" class="prompt-input" rows="6" placeholder='Example: "A cinematic 3D ark at sunrise"'></textarea>
+<textarea id="t2vPrompt" class="prompt-input" rows="5" placeholder='Example: "A cinematic 3D ark at sunrise"'></textarea>
 
 <div class="actions-row">
 <button class="primary-btn" id="t2vGenerate" type="button">Generate Video</button>
 <button class="ghost-btn" id="t2vClear" type="button">Clear</button>
 </div>
 
-<div id="t2vStatus" class="help-text"></div>
-
+<div id="t2vStatus" class="help-text" style="margin-top:10px;"></div>
 <video id="t2vResult" controls style="display:none; width:100%; margin-top:12px; border-radius:14px;"></video>
-</div>
 </div>
 </div>
 </div>
