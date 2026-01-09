@@ -1,112 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>QuannaLeap.AI</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="./style.css" />
+<meta charset="UTF-8" />
+<title>Text → Image • QuannaLeap.AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="./style.css" />
 </head>
 
 <body class="bg-stars">
-  <!-- TOP HEADER -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <a class="brand" href="./index.html">
-        <img class="brand-logo" src="./logo.png" alt="QuannaLeap.AI logo" />
-      </a>
-    </div>
 
-    <div class="topbar-right">
-      <div class="pill">
-        <span class="dot dot-green"></span>
-        <span>Standard Plan</span>
-      </div>
+<header class="topbar">
+<a class="brand" href="./index.html">
+<img class="brand-logo" src="./logo.png" alt="QuannaLeap.AI logo" />
+</a>
+</header>
 
-      <div class="pill">
-        <span class="star">★</span>
-        <span id="creditsCount">430</span>
-      </div>
+<div class="app">
+<aside class="sidebar">
+<nav class="side-nav">
+<a class="side-link" href="./index.html">🏠 Home</a>
+<a class="side-link" href="./assets.html">🗂️ Assets</a>
+<a class="side-link" href="./characters.html">🧑‍🎨 Characters</a>
+</nav>
+</aside>
 
-      <button class="icon-btn" type="button" aria-label="Notifications">
-        🔔
-      </button>
+<main class="main">
+<div class="hero">
+<h1>Text → Image</h1>
+<p>Generate images from prompts.</p>
+</div>
 
-      <button class="profile-btn" type="button" aria-label="Profile">
-        <img src="./empty-projects.png" alt="Profile" />
-      </button>
-    </div>
-  </header>
+<div class="create-panel">
+<textarea class="prompt-input" placeholder="Describe the image you want…"></textarea>
+<div class="create-actions">
+<button class="primary-btn">Generate</button>
+</div>
+<div class="result-area">
+<img class="result-preview" />
+</div>
+</div>
+</main>
+</div>
 
-  <!-- APP SHELL -->
-  <div class="app">
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <nav class="side-nav">
-        <a class="side-link active" href="./index.html">🏠 Home</a>
-        <a class="side-link" href="./assets.html">🗂️ Assets</a>
-        <a class="side-link" href="./characters.html">🧑‍🎨 Characters</a>
-      </nav>
-
-      <div class="side-footer">
-        <div class="tiny">QuannaLeap.AI • v0.1</div>
-      </div>
-    </aside>
-
-    <!-- MAIN -->
-    <main class="main">
-      <div class="hero">
-        <h1>What Would You Like To Create Today?</h1>
-        <p>Choose a workflow below. Clean dashboard now — we’ll plug in engines next.</p>
-      </div>
-
-      <section class="grid">
-        <!-- Image -> Video -->
-        <a class="card" href="./create.html?mode=image-to-video">
-          <div class="card-media">
-            <img src="./card-image-to-video.png" alt="Image to Video" />
-            <video class="card-video" muted loop playsinline preload="metadata" data-src="./hover-image-to-video.mp4"></video>
-          </div>
-          <div class="card-body">
-            <h2>Image → Video</h2>
-            <p>Upload images and generate cinematic clips.</p>
-            <div class="card-cta">Create</div>
-          </div>
-        </a>
-
-        <!-- Text -> Video -->
-        <a class="card" href="./create.html?mode=text-to-video">
-          <div class="card-media">
-            <img src="./card-text-to-video.png" alt="Text to Video" />
-            <video class="card-video" muted loop playsinline preload="metadata" data-src="./hover-text-to-video.mp4"></video>
-          </div>
-          <div class="card-body">
-            <h2>Text → Video</h2>
-            <p>Turn a prompt into a full cinematic scene.</p>
-            <div class="card-cta">Create</div>
-          </div>
-        </a>
-
-        <!-- Text -> Image -->
-        <a class="card" href="./text-to-image.html">
-          <div class="card-media">
-            <img src="./card-text-to-image.png" alt="Text to Image" />
-            <video class="card-video" muted loop playsinline preload="metadata" data-src="./hover-text-to-image.mp4"></video>
-          </div>
-          <div class="card-body">
-            <h2>Text → Image</h2>
-            <p>Generate images with your style prompts.</p>
-            <div class="card-cta">Create</div>
-          </div>
-        </a>
-      </section>
-    </main>
-  </div>
-
-  <script src="./app.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
-
-
       
      
       
