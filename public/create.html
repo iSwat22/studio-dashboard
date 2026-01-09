@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create • QuannaLeap.AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+
+<body class="bg-stars">
+  <header class="topbar">
+    <div class="topbar-left">
+      <a class="brand" href="./index.html">
+        <img class="brand-logo" src="./images/brand/logo.png" alt="QuannaLeap.AI logo" />
+      </a>
+    </div>
+    <div class="topbar-right">
+      <div class="pill"><span class="dot dot-green"></span><span>Standard Plan</span></div>
+      <div class="pill"><span class="star">★</span><span id="creditsCount">430</span></div>
+      <button class="icon-btn" type="button">🔔</button>
+      <button class="profile-btn" type="button"><img src="./images/ui/empty-projects.png" alt="Profile" /></button>
+    </div>
+  </header>
+
+  <div class="app">
+    <aside class="sidebar">
+      <nav class="side-nav">
+        <a class="side-link" href="./index.html">🏠 Home</a>
+        <a class="side-link" href="./assets.html">🗂️ Assets</a>
+        <a class="side-link" href="./characters.html">🧑‍🎨 Characters</a>
+      </nav>
+      <div class="side-footer"><div class="tiny">QuannaLeap.AI • v0.1</div></div>
+    </aside>
+
+    <main class="main">
+      <div class="hero">
+        <h1 id="pageTitle">Create</h1>
+        <p id="pageDesc">Choose your workflow.</p>
+      </div>
+
+      <!-- HERO IMAGE -->
+      <div class="card" style="max-width:1000px;">
+        <div class="card-media" style="height:280px;">
+          <img id="heroImg" src="./images/heroes/hero-image-to-video.jpg" alt="Hero" />
+        </div>
+
+        <div class="card-body">
+          <!-- IMAGE -> VIDEO -->
+          <div id="panelI2V">
+            <h2 style="font-size:20px;">Image → Video</h2>
+            <p style="color:rgba(229,231,235,.75); margin-bottom:10px;">
+              Upload images and generate a clip.
+            </p>
+
+            <input id="i2vFiles" type="file" accept="image/*" multiple />
+            <button class="icon-btn" id="i2vGenerate" style="width:220px; margin-top:10px;">Generate Video</button>
+            <div id="i2vStatus" style="margin-top:10px; opacity:.9;"></div>
+
+            <!-- later: show video result here -->
+            <video id="i2vResult" controls style="display:none; width:100%; margin-top:12px; border-radius:14px;"></video>
+          </div>
+
+          <!-- TEXT -> VIDEO -->
+          <div id="panelT2V" style="display:none;">
+            <h2 style="font-size:20px;">Text → Video</h2>
+            <p style="color:rgba(229,231,235,.75); margin-bottom:10px;">
+              Enter a prompt and generate a scene.
+            </p>
+
+            <textarea id="t2vPrompt" rows="5" placeholder='Example: "A cinematic 3D ark at sunrise"'></textarea>
+            <button class="icon-btn" id="t2vGenerate" style="width:220px;">Generate Video</button>
+            <div id="t2vStatus" style="margin-top:10px; opacity:.9;"></div>
+
+            <video id="t2vResult" controls style="display:none; width:100%; margin-top:12px; border-radius:14px;"></video>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="./create.js"></script>
+</body>
+</html>
