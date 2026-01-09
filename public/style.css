@@ -43,7 +43,7 @@ background-attachment: fixed;
 
 /* Topbar */
 .topbar{
-height:72px;
+height:96px;
 display:flex;
 align-items:center;
 justify-content:space-between;
@@ -63,7 +63,7 @@ color:var(--text);
 
 /* ✅ This WILL apply as long as the img has class="brand-logo" */
 .brand-logo{
-height:56px; /* change this to 70 if you want bigger */
+height:70px; /* change this to 70 if you want bigger */
 width:auto;
 object-fit:contain;
 }
