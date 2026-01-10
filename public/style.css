@@ -1,25 +1,20 @@
-/* =====================================================
-QuannaLeap.AI – Neon Tech UI
-FULL CLEAN BASE (LAYOUT LOCKED)
-===================================================== */
+/* =========================================
+QuannaLeap.AI — Neon Tech UI (CLEAN REBUILD)
+Single source of truth for ALL pages:
+- Home dashboard grid (cards)
+- Generator pages (Text→Image, Text→Video, Image→Video, Text→Voice)
+- Preview sizing (image/video FITS box)
+- Neon hover glow (nav + buttons)
+========================================= */
 
-/* =========================
-RESET
-========================= */
-* {
-box-sizing: border-box;
-margin: 0;
-padding: 0;
-}
+/* RESET */
+*{ box-sizing:border-box; margin:0; padding:0; }
+img, video{ display:block; max-width:100%; }
+a{ color:inherit; text-decoration:none; }
+textarea, button{ font:inherit; }
 
-html, body {
-height: 100%;
-}
-
-/* =========================
-VARIABLES (UNCHANGED)
-========================= */
-:root {
+/* VARIABLES */
+:root{
 --bg1:#020617;
 --bg2:#0b1224;
 
@@ -33,34 +28,37 @@ VARIABLES (UNCHANGED)
 --blue:#38bdf8;
 --blue2:#2563eb;
 
+--radius: 16px;
+
+/* neon glow */
 --neon: rgba(56,189,248,.95);
 --neonSoft: rgba(56,189,248,.35);
 --neonGlow1: 0 0 10px rgba(56,189,248,.35);
 --neonGlow2: 0 0 24px rgba(56,189,248,.28);
 --neonGlow3: 0 0 48px rgba(56,189,248,.18);
-
---radius: 16px;
 }
 
-/* =========================
-PAGE BACKGROUND
-========================= */
-body {
+/* PAGE */
+html, body{ height:100%; }
+body{
 font-family: Inter, Arial, sans-serif;
 color: var(--text);
 background: radial-gradient(circle at top, #0f172a, #020617);
 }
 
-.bg-stars {
+/* BACKGROUND */
+.bg-stars{
 background:
 radial-gradient(circle at top, rgba(56,189,248,.12), transparent 45%),
 linear-gradient(180deg, rgba(2,6,23,.86), rgba(2,6,23,.96));
+background-size: cover;
+background-position: center;
 }
 
-/* =========================
+/* =========================================
 TOP BAR
-========================= */
-.topbar {
+========================================= */
+.topbar{
 height: 78px;
 display:flex;
 align-items:center;
@@ -71,38 +69,54 @@ background: rgba(2,6,23,.65);
 backdrop-filter: blur(12px);
 }
 
-.topbar-left {
+.topbar-left{
 display:flex;
 align-items:center;
 gap:18px;
 }
 
-.brand-logo {
-height:56px;
-}
+.brand{ display:flex; align-items:center; }
+.brand-logo{ height:56px; width:auto; }
 
-.topnav {
+/* TOP NAV */
+.topnav{
 display:flex;
 gap:10px;
 }
 
-.topnav a {
-text-decoration:none;
-color:var(--text);
-font-weight:900;
-padding:10px 12px;
-border-radius:999px;
-border:1px solid rgba(56,189,248,.20);
+.topnav a{
+display:inline-flex;
+align-items:center;
+gap:8px;
+padding: 10px 12px;
+border-radius: 999px;
+border: 1px solid rgba(56,189,248,.20);
 background: rgba(2,6,23,.35);
+font-weight: 900;
+transition: .18s ease;
 }
 
-.topbar-right {
+.topnav a.active{
+border-color: rgba(56,189,248,.70);
+background: rgba(56,189,248,.15);
+box-shadow: var(--neonGlow1);
+}
+
+.topnav a:hover{
+border-color: rgba(56,189,248,.90);
+background: rgba(56,189,248,.18);
+box-shadow: var(--neonGlow1), var(--neonGlow2);
+transform: translateY(-1px);
+}
+
+/* RIGHT */
+.topbar-right{
 display:flex;
 gap:10px;
 align-items:center;
 }
 
-.pill {
+.pill{
 display:flex;
 align-items:center;
 gap:8px;
@@ -114,164 +128,249 @@ font-weight:900;
 font-size:13px;
 }
 
-.dot { width:8px; height:8px; border-radius:50%; }
-.dot-green { background:#22c55e; }
-.star { color:#fbbf24; }
+.dot{ width:8px; height:8px; border-radius:50%; }
+.dot-green{ background:#22c55e; }
+.star{ color:#fbbf24; }
 
 .icon-btn,
-.profile-btn {
+.profile-btn{
 height:42px;
 width:42px;
 border-radius:12px;
 border:1px solid rgba(56,189,248,.25);
 background: rgba(2,6,23,.45);
 cursor:pointer;
+transition:.18s ease;
 }
 
-/* =========================
-APP WRAPPER
-========================= */
-.app {
-padding: 26px;
+.icon-btn:hover,
+.profile-btn:hover{
+border-color: rgba(56,189,248,.85);
+box-shadow: var(--neonGlow1), var(--neonGlow2);
+transform: translateY(-1px);
 }
 
-.main {
+.profile-btn img{
+width:100%;
+height:100%;
+object-fit:cover;
+border-radius:10px;
+}
+
+/* =========================================
+APP LAYOUT
+========================================= */
+.app{ padding: 26px; }
+.sidebar{ display:none; } /* kept hidden per your baseline */
+
+.main{
 max-width: 1180px;
 margin: 0 auto;
 }
 
-.page-wrap {
+/* HERO */
+.hero{ margin-bottom: 20px; }
+.hero h1{ font-size: 34px; font-weight: 900; }
+.hero p{ margin-top: 8px; color: var(--muted); }
+
+/* =========================================
+HOME DASHBOARD GRID (CARDS)
+This fixes: “stacked huge cards” / “giant images”
+========================================= */
+.grid{
+display:grid;
+grid-template-columns: repeat(4, minmax(220px, 1fr));
+gap:16px;
+}
+
+.card{
 display:flex;
 flex-direction:column;
-gap:18px;
+border-radius: var(--radius);
+border: 2px solid rgba(56,189,248,.30);
+background: var(--card);
+overflow:hidden;
+color: var(--text);
+transition:.18s ease;
 }
 
-/* =========================
-HERO
-========================= */
-.hero h1 {
-font-size:34px;
-font-weight:900;
+.card:hover{
+border-color: rgba(56,189,248,.80);
+box-shadow: var(--neonGlow1), var(--neonGlow2);
+transform: translateY(-2px);
 }
 
-.hero p {
-margin-top:6px;
-color:var(--muted);
-}
-
-/* =========================
-CREATE PANEL (MASTER LAYOUT)
-========================= */
-.create-panel {
-display:flex;
-flex-direction:column;
-gap:18px;
-padding:18px;
-border-radius:var(--radius);
-border:2px solid rgba(56,189,248,.30);
-background:var(--panel);
-}
-
-/* =========================
-PREVIEW AREA (LOCKED)
-========================= */
-.preview-shell {
+.card-media{
 position:relative;
-width:100%;
-aspect-ratio: 16 / 9;
-border-radius:14px;
-border:2px solid rgba(56,189,248,.35);
+height:200px;
+overflow:hidden;
 background:#000;
+}
+
+.card-media img{
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.card-video{
+position:absolute;
+inset:0;
+width:100%;
+height:100%;
+object-fit:cover;
+opacity:0;
+pointer-events:none;
+}
+
+.card-body{ padding:16px; }
+.card h2{ font-size:20px; font-weight:900; }
+.card p{ margin-top:6px; font-size:14px; color: var(--muted); }
+
+.card-cta{
+margin-top:12px;
+display:inline-block;
+padding:10px 14px;
+border-radius:12px;
+font-weight:900;
+color:#061018;
+background: linear-gradient(135deg, var(--blue), var(--blue2));
+box-shadow: 0 10px 24px rgba(37,99,235,.18);
+}
+
+/* =========================================
+GENERATOR PAGES — UNIFIED LAYOUT
+Matches your sketch:
+Header area -> Preview box -> Prompt box
+========================================= */
+.page-wrap{
+width:100%;
+}
+
+.create-panel{
+margin-top: 20px;
+padding: 16px;
+border-radius: var(--radius);
+border: 2px solid rgba(56,189,248,.30);
+background: var(--panel);
+}
+
+/* Preview container (consistent across pages) */
+.preview-shell{
+width:100%;
+border-radius: 14px;
+border: 2px solid rgba(56,189,248,.35);
+background: rgba(0,0,0,.55);
+overflow:hidden;
+
+/* common “clean” preview size */
+height: clamp(320px, 46vh, 520px);
+
 display:flex;
 align-items:center;
 justify-content:center;
-overflow:hidden;
+padding: 14px;
 }
 
-/* IMAGE + VIDEO (IDENTICAL BEHAVIOR) */
-.result-preview {
+/* The actual preview media ALWAYS fits inside the box */
+.result-preview{
 width:100%;
 height:100%;
-object-fit:contain;
-display:block;
+object-fit: contain; /* THIS makes image/video fit cleanly */
+border-radius: 10px;
 }
 
-/* EMPTY STATE */
-.help-text {
-color:var(--muted);
-font-size:14px;
+/* Empty helper text inside preview */
+.help-text{
+color: var(--muted);
+font-weight: 800;
 text-align:center;
-padding:12px;
 }
 
-/* =========================
-PROMPT AREA
-========================= */
-.prompt-shell {
-display:flex;
-flex-direction:column;
-gap:12px;
-}
-
-.prompt-input {
-width:100%;
-min-height:90px;
-resize:vertical;
-padding:12px;
-border-radius:12px;
-border:1px solid rgba(56,189,248,.25);
+/* Prompt shell under preview */
+.prompt-shell{
+margin-top: 14px;
+border-radius: 14px;
+border: 2px solid rgba(56,189,248,.25);
 background: rgba(2,6,23,.35);
-color:var(--text);
-font-size:14px;
+padding: 14px;
 }
 
-/* =========================
-ACTIONS
-========================= */
-.actions-row {
+.prompt-input{
+width:100%;
+min-height: 110px;
+resize: vertical;
+border-radius: 12px;
+border: 1px solid rgba(56,189,248,.25);
+background: rgba(2,6,23,.35);
+color: var(--text);
+padding: 12px;
+outline:none;
+}
+
+.prompt-input:focus{
+border-color: rgba(56,189,248,.75);
+box-shadow: var(--neonGlow1);
+}
+
+/* Buttons row */
+.actions-row{
+margin-top: 12px;
 display:flex;
 gap:10px;
-flex-wrap:wrap;
+flex-wrap: wrap;
 }
 
-.primary-btn {
-padding:10px 16px;
-border-radius:12px;
-font-weight:900;
-border:none;
+/* Button system */
+.primary-btn,
+.ghost-btn,
+.danger-btn{
+border-radius: 12px;
+font-weight: 900;
+padding: 10px 14px;
 cursor:pointer;
-background: linear-gradient(135deg, var(--blue), var(--blue2));
+transition:.18s ease;
+border: 1px solid rgba(56,189,248,.25);
+}
+
+.primary-btn{
 color:#061018;
+background: linear-gradient(135deg, var(--blue), var(--blue2));
+border-color: rgba(56,189,248,.45);
 }
 
-.ghost-btn {
-padding:10px 16px;
-border-radius:12px;
-border:1px solid rgba(56,189,248,.35);
+.ghost-btn{
 background: rgba(2,6,23,.35);
-color:var(--text);
-font-weight:900;
-cursor:pointer;
+color: var(--text);
 }
 
-.danger-btn {
-padding:10px 16px;
-border-radius:12px;
-border:1px solid rgba(239,68,68,.45);
-background: rgba(127,29,29,.35);
-color:#fecaca;
-font-weight:900;
-cursor:pointer;
+.danger-btn{
+background: rgba(239,68,68,.18);
+color: #fecaca;
+border-color: rgba(239,68,68,.35);
 }
 
-/* =========================
-LINK RESET
-========================= */
-a { text-decoration:none; color:inherit; }
+.primary-btn:hover,
+.ghost-btn:hover{
+box-shadow: var(--neonGlow1), var(--neonGlow2);
+border-color: rgba(56,189,248,.85);
+transform: translateY(-1px);
+}
 
-/* =========================
+.danger-btn:hover{
+box-shadow: 0 0 18px rgba(239,68,68,.25);
+transform: translateY(-1px);
+}
+
+/* =========================================
 RESPONSIVE
-========================= */
-@media (max-width: 800px) {
-.topnav { display:none; }
+========================================= */
+@media (max-width: 1100px){
+.grid{ grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px){
+.grid{ grid-template-columns: 1fr; }
+.topnav{ display:none; }
+.app{ padding: 18px; }
 }
