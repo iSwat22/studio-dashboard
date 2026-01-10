@@ -544,3 +544,111 @@ max-width: 100%;
 height: clamp(300px, 45vh, 460px);
 }
 }
+
+/* =========================================================
+GENERATOR PAGES — UNIFIED LAYOUT (ALL PAGES MATCH)
+Paste at VERY BOTTOM of style.css
+========================================================= */
+
+/* 1) Keep generator pages centered and consistent */
+.main{
+max-width: 1180px;
+margin: 0 auto;
+}
+
+/* 2) Make the generator panel a stacked layout: Preview on top, Prompt below */
+.create-panel{
+width: 100%;
+max-width: 980px;
+margin: 18px auto 0 auto;
+display: grid;
+gap: 14px;
+padding: 16px;
+border-radius: var(--radius);
+border: 2px solid rgba(56,189,248,.30);
+background: var(--panel);
+}
+
+/* 3) Universal preview box size (16:9) */
+.result-area{
+width: 100%;
+max-width: 960px;
+margin: 0 auto;
+border-radius: 14px;
+border: 2px solid rgba(56,189,248,.35);
+background: rgba(0,0,0,.35);
+overflow: hidden;
+
+/* The magic: same size everywhere */
+aspect-ratio: 16 / 9;
+
+/* Centers “Your generated … will appear here” nicely */
+display: flex;
+align-items: center;
+justify-content: center;
+}
+
+/* 4) Force generated media to fit cleanly inside the box */
+.result-area img,
+.result-area video,
+.result-area canvas{
+width: 100%;
+height: 100%;
+object-fit: contain;
+display: block;
+}
+
+/* 5) Normalize text areas and inputs that appear on these pages */
+.create-panel textarea,
+.create-panel input[type="text"],
+.create-panel input[type="url"]{
+width: 100%;
+max-width: 960px;
+margin: 0 auto;
+border-radius: 14px;
+border: 2px solid rgba(56,189,248,.22);
+background: rgba(2,6,23,.55);
+color: var(--text);
+padding: 14px;
+font-size: 14px;
+line-height: 1.4;
+outline: none;
+}
+
+/* 6) Normalize file input (Image→Video) so it doesn’t look out of place */
+.create-panel input[type="file"]{
+width: 100%;
+max-width: 960px;
+margin: 0 auto;
+padding: 10px;
+border-radius: 12px;
+border: 2px solid rgba(56,189,248,.18);
+background: rgba(2,6,23,.45);
+color: var(--text);
+}
+
+/* 7) Buttons row stays clean (even if HTML uses different wrappers) */
+.create-panel button,
+.create-panel .btn,
+.create-panel .primary-btn{
+border: 0;
+cursor: pointer;
+font-weight: 900;
+padding: 12px 16px;
+border-radius: 12px;
+color: #061018;
+background: linear-gradient(135deg, var(--blue), var(--blue2));
+box-shadow: 0 0 16px rgba(56,189,248,.18);
+}
+
+/* 8) Responsive: smaller screens keep same layout without blowing up */
+@media (max-width: 980px){
+.create-panel{ max-width: 100%; }
+.result-area{ max-width: 100%; }
+.create-panel textarea,
+.create-panel input[type="text"],
+.create-panel input[type="url"],
+.create-panel input[type="file"]{
+max-width: 100%;
+}
+}
