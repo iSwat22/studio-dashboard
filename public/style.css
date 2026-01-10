@@ -433,4 +433,114 @@ RESPONSIVE
 .result-area{ height: 280px; }
 #resultImg, #resultVideo{ max-height: 280px; }
 }
+/* =========================
+GENERATOR LAYOUT FIX (STACKED)
+Header -> Preview -> Prompt
+Paste at BOTTOM of style.css
+========================= */
 
+/* Keep generator pages centered and consistent */
+.main{
+max-width: 1180px;
+margin: 0 auto;
+}
+
+/* The panel that holds the generator UI */
+.create-panel{
+max-width: 980px; /* makes it look clean (not full-wide) */
+margin: 22px auto 0 auto; /* centers it */
+padding: 16px;
+display: grid;
+grid-template-columns: 1fr; /* FORCE stacked */
+grid-auto-rows: auto;
+gap: 14px;
+}
+
+/* Force ALL direct children to behave (prevents weird side-by-side layouts) */
+.create-panel > *{
+width: 100%;
+min-width: 0;
+}
+
+/* BIG PREVIEW BOX */
+.result-area{
+width: 100%;
+/* responsive height: never tiny, never insane */
+height: clamp(340px, 52vh, 520px);
+min-height: 340px;
+
+border-radius: 14px;
+overflow: hidden;
+
+display: flex;
+align-items: center;
+justify-content: center;
+
+/* keep your neon look */
+border: 2px solid rgba(56,189,248,.35);
+background: rgba(0,0,0,.35);
+}
+
+/* Anything rendered inside preview should fit nicely */
+.result-area img,
+.result-area video{
+width: 100%;
+height: 100%;
+object-fit: contain; /* never crop the image/video */
+display: block;
+}
+
+/* PROMPT BOX should always be UNDER the preview */
+.create-panel textarea,
+.create-panel input[type="text"],
+.create-panel input[type="url"]{
+width: 100%;
+min-height: 140px;
+resize: vertical;
+
+border-radius: 14px;
+border: 2px solid rgba(56,189,248,.22);
+background: rgba(2,6,23,.55);
+color: var(--text);
+padding: 14px;
+font-size: 14px;
+line-height: 1.4;
+outline: none;
+}
+
+.create-panel textarea:focus,
+.create-panel input[type="text"]:focus,
+.create-panel input[type="url"]:focus{
+border-color: rgba(56,189,248,.60);
+box-shadow: 0 0 0 4px rgba(56,189,248,.16);
+}
+
+/* Buttons row: keep it neat under the prompt (wrap if needed) */
+.create-actions,
+.actions,
+.button-row{
+display: flex;
+flex-wrap: wrap;
+gap: 10px;
+align-items: center;
+}
+
+/* Make native file input not look crazy */
+.create-panel input[type="file"]{
+width: 100%;
+padding: 10px;
+border-radius: 12px;
+border: 1px solid rgba(56,189,248,.25);
+background: rgba(2,6,23,.35);
+color: var(--text);
+}
+
+/* Mobile: keep the same stacked layout */
+@media (max-width: 740px){
+.create-panel{
+max-width: 100%;
+}
+.result-area{
+height: clamp(300px, 45vh, 460px);
+}
+}
