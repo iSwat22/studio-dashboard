@@ -15,7 +15,6 @@
 <img class="brand-logo" src="./logo.png?v=2" alt="QuannaLeap.AI logo" />
 </a>
 
-<!-- NAV MOVED INTO TOP BAR -->
 <nav class="topnav">
 <a href="./index.html">🏠 Home</a>
 <a href="./assets.html">📁 Assets</a>
@@ -43,8 +42,9 @@
 
 <!-- CENTERED PANEL (matches your sketch) -->
 <section class="create-panel">
+
 <!-- PREVIEW (ABOVE) -->
-<div class="preview-shell">
+<div class="result-area">
 <img id="resultImg" class="result-preview" alt="Generated preview" style="display:none;" />
 <div id="emptyState" class="help-text">Your generated image will appear here.</div>
 </div>
@@ -53,7 +53,7 @@
 <div class="prompt-shell">
 <textarea id="prompt" class="prompt-input" placeholder='Example: "A cinematic 3D ark at sunrise"'></textarea>
 
-<div class="actions-row">
+<div class="create-actions">
 <button id="generateBtn" class="primary-btn" type="button">Generate</button>
 
 <!-- These are hidden until an image exists -->
@@ -66,6 +66,7 @@
 Tip: After generating, you can download it, delete it, or push it into Image → Video.
 </div>
 </div>
+
 </section>
 </div>
 </main>
@@ -74,3 +75,6 @@ Tip: After generating, you can download it, delete it, or push it into Image →
 <script src="./app.js"></script>
 </body>
 </html>
+
+
+
