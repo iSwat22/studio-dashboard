@@ -1,13 +1,25 @@
-/* =========================
+/* =====================================================
 QuannaLeap.AI – Neon Tech UI
-FULL REPLACEMENT (SAFE + GLOW + CREATE PAGES FIX)
+FULL CLEAN BASE (LAYOUT LOCKED)
+===================================================== */
+
+/* =========================
+RESET
 ========================= */
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+}
 
-/* RESET */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+height: 100%;
+}
 
-/* VARIABLES */
-:root{
+/* =========================
+VARIABLES (UNCHANGED)
+========================= */
+:root {
 --bg1:#020617;
 --bg2:#0b1224;
 
@@ -21,7 +33,6 @@ FULL REPLACEMENT (SAFE + GLOW + CREATE PAGES FIX)
 --blue:#38bdf8;
 --blue2:#2563eb;
 
-/* Neon glow */
 --neon: rgba(56,189,248,.95);
 --neonSoft: rgba(56,189,248,.35);
 --neonGlow1: 0 0 10px rgba(56,189,248,.35);
@@ -31,28 +42,25 @@ FULL REPLACEMENT (SAFE + GLOW + CREATE PAGES FIX)
 --radius: 16px;
 }
 
-/* PAGE */
-html, body { height: 100%; }
-
-body{
+/* =========================
+PAGE BACKGROUND
+========================= */
+body {
 font-family: Inter, Arial, sans-serif;
 color: var(--text);
 background: radial-gradient(circle at top, #0f172a, #020617);
 }
 
-/* BACKGROUND */
-.bg-stars{
+.bg-stars {
 background:
 radial-gradient(circle at top, rgba(56,189,248,.12), transparent 45%),
 linear-gradient(180deg, rgba(2,6,23,.86), rgba(2,6,23,.96));
-background-size: cover;
-background-position: center;
 }
 
 /* =========================
 TOP BAR
 ========================= */
-.topbar{
+.topbar {
 height: 78px;
 display:flex;
 align-items:center;
@@ -63,64 +71,38 @@ background: rgba(2,6,23,.65);
 backdrop-filter: blur(12px);
 }
 
-.topbar-left{
+.topbar-left {
 display:flex;
 align-items:center;
 gap:18px;
 }
 
-.brand{
-display:flex;
-align-items:center;
-text-decoration: none;
-color: var(--text);
+.brand-logo {
+height:56px;
 }
 
-.brand-logo{
-height: 56px;
-width: auto;
-object-fit: contain;
-filter: drop-shadow(0 0 10px rgba(56,189,248,.18));
-}
-
-/* TOP NAV */
-.topnav{
+.topnav {
 display:flex;
 gap:10px;
 }
 
-.topnav a{
+.topnav a {
 text-decoration:none;
-color: rgba(255,255,255,.92);
-font-weight: 900;
-padding: 10px 12px;
-border-radius: 999px;
-border: 1px solid rgba(56,189,248,.20);
+color:var(--text);
+font-weight:900;
+padding:10px 12px;
+border-radius:999px;
+border:1px solid rgba(56,189,248,.20);
 background: rgba(2,6,23,.35);
-transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
 }
 
-.topnav a:hover{
-transform: translateY(-1px);
-border-color: rgba(56,189,248,.60);
-background: rgba(56,189,248,.10);
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-}
-
-.topnav a.active{
-border-color: rgba(56,189,248,.75);
-background: rgba(56,189,248,.15);
-box-shadow: var(--neonGlow1), var(--neonGlow2), var(--neonGlow3);
-}
-
-/* RIGHT */
-.topbar-right{
+.topbar-right {
 display:flex;
 gap:10px;
 align-items:center;
 }
 
-.pill{
+.pill {
 display:flex;
 align-items:center;
 gap:8px;
@@ -130,525 +112,166 @@ border:1px solid rgba(56,189,248,.25);
 background: rgba(2,6,23,.45);
 font-weight:900;
 font-size:13px;
-box-shadow: 0 0 14px rgba(56,189,248,.10);
 }
 
-.dot{
-width:8px;
-height:8px;
-border-radius:50%;
-}
-.dot-green{ background:#22c55e; }
-.star{ color:#fbbf24; }
+.dot { width:8px; height:8px; border-radius:50%; }
+.dot-green { background:#22c55e; }
+.star { color:#fbbf24; }
 
 .icon-btn,
-.profile-btn{
+.profile-btn {
 height:42px;
 width:42px;
 border-radius:12px;
 border:1px solid rgba(56,189,248,.25);
 background: rgba(2,6,23,.45);
 cursor:pointer;
-transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
-}
-
-.icon-btn:hover,
-.profile-btn:hover{
-transform: translateY(-1px);
-border-color: rgba(56,189,248,.65);
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-}
-
-.profile-btn img{
-width:100%;
-height:100%;
-object-fit:cover;
 }
 
 /* =========================
-APP LAYOUT
+APP WRAPPER
 ========================= */
-.app{
+.app {
 padding: 26px;
 }
 
-.sidebar{ display:none; }
-
-.main{
+.main {
 max-width: 1180px;
 margin: 0 auto;
 }
 
-/* HERO */
-.hero{ margin-bottom: 20px; }
-
-.hero h1{
-font-size: 34px;
-font-weight: 900;
-text-shadow: 0 0 18px rgba(56,189,248,.10);
-}
-
-.hero p{
-margin-top: 8px;
-color: var(--muted);
-}
-
-/* =========================
-DASHBOARD GRID
-========================= */
-.grid{
-display:grid;
-grid-template-columns: repeat(4, minmax(220px, 1fr));
-gap:16px;
-}
-
-/* CARD */
-.card{
+.page-wrap {
 display:flex;
 flex-direction:column;
-border-radius: var(--radius);
-border: 2px solid rgba(56,189,248,.30);
-background: var(--card);
-overflow:hidden;
-text-decoration:none;
-color: var(--text);
-box-shadow: 0 16px 50px rgba(0,0,0,.40);
-transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
-}
-
-.card:hover{
-transform: translateY(-2px);
-border-color: rgba(56,189,248,.85);
-box-shadow: var(--neonGlow1), var(--neonGlow2), var(--neonGlow3), 0 22px 60px rgba(0,0,0,.55);
-}
-
-.card-media{
-position:relative;
-height:200px;
-overflow:hidden;
-background:#000;
-}
-
-.card-media img{
-width:100%;
-height:100%;
-object-fit:cover;
-transform: scale(1.03);
-filter: saturate(1.1) contrast(1.05);
-transition: transform .35s ease, filter .35s ease, opacity .35s ease;
-}
-
-.card:hover .card-media img{
-transform: scale(1.08);
-filter: saturate(1.2) contrast(1.10);
-opacity:.96;
-}
-
-.card-video{
-position:absolute;
-inset:0;
-width:100%;
-height:100%;
-object-fit:cover;
-opacity:0;
-transition: opacity .25s ease;
-pointer-events:none;
-}
-
-.card-body{ padding:16px; }
-
-.card h2{
-font-size:20px;
-font-weight:900;
-}
-
-.card p{
-margin-top:6px;
-font-size:14px;
-color: var(--muted);
-}
-
-.card-cta{
-margin-top:12px;
-display:inline-flex;
-align-items:center;
-justify-content:center;
-padding:10px 14px;
-border-radius:12px;
-font-weight:900;
-color:#061018;
-background: linear-gradient(135deg, var(--blue), var(--blue2));
-box-shadow: 0 0 16px rgba(56,189,248,.18);
-transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
-}
-
-.card:hover .card-cta{
-transform: translateY(-1px);
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-filter: brightness(1.06);
+gap:18px;
 }
 
 /* =========================
-CREATE / GENERATOR PAGES
-- Preview box on top
-- Prompt box under it
-- Buttons glow again
+HERO
 ========================= */
-
-/* Container panel */
-.create-panel{
-margin-top: 20px;
-padding: 16px;
-border-radius: var(--radius);
-border: 2px solid rgba(56,189,248,.30);
-background: var(--panel);
-box-shadow: 0 16px 55px rgba(0,0,0,.45);
-max-width: 980px; /* keeps it from stretching edge-to-edge */
-margin-left: auto;
-margin-right: auto;
+.hero h1 {
+font-size:34px;
+font-weight:900;
 }
 
-/* Preview box */
-.result-area{
+.hero p {
+margin-top:6px;
+color:var(--muted);
+}
+
+/* =========================
+CREATE PANEL (MASTER LAYOUT)
+========================= */
+.create-panel {
+display:flex;
+flex-direction:column;
+gap:18px;
+padding:18px;
+border-radius:var(--radius);
+border:2px solid rgba(56,189,248,.30);
+background:var(--panel);
+}
+
+/* =========================
+PREVIEW AREA (LOCKED)
+========================= */
+.preview-shell {
+position:relative;
 width:100%;
-height: 340px; /* ✅ makes it look like your “correct” screenshot */
+aspect-ratio: 16 / 9;
 border-radius:14px;
 border:2px solid rgba(56,189,248,.35);
-background: rgba(0,0,0,.35);
+background:#000;
 display:flex;
 align-items:center;
 justify-content:center;
 overflow:hidden;
-box-shadow: inset 0 0 0 2px rgba(37,99,235,.10);
-margin-bottom: 14px;
 }
 
-/* Anything shown inside preview */
-.result-area img,
-.result-area video{
-width: 100%;
-height: 100%;
-max-width: 100%;
-max-height: 100%;
-object-fit: contain; /* ✅ prevents “too big” images */
+/* IMAGE + VIDEO (IDENTICAL BEHAVIOR) */
+.result-preview {
+width:100%;
+height:100%;
+object-fit:contain;
+display:block;
 }
 
-/* If your page uses #resultImg / #resultVideo directly (outside wrappers) */
-#resultImg, #resultVideo{
-max-width: 100%;
-max-height: 340px;
-object-fit: contain;
-border-radius: 12px;
-}
-
-/* Prompt textarea */
-#prompt, .prompt-input, textarea{
-width: 100%;
-min-height: 140px;
-resize: vertical;
-border-radius: 14px;
-border: 2px solid rgba(56,189,248,.22);
-background: rgba(2,6,23,.55);
-color: var(--text);
-padding: 14px;
-font-size: 14px;
-line-height: 1.4;
-outline: none;
-margin-top: 10px;
-}
-
-#prompt:focus, .prompt-input:focus, textarea:focus{
-border-color: rgba(56,189,248,.60);
-box-shadow: 0 0 0 4px rgba(56,189,248,.16);
-}
-
-/* Buttons (Generate / Download / Delete / Make Video) */
-button, .primary-btn, a[role="button"]{
-transition: transform .15s ease, box-shadow .2s ease, filter .2s ease, border-color .2s ease;
-}
-
-#generateBtn{
-border: 0;
-cursor: pointer;
-font-weight: 900;
-padding: 12px 16px;
-border-radius: 12px;
-color: #061018;
-background: linear-gradient(135deg, var(--blue), var(--blue2));
-box-shadow: 0 0 16px rgba(56,189,248,.18);
-margin-top: 12px;
-}
-
-#generateBtn:hover{
-transform: translateY(-1px);
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-filter: brightness(1.06);
-}
-
-#downloadBtn, #deleteBtn, #makeVideoBtn{
-display:inline-flex;
-align-items:center;
-justify-content:center;
-gap:8px;
-margin-top: 12px;
-padding: 12px 14px;
-border-radius: 12px;
-font-weight: 900;
-border: 1px solid rgba(56,189,248,.30);
-background: rgba(2,6,23,.45);
-color: var(--text);
-text-decoration: none;
-}
-
-#downloadBtn:hover, #deleteBtn:hover, #makeVideoBtn:hover{
-transform: translateY(-1px);
-border-color: rgba(56,189,248,.70);
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-}
-
-/* Small helper text */
-.tip, .hint, small{
-color: var(--muted);
+/* EMPTY STATE */
+.help-text {
+color:var(--muted);
+font-size:14px;
+text-align:center;
+padding:12px;
 }
 
 /* =========================
-NO UNDERLINES ANYWHERE
+PROMPT AREA
 ========================= */
-a, a:hover, a:visited, a:active{
-text-decoration:none !important;
-color: inherit;
+.prompt-shell {
+display:flex;
+flex-direction:column;
+gap:12px;
 }
+
+.prompt-input {
+width:100%;
+min-height:90px;
+resize:vertical;
+padding:12px;
+border-radius:12px;
+border:1px solid rgba(56,189,248,.25);
+background: rgba(2,6,23,.35);
+color:var(--text);
+font-size:14px;
+}
+
+/* =========================
+ACTIONS
+========================= */
+.actions-row {
+display:flex;
+gap:10px;
+flex-wrap:wrap;
+}
+
+.primary-btn {
+padding:10px 16px;
+border-radius:12px;
+font-weight:900;
+border:none;
+cursor:pointer;
+background: linear-gradient(135deg, var(--blue), var(--blue2));
+color:#061018;
+}
+
+.ghost-btn {
+padding:10px 16px;
+border-radius:12px;
+border:1px solid rgba(56,189,248,.35);
+background: rgba(2,6,23,.35);
+color:var(--text);
+font-weight:900;
+cursor:pointer;
+}
+
+.danger-btn {
+padding:10px 16px;
+border-radius:12px;
+border:1px solid rgba(239,68,68,.45);
+background: rgba(127,29,29,.35);
+color:#fecaca;
+font-weight:900;
+cursor:pointer;
+}
+
+/* =========================
+LINK RESET
+========================= */
+a { text-decoration:none; color:inherit; }
 
 /* =========================
 RESPONSIVE
 ========================= */
-@media (max-width: 1100px){
-.grid{ grid-template-columns: repeat(2, 1fr); }
-.create-panel{ max-width: 100%; }
-}
-
-@media (max-width: 700px){
-.grid{ grid-template-columns: 1fr; }
-.topnav{ display:none; }
-.result-area{ height: 280px; }
-#resultImg, #resultVideo{ max-height: 280px; }
-}
-/* =========================
-GENERATOR LAYOUT FIX (STACKED)
-Header -> Preview -> Prompt
-Paste at BOTTOM of style.css
-========================= */
-
-/* Keep generator pages centered and consistent */
-.main{
-max-width: 1180px;
-margin: 0 auto;
-}
-
-/* The panel that holds the generator UI */
-.create-panel{
-max-width: 980px; /* makes it look clean (not full-wide) */
-margin: 22px auto 0 auto; /* centers it */
-padding: 16px;
-display: grid;
-grid-template-columns: 1fr; /* FORCE stacked */
-grid-auto-rows: auto;
-gap: 14px;
-}
-
-/* Force ALL direct children to behave (prevents weird side-by-side layouts) */
-.create-panel > *{
-width: 100%;
-min-width: 0;
-}
-
-/* BIG PREVIEW BOX */
-.result-area{
-width: 100%;
-/* responsive height: never tiny, never insane */
-height: clamp(340px, 52vh, 520px);
-min-height: 340px;
-
-border-radius: 14px;
-overflow: hidden;
-
-display: flex;
-align-items: center;
-justify-content: center;
-
-/* keep your neon look */
-border: 2px solid rgba(56,189,248,.35);
-background: rgba(0,0,0,.35);
-}
-
-/* Anything rendered inside preview should fit nicely */
-.result-area img,
-.result-area video{
-width: 100%;
-height: 100%;
-object-fit: contain; /* never crop the image/video */
-display: block;
-}
-
-/* PROMPT BOX should always be UNDER the preview */
-.create-panel textarea,
-.create-panel input[type="text"],
-.create-panel input[type="url"]{
-width: 100%;
-min-height: 140px;
-resize: vertical;
-
-border-radius: 14px;
-border: 2px solid rgba(56,189,248,.22);
-background: rgba(2,6,23,.55);
-color: var(--text);
-padding: 14px;
-font-size: 14px;
-line-height: 1.4;
-outline: none;
-}
-
-.create-panel textarea:focus,
-.create-panel input[type="text"]:focus,
-.create-panel input[type="url"]:focus{
-border-color: rgba(56,189,248,.60);
-box-shadow: 0 0 0 4px rgba(56,189,248,.16);
-}
-
-/* Buttons row: keep it neat under the prompt (wrap if needed) */
-.create-actions,
-.actions,
-.button-row{
-display: flex;
-flex-wrap: wrap;
-gap: 10px;
-align-items: center;
-}
-
-/* Make native file input not look crazy */
-.create-panel input[type="file"]{
-width: 100%;
-padding: 10px;
-border-radius: 12px;
-border: 1px solid rgba(56,189,248,.25);
-background: rgba(2,6,23,.35);
-color: var(--text);
-}
-
-/* Mobile: keep the same stacked layout */
-@media (max-width: 740px){
-.create-panel{
-max-width: 100%;
-}
-.result-area{
-height: clamp(300px, 45vh, 460px);
-}
-}
-
-/* =========================================================
-GENERATOR PAGES — UNIFIED LAYOUT (ALL PAGES MATCH)
-Paste at VERY BOTTOM of style.css
-========================================================= */
-
-/* 1) Keep generator pages centered and consistent */
-.main{
-max-width: 1180px;
-margin: 0 auto;
-}
-
-/* 2) Make the generator panel a stacked layout: Preview on top, Prompt below */
-.create-panel{
-width: 100%;
-max-width: 980px;
-margin: 18px auto 0 auto;
-display: grid;
-gap: 14px;
-padding: 16px;
-border-radius: var(--radius);
-border: 2px solid rgba(56,189,248,.30);
-background: var(--panel);
-}
-
-/* 3) Universal preview box size (16:9) */
-.result-area{
-width: 100%;
-max-width: 960px;
-margin: 0 auto;
-border-radius: 14px;
-border: 2px solid rgba(56,189,248,.35);
-background: rgba(0,0,0,.35);
-overflow: hidden;
-
-/* The magic: same size everywhere */
-aspect-ratio: 16 / 9;
-
-/* Centers “Your generated … will appear here” nicely */
-display: flex;
-align-items: center;
-justify-content: center;
-}
-
-/* 4) Force generated media to fit cleanly inside the box */
-.result-area img,
-.result-area video,
-.result-area canvas{
-width: 100%;
-height: 100%;
-object-fit: contain;
-display: block;
-}
-
-/* 5) Normalize text areas and inputs that appear on these pages */
-.create-panel textarea,
-.create-panel input[type="text"],
-.create-panel input[type="url"]{
-width: 100%;
-max-width: 960px;
-margin: 0 auto;
-border-radius: 14px;
-border: 2px solid rgba(56,189,248,.22);
-background: rgba(2,6,23,.55);
-color: var(--text);
-padding: 14px;
-font-size: 14px;
-line-height: 1.4;
-outline: none;
-}
-
-/* 6) Normalize file input (Image→Video) so it doesn’t look out of place */
-.create-panel input[type="file"]{
-width: 100%;
-max-width: 960px;
-margin: 0 auto;
-padding: 10px;
-border-radius: 12px;
-border: 2px solid rgba(56,189,248,.18);
-background: rgba(2,6,23,.45);
-color: var(--text);
-}
-
-/* 7) Buttons row stays clean (even if HTML uses different wrappers) */
-.create-panel button,
-.create-panel .btn,
-.create-panel .primary-btn{
-border: 0;
-cursor: pointer;
-font-weight: 900;
-padding: 12px 16px;
-border-radius: 12px;
-color: #061018;
-background: linear-gradient(135deg, var(--blue), var(--blue2));
-box-shadow: 0 0 16px rgba(56,189,248,.18);
-}
-
-/* 8) Responsive: smaller screens keep same layout without blowing up */
-@media (max-width: 980px){
-.create-panel{ max-width: 100%; }
-.result-area{ max-width: 100%; }
-.create-panel textarea,
-.create-panel input[type="text"],
-.create-panel input[type="url"],
-.create-panel input[type="file"]{
-max-width: 100%;
-}
+@media (max-width: 800px) {
+.topnav { display:none; }
 }
