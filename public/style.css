@@ -1,12 +1,17 @@
+
 /* =========================
-QuannaLeap.AI - Neon Tech UI
-style.css (FULL REPLACEMENT)
+QuannaLeap.AI – Neon Tech UI
+FINAL SAFE VERSION
 ========================= */
 
-/* Base */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* Base reset */
+* {
+box-sizing: border-box;
+margin: 0;
+padding: 0;
+}
 
-:root{
+:root {
 --bg1:#020617;
 --bg2:#0b1224;
 
@@ -22,9 +27,7 @@ style.css (FULL REPLACEMENT)
 --blue:#38bdf8;
 --blue2:#2563eb;
 
-/* Neon glow colors */
 --neon: rgba(56,189,248,.95);
---neonSoft: rgba(56,189,248,.35);
 --neonGlow1: 0 0 10px rgba(56,189,248,.35);
 --neonGlow2: 0 0 24px rgba(56,189,248,.30);
 --neonGlow3: 0 0 48px rgba(56,189,248,.20);
@@ -32,29 +35,20 @@ style.css (FULL REPLACEMENT)
 --radius: 16px;
 }
 
-html, body { height: 100%; }
+html, body {
+height: 100%;
+}
 
-body{
+body {
 font-family: Inter, Arial, sans-serif;
 color: var(--text);
 background: radial-gradient(circle at top, #0f172a, #020617);
 }
 
-/* Background helper */
-.bg-stars{
-background:
-radial-gradient(circle at top, rgba(56,189,248,.12), transparent 45%),
-linear-gradient(180deg, rgba(2,6,23,.86), rgba(2,6,23,.96)),
-url("./images/backgrounds/bg-stars.jpg");
-background-size: cover;
-background-position: center;
-background-attachment: fixed;
-}
-
 /* =========================
-TOPBAR
+TOP BAR
 ========================= */
-.topbar{
+.topbar {
 height: 78px;
 display:flex;
 align-items:center;
@@ -65,54 +59,99 @@ background: rgba(2,6,23,.62);
 backdrop-filter: blur(12px);
 }
 
-/* ... (everything above stays EXACTLY the same) ... */
-
-/* Neon hover */
-.card:hover{
-transform: translateY(-2px);
-border-color: rgba(56,189,248,.85);
-box-shadow: var(--neonGlow1), var(--neonGlow2), var(--neonGlow3), 0 22px 60px rgba(0,0,0,.55);
+.brand {
+display:flex;
+align-items:center;
+gap:10px;
+text-decoration:none;
+color: var(--text);
 }
-.card:hover img{
-transform: scale(1.08);
-filter: saturate(1.2) contrast(1.10);
-opacity:.96;
+
+.brand-logo {
+height: 60px;
+width: auto;
 }
 
 /* =========================
-GENERATOR RESULT SIZE FIX
-THIS IS THE IMPORTANT PART
+LAYOUT
+========================= */
+.app {
+min-height: calc(100vh - 78px);
+}
+
+.main {
+padding: 26px;
+}
+
+/* =========================
+DASHBOARD GRID
+========================= */
+.grid {
+max-width: 1180px;
+margin: 0 auto;
+display:grid;
+grid-template-columns: repeat(4, minmax(220px, 1fr));
+gap: 16px;
+}
+
+.card {
+display:flex;
+flex-direction:column;
+border-radius: var(--radius);
+border: 2px solid rgba(56,189,248,.28);
+background: rgba(2,6,23,.55);
+overflow:hidden;
+color: var(--text);
+box-shadow: 0 16px 50px rgba(0,0,0,.45);
+}
+
+.card-media {
+height: 200px;
+background:#000;
+}
+
+.card-media img {
+width:100%;
+height:100%;
+object-fit:cover;
+}
+
+.card-body {
+padding:16px;
+}
+
+/* =========================
+GENERATOR RESULTS (FIX)
+THIS IS THE ONLY NEW PART
 ========================= */
 
-/* Text → Image */
-#resultImg{
+/* Image result */
+#resultImg {
 max-width: 100%;
-max-height: 380px;
+max-height: 360px;
 width: auto;
 height: auto;
 object-fit: contain;
-display: block;
+display:block;
 margin: 0 auto;
 border-radius: 14px;
 }
 
-/* Image → Video & Text → Video */
-#resultVideo{
+/* Video result */
+#resultVideo {
 width: 100%;
-max-height: 380px;
-height: auto;
+max-height: 360px;
 object-fit: contain;
-display: block;
+display:block;
 margin: 0 auto;
 border-radius: 14px;
 }
 
-/* Text → Voice */
-#resultAudio{
+/* Audio */
+#resultAudio {
 width: 100%;
-max-width: 720px;
-display: block;
-margin: 12px auto 0 auto;
+max-width: 700px;
+margin: 12px auto;
+display:block;
 }
-
 
