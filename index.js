@@ -1,3 +1,56 @@
+// index.js (SERVER)
+
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const { GoogleAuth } = require("google-auth-library");
+
+const app = express();
+
+// ---------- Middleware ----------
+app.use(cors());
+app.use(express.json({ limit: "2mb" })); // text prompts are small
+app.use(express.urlencoded({ extended: true }));
+
+// Serve your frontend (if you keep HTML files in /public)
+app.use(express.static(path.join(__dirname, "public")));
+
+// Health check (easy test)
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// ---------- Google Auth Helper (BEST PRACTICE) ----------
+// Put your Service Account JSON into Render as env var: GOOGLE_SERVICE_ACCOUNT_JSON
+// (Copy/paste the entire JSON from Google Cloud service account key.)
+function getGoogleAuthClient() {
+const saJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+if (!saJson) return null;
+
+let credentials;
+try {
+credentials = JSON.parse(saJson);
+} catch (e) {
+throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON");
+}
+
+return new GoogleAuth({
+credentials,
+scopes: ["https://www.googleapis.com/auth/cloud-platform"]
+});
+}
+
+async function getAccessToken() {
+const auth = getGoogleAuthClient();
+if (!auth) {
+throw new Error("Missing GOOGLE_SERVICE_ACCOUNT_JSON (recommended on Render)");
+}
+
+const client = await auth.getClient();
+const tokenResponse = await client.getAccessToken();
+const token = tokenResponse?.token;
+
+if (!token) throw new Error("Failed to obtain Google access token");
+return token;
+}
 
 // =============================
 // Text -> Video (Veo on Vertex)
@@ -7,46 +60,45 @@ try {
 const prompt = (req.body?.prompt || "").trim();
 if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
-// ====== CONFIG (Render env vars) ======
+// CONFIG
 const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID; // required
 const LOCATION = process.env.GOOGLE_CLOUD_LOCATION || "us-central1";
-const MODEL_ID = process.env.VEO_MODEL_ID || "veo-2.0-generate-exp";
 
-// IMPORTANT: Vertex needs a Bearer token (OAuth). If you don't have this, Veo won't run.
-const ACCESS_TOKEN = process.env.GOOGLE_CLOUD_ACCESS_TOKEN;
+// Use the doc model id (your "exp" one can fail)
+const MODEL_ID = process.env.VEO_MODEL_ID || "veo-2.0-generate-001";
+
+// OPTIONAL but recommended: output bucket
+// Example: gs://your-bucket/videos/
+const STORAGE_URI = process.env.VEO_STORAGE_URI || "";
 
 if (!PROJECT_ID) {
 return res.status(500).json({ ok: false, error: "Missing GOOGLE_CLOUD_PROJECT_ID env var" });
 }
-if (!ACCESS_TOKEN) {
-return res.status(500).json({
-ok: false,
-error: "Missing GOOGLE_CLOUD_ACCESS_TOKEN env var (Vertex Veo uses Bearer auth).",
-});
-}
+
+const ACCESS_TOKEN = await getAccessToken();
 
 const startEndpoint =
 `https://${LOCATION}-aiplatform.googleapis.com/v1/` +
 `projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:predictLongRunning`;
 
+// IMPORTANT: Keep this aligned with docs.
+// If you provide storageUri, you'll usually get gcsUri back.
 const requestBody = {
 instances: [{ prompt }],
 parameters: {
-durationSeconds: 8,
 sampleCount: 1,
-// If you set storageUri, you'll usually get gcsUri back.
-// storageUri: "gs://YOUR_BUCKET/output/"
-},
+...(STORAGE_URI ? { storageUri: STORAGE_URI } : {})
+}
 };
 
-// 1) START GENERATION (long-running op)
+// 1) Start generation
 const startResp = await fetch(startEndpoint, {
 method: "POST",
 headers: {
 Authorization: `Bearer ${ACCESS_TOKEN}`,
-"Content-Type": "application/json; charset=utf-8",
+"Content-Type": "application/json; charset=utf-8"
 },
-body: JSON.stringify(requestBody),
+body: JSON.stringify(requestBody)
 });
 
 const startText = await startResp.text();
@@ -58,7 +110,7 @@ console.error("Veo start error:", startResp.status, startText);
 return res.status(502).json({
 ok: false,
 error: `Veo start failed (${startResp.status})`,
-details: startJson || startText,
+details: startJson || startText
 });
 }
 
@@ -68,12 +120,12 @@ console.error("No operation name returned:", startText);
 return res.status(502).json({ ok: false, error: "No operation name returned from Veo" });
 }
 
-// 2) POLL STATUS
+// 2) Poll
 const pollEndpoint =
 `https://${LOCATION}-aiplatform.googleapis.com/v1/` +
 `projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:fetchPredictOperation`;
 
-const maxAttempts = 30; // 30 * 3s = 90s
+const maxAttempts = 40; // 40 * 3s = 120s
 for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 await new Promise((r) => setTimeout(r, 3000));
 
@@ -81,9 +133,9 @@ const pollResp = await fetch(pollEndpoint, {
 method: "POST",
 headers: {
 Authorization: `Bearer ${ACCESS_TOKEN}`,
-"Content-Type": "application/json; charset=utf-8",
+"Content-Type": "application/json; charset=utf-8"
 },
-body: JSON.stringify({ operationName }),
+body: JSON.stringify({ operationName })
 });
 
 const pollText = await pollResp.text();
@@ -95,7 +147,7 @@ console.error("Veo poll error:", pollResp.status, pollText);
 return res.status(502).json({
 ok: false,
 error: `Veo poll failed (${pollResp.status})`,
-details: pollJson || pollText,
+details: pollJson || pollText
 });
 }
 
@@ -108,31 +160,30 @@ return res.status(502).json({ ok: false, error: "Veo finished but returned no vi
 
 const v0 = videos[0];
 
-// ✅ BEST CASE: bytes returned (frontend can play immediately)
+// If bytes returned
 if (v0?.bytesBase64Encoded) {
 return res.json({
 ok: true,
 base64: v0.bytesBase64Encoded,
-mimeType: v0.mimeType || "video/mp4",
+mimeType: v0.mimeType || "video/mp4"
 });
 }
 
-// ✅ COMMON CASE: gcsUri returned -> browser can't play gcsUri directly
-// So we return a URL to our proxy endpoint that streams it.
+// If gcsUri returned
 if (v0?.gcsUri) {
 const proxyUrl = `/api/video-proxy?gcsUri=${encodeURIComponent(v0.gcsUri)}`;
 return res.json({
 ok: true,
 videoUrl: proxyUrl,
 mimeType: v0.mimeType || "video/mp4",
-gcsUri: v0.gcsUri,
+gcsUri: v0.gcsUri
 });
 }
 
 return res.status(502).json({
 ok: false,
 error: "Unknown video payload format",
-details: v0,
+details: v0
 });
 }
 }
@@ -146,7 +197,6 @@ return res.status(500).json({ ok: false, error: err?.message || "Server error" }
 
 // ===========================================
 // Video Proxy: streams Veo gcsUri as mp4
-// This is what fixes the "black player" issue.
 // ===========================================
 app.get("/api/video-proxy", async (req, res) => {
 try {
@@ -155,12 +205,8 @@ if (!gcsUri.startsWith("gs://")) {
 return res.status(400).send("Missing or invalid gcsUri");
 }
 
-const ACCESS_TOKEN = process.env.GOOGLE_CLOUD_ACCESS_TOKEN;
-if (!ACCESS_TOKEN) {
-return res.status(500).send("Missing GOOGLE_CLOUD_ACCESS_TOKEN");
-}
+const ACCESS_TOKEN = await getAccessToken();
 
-// Parse: gs://bucket/path/to/file.mp4
 const without = gcsUri.replace("gs://", "");
 const firstSlash = without.indexOf("/");
 const bucket = firstSlash === -1 ? without : without.slice(0, firstSlash);
@@ -170,13 +216,12 @@ if (!bucket || !object) {
 return res.status(400).send("Invalid gcsUri format");
 }
 
-// Google Cloud Storage JSON API (media download)
 const downloadUrl =
 `https://storage.googleapis.com/storage/v1/b/${encodeURIComponent(bucket)}` +
 `/o/${encodeURIComponent(object)}?alt=media`;
 
 const upstream = await fetch(downloadUrl, {
-headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
+headers: { Authorization: `Bearer ${ACCESS_TOKEN}` }
 });
 
 if (!upstream.ok) {
@@ -188,7 +233,8 @@ return res.status(502).send(`Failed to fetch video from GCS (${upstream.status})
 res.setHeader("Content-Type", upstream.headers.get("content-type") || "video/mp4");
 res.setHeader("Cache-Control", "no-store");
 
-// Stream mp4 bytes to the browser
+// NOTE: for big videos, streaming is better than buffering.
+// But this is fine for short clips.
 const arrayBuffer = await upstream.arrayBuffer();
 res.send(Buffer.from(arrayBuffer));
 } catch (err) {
@@ -196,3 +242,10 @@ console.error("video-proxy error:", err);
 res.status(500).send(err?.message || "Server error");
 }
 });
+
+// ---------- Start server ----------
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+console.log(`✅ Server listening on port ${PORT}`);
+});
+
