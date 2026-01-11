@@ -52,13 +52,29 @@ function hide(el) {
 if (el) el.style.display = "none";
 }
 
-function setStatus(text) {
-// Optional status element per page (you can add later)
-console.log(text);
-}
-
 function makeDataUrl(mimeType, base64) {
 return `data:${mimeType || "image/png"};base64,${base64}`;
+}
+
+/**
+* Make video reliably render/play after setting src
+*/
+function setVideoSrc(videoEl, src) {
+if (!videoEl) return;
+
+// Make sure controls exist so you can see/play it
+videoEl.controls = true;
+videoEl.playsInline = true;
+
+// Some browsers won’t show a frame until metadata loads
+videoEl.preload = "metadata";
+
+// Set src + force reload
+videoEl.src = src;
+videoEl.load();
+
+// Try autoplay (won't always work, but helps)
+videoEl.play().catch(() => {});
 }
 
 /* =========================
@@ -127,7 +143,7 @@ try {
 const res = await fetch("/api/text-to-image", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt })
+body: JSON.stringify({ prompt }),
 });
 
 const data = await res.json().catch(() => ({}));
@@ -173,9 +189,7 @@ window.location.href = "./image-to-video.html";
 
 /* =========================
 Image → Video page
-- Shows selected image preview
-- Calls /api/image-to-video (you can wire backend later)
-Expected backend suggestion:
+Expected backend:
 { ok:true, videoUrl:"https://..." } OR { ok:true, base64, mimeType:"video/mp4" }
 ========================= */
 function setupImageToVideoPage() {
@@ -199,7 +213,8 @@ sourceImg.src = "";
 hide(sourceImg);
 }
 if (resultVideo) {
-resultVideo.src = "";
+resultVideo.removeAttribute("src");
+resultVideo.load();
 hide(resultVideo);
 }
 if (downloadBtn) {
@@ -233,7 +248,8 @@ if (emptyState) hide(emptyState);
 }
 // Clear any old video
 if (resultVideo) {
-resultVideo.src = "";
+resultVideo.removeAttribute("src");
+resultVideo.load();
 hide(resultVideo);
 }
 if (downloadBtn) downloadBtn.style.display = "none";
@@ -244,8 +260,6 @@ reader.readAsDataURL(file);
 
 generateBtn.addEventListener("click", async () => {
 const file = imageFile.files && imageFile.files[0];
-
-// If no uploaded file, try pushed image (dataURL)
 const pushed = localStorage.getItem("ql_image_for_video");
 
 if (!file && !pushed) {
@@ -257,8 +271,6 @@ generateBtn.disabled = true;
 generateBtn.textContent = "Generating...";
 
 try {
-// If you have a backend route ready, this is where it goes.
-// We'll send either multipart (file) or JSON (pushed dataURL).
 let res;
 
 if (file) {
@@ -269,7 +281,7 @@ res = await fetch("/api/image-to-video", { method: "POST", body: fd });
 res = await fetch("/api/image-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ imageDataUrl: pushed })
+body: JSON.stringify({ imageDataUrl: pushed }),
 });
 }
 
@@ -281,7 +293,8 @@ throw new Error(data.error || `API error: ${res.status}`);
 
 // Option A: videoUrl
 if (data.videoUrl && resultVideo) {
-resultVideo.src = data.videoUrl;
+setVideoSrc(resultVideo, data.videoUrl);
+
 show(resultVideo);
 if (emptyState) hide(emptyState);
 
@@ -298,7 +311,8 @@ return;
 // Option B: base64 mp4
 if (data.base64 && resultVideo) {
 const vUrl = `data:${data.mimeType || "video/mp4"};base64,${data.base64}`;
-resultVideo.src = vUrl;
+setVideoSrc(resultVideo, vUrl);
+
 show(resultVideo);
 if (emptyState) hide(emptyState);
 
@@ -329,7 +343,7 @@ deleteBtn.addEventListener("click", resetUI);
 // restore last video (if any)
 const savedVideo = localStorage.getItem("ql_last_video_url");
 if (savedVideo && resultVideo) {
-resultVideo.src = savedVideo;
+setVideoSrc(resultVideo, savedVideo);
 show(resultVideo);
 if (emptyState) hide(emptyState);
 if (downloadBtn) {
@@ -361,7 +375,8 @@ const deleteBtn = $("deleteBtn");
 if (!promptEl || !generateBtn || !resultVideo) return;
 
 function clearUI() {
-resultVideo.src = "";
+resultVideo.removeAttribute("src");
+resultVideo.load();
 hide(resultVideo);
 if (emptyState) show(emptyState);
 
@@ -373,7 +388,7 @@ localStorage.removeItem("ql_last_t2v");
 
 const saved = localStorage.getItem("ql_last_t2v");
 if (saved) {
-resultVideo.src = saved;
+setVideoSrc(resultVideo, saved);
 show(resultVideo);
 if (emptyState) hide(emptyState);
 if (downloadBtn) {
@@ -395,7 +410,7 @@ try {
 const res = await fetch("/api/text-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt })
+body: JSON.stringify({ prompt }),
 });
 
 const data = await res.json().catch(() => ({}));
@@ -409,7 +424,7 @@ const finalUrl = videoUrl
 ? videoUrl
 : `data:${data.mimeType || "video/mp4"};base64,${data.base64}`;
 
-resultVideo.src = finalUrl;
+setVideoSrc(resultVideo, finalUrl);
 show(resultVideo);
 if (emptyState) hide(emptyState);
 
@@ -488,7 +503,7 @@ try {
 const res = await fetch("/api/text-to-voice", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ text: prompt })
+body: JSON.stringify({ text: prompt }),
 });
 
 const data = await res.json().catch(() => ({}));
