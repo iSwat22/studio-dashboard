@@ -84,8 +84,7 @@ res.status(500).json({ ok: false, error: "Server error" });
 app.post("/api/text-to-video", async (req, res) => {
 return res.json({
 ok: true,
-videoUrl:
-"https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4"
+videoUrl:  "/demo.mp4"
 });
 });
 
