@@ -1,22 +1,3 @@
-import express from "express";
-import path from "path";
-import fs from "fs";
-import os from "os";
-import { spawn } from "child_process";
-import multer from "multer";
-import { fileURLToPath } from "url";
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// ---- Path helpers (ES Modules) ----
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ---- Middleware ----
-app.use(express.json({ limit: "5mb" }));
-app.use(express.static(path.join(__dirname, "public")));
-
 // ---- Multer (uploads for image->video) ----
 const TMP_DIR = os.tmpdir();
 const upload = multer({
@@ -27,7 +8,7 @@ const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
 cb(null, `${Date.now()}_${Math.random().toString(16).slice(2)}_${safe}`);
 },
 }),
-limits: { fileSize: 8 * 1024 * 1024 },
+limits: { fileSize: 12 * 1024 * 1024 }, // 12MB
 });
 
 // ---- Health check ----
@@ -39,7 +20,7 @@ keyPresent: Boolean(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY),
 });
 });
 
-// ---- Text -> Image (Gemini) ----
+// ---- Text -> Image (Gemini 3 Pro Image) ----
 app.post("/api/text-to-image", async (req, res) => {
 try {
 const prompt = (req.body?.prompt || "").trim();
@@ -49,7 +30,7 @@ const API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
 if (!API_KEY) {
 return res.status(500).json({
 ok: false,
-error: "Missing GOOGLE_API_KEY or GEMINI_API_KEY",
+error: "Missing API key. Set GOOGLE_API_KEY (or GEMINI_API_KEY) in Render Environment.",
 });
 }
 
@@ -72,63 +53,95 @@ headers: {
 body: JSON.stringify(payload),
 });
 
-const data = await apiRes.json();
+const text = await apiRes.text();
+let data;
+try {
+data = JSON.parse(text);
+} catch {
+return res.status(500).json({
+ok: false,
+error: "Gemini returned non-JSON response",
+raw: text.slice(0, 400),
+});
+}
+
+if (!apiRes.ok) {
+return res.status(apiRes.status).json({
+ok: false,
+error: data?.error?.message || data?.error || "Gemini request failed",
+details: data,
+});
+}
 
 const parts = data?.candidates?.[0]?.content?.parts || [];
-const imagePart = parts.find(p => p.inlineData?.data);
+const imagePart = parts.find((p) => p.inlineData && p.inlineData.data);
 
 if (!imagePart) {
-return res.status(500).json({ ok: false, error: "No image returned" });
+return res.status(500).json({
+ok: false,
+error: "No image returned from model",
+details: data,
+});
 }
 
-res.json({
-ok: true,
-mimeType: imagePart.inlineData.mimeType,
-base64: imagePart.inlineData.data,
-});
+const mimeType = imagePart.inlineData.mimeType || "image/png";
+const base64 = imagePart.inlineData.data;
+
+return res.json({ ok: true, message: "Image generated", mimeType, base64 });
 } catch (err) {
 console.error("text-to-image error:", err);
-res.status(500).json({ ok: false, error: "Server error" });
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
 }
 });
 
-
-// ======================================================
-// ✅ TEXT → VIDEO (TEMP WORKING ROUTE FOR TESTING)
-// ======================================================
+// ✅ Text -> Video (TEMP: return demo.mp4 so UI works now)
 app.post("/api/text-to-video", async (req, res) => {
 try {
-const prompt = (req.body?.prompt || "").trim();
-if (!prompt) {
-return res.status(400).json({ ok: false, error: "Missing prompt" });
+// You can ignore prompt for now. We just prove pipeline works.
+const demoPath = path.join(__dirname, "public", "demo.mp4");
+if (!fs.existsSync(demoPath)) {
+return res.status(404).json({
+ok: false,
+error: "demo.mp4 not found. Put demo.mp4 inside /public folder.",
+});
 }
 
-// Temporary demo video (proves frontend + backend wiring)
-res.json({
-ok: true,
-videoUrl:
-"https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
-});
+// IMPORTANT: return JSON the frontend expects
+return res.json({ ok: true, videoUrl: "/demo.mp4" });
 } catch (err) {
 console.error("text-to-video error:", err);
-res.status(500).json({ ok: false, error: "Server error" });
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
 }
 });
 
-
-// ---- Image -> Video (FFmpeg) ----
-app.post("/api/image-to-video", upload.array("images", 20), async (req, res) => {
-return res.status(501).json({
+// ✅ Image -> Video (TEMP: accept both 'image' and 'images', return demo.mp4 for now)
+app.post(
+"/api/image-to-video",
+upload.fields([{ name: "image", maxCount: 1 }, { name: "images", maxCount: 20 }]),
+async (req, res) => {
+try {
+// For now we just return demo.mp4 to prove the UI works
+const demoPath = path.join(__dirname, "public", "demo.mp4");
+if (!fs.existsSync(demoPath)) {
+return res.status(404).json({
 ok: false,
-error: "FFmpeg not installed yet (next step)",
+error: "demo.mp4 not found. Put demo.mp4 inside /public folder.",
 });
-});
+}
 
-// ---- Fallback ----
+return res.json({ ok: true, videoUrl: "/demo.mp4" });
+} catch (err) {
+console.error("image-to-video error:", err);
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
+}
+}
+);
+
+// ---- Fallback to index.html ----
 app.get("*", (req, res) => {
 res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 app.listen(PORT, () => {
-console.log(`✅ Server running on port ${PORT}`);
+console.log(`Server running on port ${PORT}`);
 });
