@@ -1,232 +1,127 @@
-import express from "express";
-import path from "path";
-import fs from "fs";
-import crypto from "crypto";
-import { fileURLToPath } from "url";
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// --------------------
-// Path helpers (ESM)
-// --------------------
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// --------------------
-// Middleware
-// --------------------
-app.use(express.json({ limit: "5mb" }));
-app.use(express.static(path.join(__dirname, "public")));
-
-// Serve generated videos
-const OUTPUT_DIR = path.join(__dirname, "outputs");
-if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
-app.use("/outputs", express.static(OUTPUT_DIR));
-
-// --------------------
-// Health check
-// --------------------
-app.get("/api/health", (req, res) => {
-res.json({
-ok: true,
-googleKeyPresent: Boolean(process.env.GOOGLE_API_KEY),
-veoKeyPresent: Boolean(process.env.GOOGLE_VEO_API_KEY),
-});
-});
-
-// ======================================================
-// TEXT → IMAGE (Gemini) — WORKING
-// ======================================================
-app.post("/api/text-to-image", async (req, res) => {
-try {
-const prompt = (req.body?.prompt || "").trim();
-if (!prompt) {
-return res.status(400).json({ ok: false, error: "Missing prompt" });
-}
-
-const API_KEY = process.env.GOOGLE_API_KEY;
-if (!API_KEY) {
-return res.status(500).json({
-ok: false,
-error: "Missing GOOGLE_API_KEY",
-});
-}
-
-const url =
-"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent";
-
-const payload = {
-contents: [{ parts: [{ text: prompt }] }],
-generationConfig: {
-imageConfig: { aspectRatio: "1:1", imageSize: "1024" },
-},
-};
-
-const apiRes = await fetch(url, {
-method: "POST",
-headers: {
-"Content-Type": "application/json",
-"x-goog-api-key": API_KEY,
-},
-body: JSON.stringify(payload),
-});
-
-const data = await apiRes.json();
-
-if (!apiRes.ok) {
-return res.status(apiRes.status).json({
-ok: false,
-error: data?.error?.message || "Gemini error",
-details: data,
-});
-}
-
-const parts = data?.candidates?.[0]?.content?.parts || [];
-const imagePart = parts.find((p) => p.inlineData?.data);
-
-if (!imagePart) {
-return res.status(500).json({
-ok: false,
-error: "No image returned",
-details: data,
-});
-}
-
-res.json({
-ok: true,
-mimeType: imagePart.inlineData.mimeType || "image/png",
-base64: imagePart.inlineData.data,
-});
-} catch (err) {
-console.error("text-to-image error:", err);
-res.status(500).json({ ok: false, error: err.message || "Server error" });
-}
-});
-
-// ======================================================
-// TEXT → VIDEO (Google Veo)
-// Returns a REAL MP4 served from /outputs
-// ======================================================
+// --- Text -> Video (Veo) ---
 app.post("/api/text-to-video", async (req, res) => {
 try {
 const prompt = (req.body?.prompt || "").trim();
-if (!prompt) {
-return res.status(400).json({ ok: false, error: "Missing prompt" });
+if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
+
+// ====== CONFIG ======
+const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID; // set in Render
+const LOCATION = "us-central1";
+const MODEL_ID = "veo-2.0-generate-exp"; // from Google docs
+const ACCESS_TOKEN = process.env.GOOGLE_CLOUD_ACCESS_TOKEN;
+// NOTE: Vertex docs show Bearer token auth (gcloud access token). [oai_citation:5‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
+
+if (!PROJECT_ID) {
+return res.status(500).json({ ok: false, error: "Missing GOOGLE_CLOUD_PROJECT_ID env var" });
 }
-
-const API_KEY =
-process.env.GOOGLE_VEO_API_KEY || process.env.GOOGLE_API_KEY;
-
-if (!API_KEY) {
+if (!ACCESS_TOKEN) {
 return res.status(500).json({
 ok: false,
-error: "Missing GOOGLE_VEO_API_KEY",
+error:
+"Missing GOOGLE_CLOUD_ACCESS_TOKEN env var (Vertex Veo needs Bearer token auth).",
 });
 }
 
-// ⚠️ Model name may differ by account.
-// If this errors with “model not found”, we’ll swap it.
-const model = "veo-2";
+const endpoint =
+`https://${LOCATION}-aiplatform.googleapis.com/v1/` +
+`projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:predictLongRunning`;
 
-// 1) Start generation
-const startUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateVideo`;
+const requestBody = {
+instances: [{ prompt }],
+parameters: {
+durationSeconds: 8,
+sampleCount: 1,
+// IMPORTANT:
+// If you set storageUri, response returns gcsUri. [oai_citation:6‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
+// If you omit storageUri, docs say video bytes may be returned instead. [oai_citation:7‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
+// storageUri: "gs://YOUR_BUCKET/output/"
+},
+};
 
-const startRes = await fetch(startUrl, {
+// 1) START GENERATION (long-running op)
+const startResp = await fetch(endpoint, {
 method: "POST",
 headers: {
-"Content-Type": "application/json",
-"x-goog-api-key": API_KEY,
+"Authorization": `Bearer ${ACCESS_TOKEN}`,
+"Content-Type": "application/json; charset=utf-8",
 },
-body: JSON.stringify({ prompt }),
+body: JSON.stringify(requestBody),
 });
 
-const startData = await startRes.json();
+const startText = await startResp.text(); // <-- always read as text first
+let startJson = null;
+try { startJson = JSON.parse(startText); } catch (_) {}
 
-if (!startRes.ok) {
-return res.status(startRes.status).json({
+if (!startResp.ok) {
+console.error("Veo start error:", startResp.status, startText);
+return res.status(502).json({
 ok: false,
-error: startData?.error?.message || "Veo start failed",
-details: startData,
+error: `Veo start failed (${startResp.status})`,
+details: startJson || startText,
 });
 }
 
-const jobName = startData?.name;
-if (!jobName) {
-return res.status(500).json({
+const operationName = startJson?.name;
+if (!operationName) {
+console.error("No operation name returned:", startText);
+return res.status(502).json({ ok: false, error: "No operation name returned from Veo" });
+}
+
+// 2) POLL STATUS
+const pollEndpoint =
+`https://${LOCATION}-aiplatform.googleapis.com/v1/` +
+`projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${MODEL_ID}:fetchPredictOperation`;
+
+const maxAttempts = 30; // ~30 * 3s = 90s
+for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+await new Promise(r => setTimeout(r, 3000));
+
+const pollResp = await fetch(pollEndpoint, {
+method: "POST",
+headers: {
+"Authorization": `Bearer ${ACCESS_TOKEN}`,
+"Content-Type": "application/json; charset=utf-8",
+},
+body: JSON.stringify({ operationName }),
+});
+
+const pollText = await pollResp.text();
+let pollJson = null;
+try { pollJson = JSON.parse(pollText); } catch (_) {}
+
+if (!pollResp.ok) {
+console.error("Veo poll error:", pollResp.status, pollText);
+return res.status(502).json({
 ok: false,
-error: "No job id returned from Veo",
-details: startData,
+error: `Veo poll failed (${pollResp.status})`,
+details: pollJson || pollText,
 });
 }
 
-// 2) Poll until done
-const pollUrl = `https://generativelanguage.googleapis.com/v1beta/${jobName}`;
-let finalData = null;
+if (pollJson?.done) {
+const videos = pollJson?.response?.videos || [];
+if (!videos.length) {
+console.error("Veo done but no videos:", pollJson);
+return res.status(502).json({ ok: false, error: "Veo finished but returned no videos" });
+}
 
-for (let i = 0; i < 60; i++) {
-await new Promise((r) => setTimeout(r, 2000));
-const pollRes = await fetch(pollUrl, {
-headers: { "x-goog-api-key": API_KEY },
-});
-const pollData = await pollRes.json();
-if (pollData?.done) {
-finalData = pollData;
-break;
+// Common case (docs sample): gcsUri result [oai_citation:8‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
+if (videos[0].gcsUri) {
+return res.json({ ok: true, gcsUri: videos[0].gcsUri, mimeType: videos[0].mimeType || "video/mp4" });
+}
+
+// If bytes are returned (varies by config), handle it:
+if (videos[0].bytesBase64Encoded) {
+return res.json({ ok: true, base64: videos[0].bytesBase64Encoded, mimeType: videos[0].mimeType || "video/mp4" });
+}
+
+return res.status(502).json({ ok: false, error: "Unknown video payload format", details: videos[0] });
 }
 }
 
-if (!finalData) {
-return res
-.status(504)
-.json({ ok: false, error: "Timed out waiting for Veo" });
-}
-
-// 3) Extract inline video data
-const inline = finalData?.response?.candidates?.[0]?.content?.parts?.find(
-(p) => p.inlineData?.data
-);
-
-if (!inline) {
-return res.status(500).json({
-ok: false,
-error: "No inline video returned",
-details: finalData,
-});
-}
-
-// 4) Save MP4 locally
-const fileName = `veo_${crypto.randomBytes(8).toString("hex")}.mp4`;
-const filePath = path.join(OUTPUT_DIR, fileName);
-fs.writeFileSync(filePath, Buffer.from(inline.inlineData.data, "base64"));
-
-return res.json({
-ok: true,
-videoUrl: `/outputs/${fileName}`,
-});
+return res.status(504).json({ ok: false, error: "Timed out waiting for Veo video" });
 } catch (err) {
 console.error("text-to-video error:", err);
-res.status(500).json({ ok: false, error: err.message || "Server error" });
+return res.status(500).json({ ok: false, error: err?.message || "Server error" });
 }
-});
-
-// ======================================================
-// Image → Video (placeholder — later)
-// ======================================================
-app.post("/api/image-to-video", async (req, res) => {
-res.status(501).json({
-ok: false,
-error: "Image→Video not wired yet",
-});
-});
-
-// --------------------
-// Fallback
-// --------------------
-app.get("*", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-app.listen(PORT, () => {
-console.log(`✅ Server running on port ${PORT}`);
-});
+})
