@@ -1,9 +1,10 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
+import os from "os";
+import { spawn } from "child_process";
+import multer from "multer";
 import { fileURLToPath } from "url";
-
-// ✅ Fal.ai client
-import { fal } from "@fal-ai/client";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,25 +17,25 @@ const __dirname = path.dirname(__filename);
 app.use(express.json({ limit: "5mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// ✅ Configure Fal.ai
-// Supports either FAL_KEY or your custom env name "video_key"
-const FAL_KEY =
-process.env.FAL_KEY ||
-process.env.VIDEO_KEY ||
-process.env.video_key ||
-"";
-
-if (FAL_KEY) {
-fal.config({ credentials: FAL_KEY });
-}
+// ---- Multer (uploads for image->video) ----
+const TMP_DIR = os.tmpdir();
+const upload = multer({
+storage: multer.diskStorage({
+destination: (req, file, cb) => cb(null, TMP_DIR),
+filename: (req, file, cb) => {
+const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+cb(null, `${Date.now()}_${Math.random().toString(16).slice(2)}_${safe}`);
+},
+}),
+limits: { fileSize: 8 * 1024 * 1024 },
+});
 
 // ---- Health check ----
 app.get("/api/health", (req, res) => {
 res.json({
 ok: true,
 status: "healthy",
-googleKeyPresent: Boolean(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY),
-falKeyPresent: Boolean(FAL_KEY),
+keyPresent: Boolean(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY),
 });
 });
 
@@ -91,50 +92,22 @@ res.status(500).json({ ok: false, error: err?.message || "Server error" });
 }
 });
 
-// ======================================================
-// ✅ TEXT → VIDEO (REAL) using Fal.ai LTX Video
-// Model: fal-ai/ltx-video
-// Output: { video: { url: "..." } }
-// ======================================================
+// ✅ TEXT → VIDEO (TEMP DEMO so UI wiring works)
 app.post("/api/text-to-video", async (req, res) => {
-try {
 const prompt = (req.body?.prompt || "").trim();
 if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
-if (!FAL_KEY) {
-return res.status(500).json({
-ok: false,
-error: "Missing Fal.ai key. Set FAL_KEY (or video_key) in Render env vars.",
+return res.json({
+ok: true,
+videoUrl: "/demo.mp4" // put demo.mp4 inside /public
 });
-}
-
-// Run Fal model (waits until it finishes)
-const result = await fal.subscribe("fal-ai/ltx-video", {
-input: { prompt },
-logs: true,
 });
 
-const videoUrl = result?.data?.video?.url;
-if (!videoUrl) {
-return res.status(500).json({
-ok: false,
-error: "Fal did not return a video URL.",
-details: result?.data || result,
-});
-}
-
-return res.json({ ok: true, videoUrl });
-} catch (err) {
-console.error("text-to-video error:", err);
-return res.status(500).json({ ok: false, error: err?.message || "Server error" });
-}
-});
-
-// ---- Image -> Video (not wired yet) ----
-app.post("/api/image-to-video", async (req, res) => {
+// ---- Image -> Video (FFmpeg later) ----
+app.post("/api/image-to-video", upload.array("images", 20), async (req, res) => {
 return res.status(501).json({
 ok: false,
-error: "Not wired yet. We'll hook this to Fal after Text→Video is confirmed working.",
+error: "Not wired yet. We'll add FFmpeg later.",
 });
 });
 
