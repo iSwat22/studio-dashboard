@@ -52,66 +52,13 @@ function hide(el) {
 if (el) el.style.display = "none";
 }
 
+function setStatus(text) {
+// Optional status element per page (you can add later)
+console.log(text);
+}
+
 function makeDataUrl(mimeType, base64) {
 return `data:${mimeType || "image/png"};base64,${base64}`;
-}
-
-/**
-* Fetch helper that NEVER crashes if backend returns:
-* - empty body
-* - html
-* - text
-* - invalid json
-*/
-async function safeFetchJson(url, options) {
-const res = await fetch(url, options);
-
-const contentType = (res.headers.get("content-type") || "").toLowerCase();
-
-// Always read raw text first so we can debug anything
-const rawText = await res.text();
-
-let data = {};
-if (rawText && contentType.includes("application/json")) {
-try {
-data = JSON.parse(rawText);
-} catch (e) {
-// JSON header but body wasn't valid JSON
-data = { ok: false, error: "Invalid JSON from server", _raw: rawText };
-}
-} else if (rawText) {
-// Not JSON (maybe HTML error page)
-data = { ok: false, error: "Non-JSON response from server", _raw: rawText };
-} else {
-// Empty response
-data = { ok: false, error: "Empty response from server", _raw: "" };
-}
-
-// Attach status info for better error messages
-data._status = res.status;
-data._okHttp = res.ok;
-
-return data;
-}
-
-/**
-* Make video reliably render/play after setting src
-*/
-function setVideoSrc(videoEl, src) {
-if (!videoEl) return;
-
-videoEl.controls = true;
-videoEl.playsInline = true;
-videoEl.preload = "metadata";
-
-// clear old source first (helps with black player)
-videoEl.removeAttribute("src");
-videoEl.load();
-
-videoEl.src = src;
-videoEl.load();
-
-videoEl.play().catch(() => {});
 }
 
 /* =========================
@@ -130,6 +77,7 @@ const downloadBtn = $("downloadBtn");
 const deleteBtn = $("deleteBtn");
 const makeVideoBtn = $("makeVideoBtn");
 
+// If this page doesn't have these elements, skip
 if (!promptEl || !generateBtn || !resultImg) return;
 
 function showImageUI(dataUrl) {
@@ -161,31 +109,39 @@ if (makeVideoBtn) makeVideoBtn.style.display = "none";
 localStorage.removeItem("ql_last_image_dataurl");
 }
 
+// Restore last image on refresh
 const saved = localStorage.getItem("ql_last_image_dataurl");
 if (saved) showImageUI(saved);
 
 generateBtn.addEventListener("click", async () => {
 const prompt = (promptEl.value || "").trim();
-if (!prompt) return alert("Please enter a prompt first.");
+if (!prompt) {
+alert("Please enter a prompt first.");
+return;
+}
 
 generateBtn.disabled = true;
 generateBtn.textContent = "Generating...";
 
 try {
-const data = await safeFetchJson("/api/text-to-image", {
+const res = await fetch("/api/text-to-image", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt }),
+body: JSON.stringify({ prompt })
 });
 
-if (!data.ok) {
-console.error("Text→Image API error:", data);
-throw new Error(data.error || `API error: ${data._status}`);
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok || !data.ok) {
+throw new Error(data.error || `API error: ${res.status}`);
 }
 
-if (!data.base64) throw new Error("No base64 image returned from API.");
+if (!data.base64) {
+throw new Error("No base64 image returned from API.");
+}
 
 const dataUrl = makeDataUrl(data.mimeType, data.base64);
+
 localStorage.setItem("ql_last_image_dataurl", dataUrl);
 showImageUI(dataUrl);
 } catch (err) {
@@ -197,13 +153,19 @@ generateBtn.textContent = "Generate";
 }
 });
 
-if (deleteBtn) deleteBtn.addEventListener("click", clearImageUI);
+if (deleteBtn) {
+deleteBtn.addEventListener("click", clearImageUI);
+}
 
 if (makeVideoBtn) {
 makeVideoBtn.addEventListener("click", () => {
 const dataUrl = resultImg.src;
 if (!dataUrl) return;
+
+// store image so Image→Video page can pick it up
 localStorage.setItem("ql_image_for_video", dataUrl);
+
+// send to Image→Video page
 window.location.href = "./image-to-video.html";
 });
 }
@@ -211,7 +173,9 @@ window.location.href = "./image-to-video.html";
 
 /* =========================
 Image → Video page
-Expected backend:
+- Shows selected image preview
+- Calls /api/image-to-video (you can wire backend later)
+Expected backend suggestion:
 { ok:true, videoUrl:"https://..." } OR { ok:true, base64, mimeType:"video/mp4" }
 ========================= */
 function setupImageToVideoPage() {
@@ -235,8 +199,7 @@ sourceImg.src = "";
 hide(sourceImg);
 }
 if (resultVideo) {
-resultVideo.removeAttribute("src");
-resultVideo.load();
+resultVideo.src = "";
 hide(resultVideo);
 }
 if (downloadBtn) {
@@ -249,6 +212,7 @@ if (emptyState) show(emptyState);
 localStorage.removeItem("ql_last_video_url");
 }
 
+// If user came from "Make Video" on Text→Image:
 const pushedImage = localStorage.getItem("ql_image_for_video");
 if (pushedImage && sourceImg) {
 sourceImg.src = pushedImage;
@@ -267,10 +231,9 @@ sourceImg.src = reader.result;
 show(sourceImg);
 if (emptyState) hide(emptyState);
 }
-
+// Clear any old video
 if (resultVideo) {
-resultVideo.removeAttribute("src");
-resultVideo.load();
+resultVideo.src = "";
 hide(resultVideo);
 }
 if (downloadBtn) downloadBtn.style.display = "none";
@@ -281,35 +244,44 @@ reader.readAsDataURL(file);
 
 generateBtn.addEventListener("click", async () => {
 const file = imageFile.files && imageFile.files[0];
+
+// If no uploaded file, try pushed image (dataURL)
 const pushed = localStorage.getItem("ql_image_for_video");
 
-if (!file && !pushed) return alert("Please choose an image first.");
+if (!file && !pushed) {
+alert("Please choose an image first.");
+return;
+}
 
 generateBtn.disabled = true;
 generateBtn.textContent = "Generating...";
 
 try {
-let data;
+// If you have a backend route ready, this is where it goes.
+// We'll send either multipart (file) or JSON (pushed dataURL).
+let res;
 
 if (file) {
 const fd = new FormData();
 fd.append("image", file);
-data = await safeFetchJson("/api/image-to-video", { method: "POST", body: fd });
+res = await fetch("/api/image-to-video", { method: "POST", body: fd });
 } else {
-data = await safeFetchJson("/api/image-to-video", {
+res = await fetch("/api/image-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ imageDataUrl: pushed }),
+body: JSON.stringify({ imageDataUrl: pushed })
 });
 }
 
-if (!data.ok) {
-console.error("Image→Video API error:", data);
-throw new Error(data.error || `API error: ${data._status}`);
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok || !data.ok) {
+throw new Error(data.error || `API error: ${res.status}`);
 }
 
+// Option A: videoUrl
 if (data.videoUrl && resultVideo) {
-setVideoSrc(resultVideo, data.videoUrl);
+resultVideo.src = data.videoUrl;
 show(resultVideo);
 if (emptyState) hide(emptyState);
 
@@ -323,9 +295,10 @@ localStorage.setItem("ql_last_video_url", data.videoUrl);
 return;
 }
 
+// Option B: base64 mp4
 if (data.base64 && resultVideo) {
 const vUrl = `data:${data.mimeType || "video/mp4"};base64,${data.base64}`;
-setVideoSrc(resultVideo, vUrl);
+resultVideo.src = vUrl;
 show(resultVideo);
 if (emptyState) hide(emptyState);
 
@@ -349,11 +322,14 @@ generateBtn.textContent = "Generate Video";
 }
 });
 
-if (deleteBtn) deleteBtn.addEventListener("click", resetUI);
+if (deleteBtn) {
+deleteBtn.addEventListener("click", resetUI);
+}
 
+// restore last video (if any)
 const savedVideo = localStorage.getItem("ql_last_video_url");
 if (savedVideo && resultVideo) {
-setVideoSrc(resultVideo, savedVideo);
+resultVideo.src = savedVideo;
 show(resultVideo);
 if (emptyState) hide(emptyState);
 if (downloadBtn) {
@@ -385,8 +361,7 @@ const deleteBtn = $("deleteBtn");
 if (!promptEl || !generateBtn || !resultVideo) return;
 
 function clearUI() {
-resultVideo.removeAttribute("src");
-resultVideo.load();
+resultVideo.src = "";
 hide(resultVideo);
 if (emptyState) show(emptyState);
 
@@ -398,7 +373,7 @@ localStorage.removeItem("ql_last_t2v");
 
 const saved = localStorage.getItem("ql_last_t2v");
 if (saved) {
-setVideoSrc(resultVideo, saved);
+resultVideo.src = saved;
 show(resultVideo);
 if (emptyState) hide(emptyState);
 if (downloadBtn) {
@@ -417,18 +392,15 @@ generateBtn.disabled = true;
 generateBtn.textContent = "Generating...";
 
 try {
-const data = await safeFetchJson("/api/text-to-video", {
+const res = await fetch("/api/text-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt }),
+body: JSON.stringify({ prompt })
 });
 
-if (!data.ok) {
-console.error("Text→Video API error:", data);
-// This line is KEY: it will show you the REAL server response in the console
-if (data._raw) console.error("SERVER RAW RESPONSE:", data._raw);
-throw new Error(data.error || `API error: ${data._status}`);
-}
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok || !data.ok) throw new Error(data.error || `API error: ${res.status}`);
 
 const videoUrl = data.videoUrl || "";
 if (!videoUrl && !data.base64) throw new Error("No video returned.");
@@ -437,7 +409,7 @@ const finalUrl = videoUrl
 ? videoUrl
 : `data:${data.mimeType || "video/mp4"};base64,${data.base64}`;
 
-setVideoSrc(resultVideo, finalUrl);
+resultVideo.src = finalUrl;
 show(resultVideo);
 if (emptyState) hide(emptyState);
 
@@ -513,17 +485,15 @@ generateBtn.disabled = true;
 generateBtn.textContent = "Generating...";
 
 try {
-const data = await safeFetchJson("/api/text-to-voice", {
+const res = await fetch("/api/text-to-voice", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ text: prompt }),
+body: JSON.stringify({ text: prompt })
 });
 
-if (!data.ok) {
-console.error("Text→Voice API error:", data);
-if (data._raw) console.error("SERVER RAW RESPONSE:", data._raw);
-throw new Error(data.error || `API error: ${data._status}`);
-}
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok || !data.ok) throw new Error(data.error || `API error: ${res.status}`);
 
 const audioUrl = data.audioUrl || "";
 if (!audioUrl && !data.base64) throw new Error("No audio returned.");
