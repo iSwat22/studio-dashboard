@@ -43,9 +43,10 @@ app.get("/api/health", (req, res) => {
 app.post("/api/text-to-video", async (req, res) => {
 return res.status(501).json({
 ok: false,
-error: "Text-to-Video route is not implemented yet on the backend.",
+error: "Text-to-Video route is not implemented yet on the backend."
 });
 });
+
 
 // ---- Text -> Image (Gemini 3 Pro Image) ----
 app.post("/api/text-to-image", async (req, res) => {
