@@ -39,12 +39,30 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// ---- Text -> Video (stub so /api/text-to-video exists) ----
+// ---- Text -> Video (temporary mock implementation) ----
 app.post("/api/text-to-video", async (req, res) => {
-return res.status(501).json({
-ok: false,
-error: "Text-to-Video route is not implemented yet on the backend."
+try {
+const prompt = (req.body?.prompt || "").trim();
+if (!prompt) {
+return res.status(400).json({ ok: false, error: "Missing prompt" });
+}
+
+// TEMP MOCK VIDEO (short mp4 hosted publicly)
+const demoVideoUrl =
+"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+
+return res.json({
+ok: true,
+videoUrl: demoVideoUrl
 });
+
+} catch (err) {
+console.error("Text-to-Video error:", err);
+return res.status(500).json({
+ok: false,
+error: "Text-to-Video failed"
+});
+}
 });
 
 
