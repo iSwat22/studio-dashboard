@@ -52,11 +52,6 @@ function hide(el) {
 if (el) el.style.display = "none";
 }
 
-function setStatus(text) {
-// Optional status element per page (you can add later)
-console.log(text);
-}
-
 function makeDataUrl(mimeType, base64) {
 return `data:${mimeType || "image/png"};base64,${base64}`;
 }
@@ -127,7 +122,7 @@ try {
 const res = await fetch("/api/text-to-image", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt })
+body: JSON.stringify({ prompt }),
 });
 
 const data = await res.json().catch(() => ({}));
@@ -153,19 +148,14 @@ generateBtn.textContent = "Generate";
 }
 });
 
-if (deleteBtn) {
-deleteBtn.addEventListener("click", clearImageUI);
-}
+if (deleteBtn) deleteBtn.addEventListener("click", clearImageUI);
 
 if (makeVideoBtn) {
 makeVideoBtn.addEventListener("click", () => {
 const dataUrl = resultImg.src;
 if (!dataUrl) return;
 
-// store image so Image→Video page can pick it up
 localStorage.setItem("ql_image_for_video", dataUrl);
-
-// send to Image→Video page
 window.location.href = "./image-to-video.html";
 });
 }
@@ -173,10 +163,6 @@ window.location.href = "./image-to-video.html";
 
 /* =========================
 Image → Video page
-- Shows selected image preview
-- Calls /api/image-to-video (you can wire backend later)
-Expected backend suggestion:
-{ ok:true, videoUrl:"https://..." } OR { ok:true, base64, mimeType:"video/mp4" }
 ========================= */
 function setupImageToVideoPage() {
 const mode = document.body.dataset.mode;
@@ -212,7 +198,6 @@ if (emptyState) show(emptyState);
 localStorage.removeItem("ql_last_video_url");
 }
 
-// If user came from "Make Video" on Text→Image:
 const pushedImage = localStorage.getItem("ql_image_for_video");
 if (pushedImage && sourceImg) {
 sourceImg.src = pushedImage;
@@ -231,7 +216,6 @@ sourceImg.src = reader.result;
 show(sourceImg);
 if (emptyState) hide(emptyState);
 }
-// Clear any old video
 if (resultVideo) {
 resultVideo.src = "";
 hide(resultVideo);
@@ -244,8 +228,6 @@ reader.readAsDataURL(file);
 
 generateBtn.addEventListener("click", async () => {
 const file = imageFile.files && imageFile.files[0];
-
-// If no uploaded file, try pushed image (dataURL)
 const pushed = localStorage.getItem("ql_image_for_video");
 
 if (!file && !pushed) {
@@ -257,8 +239,6 @@ generateBtn.disabled = true;
 generateBtn.textContent = "Generating...";
 
 try {
-// If you have a backend route ready, this is where it goes.
-// We'll send either multipart (file) or JSON (pushed dataURL).
 let res;
 
 if (file) {
@@ -269,17 +249,13 @@ res = await fetch("/api/image-to-video", { method: "POST", body: fd });
 res = await fetch("/api/image-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ imageDataUrl: pushed })
+body: JSON.stringify({ imageDataUrl: pushed }),
 });
 }
 
 const data = await res.json().catch(() => ({}));
+if (!res.ok || !data.ok) throw new Error(data.error || `API error: ${res.status}`);
 
-if (!res.ok || !data.ok) {
-throw new Error(data.error || `API error: ${res.status}`);
-}
-
-// Option A: videoUrl
 if (data.videoUrl && resultVideo) {
 resultVideo.src = data.videoUrl;
 show(resultVideo);
@@ -295,7 +271,6 @@ localStorage.setItem("ql_last_video_url", data.videoUrl);
 return;
 }
 
-// Option B: base64 mp4
 if (data.base64 && resultVideo) {
 const vUrl = `data:${data.mimeType || "video/mp4"};base64,${data.base64}`;
 resultVideo.src = vUrl;
@@ -322,11 +297,8 @@ generateBtn.textContent = "Generate Video";
 }
 });
 
-if (deleteBtn) {
-deleteBtn.addEventListener("click", resetUI);
-}
+if (deleteBtn) deleteBtn.addEventListener("click", resetUI);
 
-// restore last video (if any)
 const savedVideo = localStorage.getItem("ql_last_video_url");
 if (savedVideo && resultVideo) {
 resultVideo.src = savedVideo;
@@ -342,8 +314,8 @@ if (deleteBtn) deleteBtn.style.display = "inline-flex";
 }
 
 /* =========================
-Text → Video page
-Calls /api/text-to-video
+Text → Video page (adds duration support)
+Sends: { prompt, durationSeconds }
 ========================= */
 function setupTextToVideoPage() {
 const mode = document.body.dataset.mode;
@@ -357,6 +329,9 @@ const emptyState = $("emptyState");
 
 const downloadBtn = $("downloadBtn");
 const deleteBtn = $("deleteBtn");
+
+// NEW: duration dropdown (optional)
+const durationEl = $("t2vDuration"); // <select id="t2vDuration">
 
 if (!promptEl || !generateBtn || !resultVideo) return;
 
@@ -388,6 +363,9 @@ generateBtn.addEventListener("click", async () => {
 const prompt = (promptEl.value || "").trim();
 if (!prompt) return alert("Enter a prompt first.");
 
+// NEW: read selected duration (seconds)
+const durationSeconds = durationEl ? Number(durationEl.value) : undefined;
+
 generateBtn.disabled = true;
 generateBtn.textContent = "Generating...";
 
@@ -395,11 +373,13 @@ try {
 const res = await fetch("/api/text-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt })
+body: JSON.stringify({
+prompt,
+...(Number.isFinite(durationSeconds) ? { durationSeconds } : {}),
+}),
 });
 
 const data = await res.json().catch(() => ({}));
-
 if (!res.ok || !data.ok) throw new Error(data.error || `API error: ${res.status}`);
 
 const videoUrl = data.videoUrl || "";
@@ -435,7 +415,6 @@ if (deleteBtn) deleteBtn.addEventListener("click", clearUI);
 
 /* =========================
 Text → Voice page
-Calls /api/text-to-voice
 ========================= */
 function setupTextToVoicePage() {
 const mode = document.body.dataset.mode;
@@ -488,11 +467,10 @@ try {
 const res = await fetch("/api/text-to-voice", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ text: prompt })
+body: JSON.stringify({ text: prompt }),
 });
 
 const data = await res.json().catch(() => ({}));
-
 if (!res.ok || !data.ok) throw new Error(data.error || `API error: ${res.status}`);
 
 const audioUrl = data.audioUrl || "";
@@ -527,7 +505,7 @@ if (deleteBtn) deleteBtn.addEventListener("click", clearUI);
 }
 
 /* =========================
-BOOT
+BOOT (single DOMContentLoaded)
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
 tryLoadHoverVideos();
