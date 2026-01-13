@@ -1,112 +1,208 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<title>Text → Video • QuannaLeap.AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" href="./style.css" />
-</head>
+// public/script.js ✅ (FRONTEND SCRIPT runs in the browser only)
+console.log("✅ Frontend script loaded");
 
-<body class="bg-stars" data-mode="text-to-video">
-<!-- TOPBAR -->
-<header class="topbar">
-<div class="topbar-left">
-<a class="brand" href="./index.html">
-<img class="brand-logo" src="./logo.png?v=2" alt="QuannaLeap.AI logo" />
-</a>
+document.addEventListener("DOMContentLoaded", () => {
+// ======================================================
+// TEXT -> IMAGE (works with your existing HTML IDs)
+// ======================================================
+const t2iPrompt = document.getElementById("t2iPrompt");
+const t2iBtn = document.getElementById("t2iBtn");
+const t2iStatus = document.getElementById("t2iStatus");
+const t2iImg = document.getElementById("t2iImg");
 
-<nav class="topnav">
-<a href="./index.html">🏠 Home</a>
-<a href="./assets.html">📁 Assets</a>
-<a href="./characters.html">🧍 Characters</a>
-</nav>
-</div>
+// If this page doesn’t have the Text→Image card, just skip it.
+if (t2iPrompt && t2iBtn && t2iStatus && t2iImg) {
+t2iBtn.addEventListener("click", async () => {
+const prompt = t2iPrompt.value.trim();
 
-<div class="topbar-right">
-<div class="pill"><span class="dot dot-green"></span><span>Standard Plan</span></div>
-<div class="pill"><span class="star">★</span><span id="creditCount">Unlimited</span></div>
-<button class="icon-btn" type="button">🔔</button>
-<button class="profile-btn" type="button">
-<img src="./images/brand/profile.jpg" alt="Profile" />
-</button>
-</div>
-</header>
+if (!prompt) {
+t2iStatus.textContent = "Please enter a prompt.";
+return;
+}
 
-<div class="app">
-<main class="main">
-<div class="page-wrap">
+t2iStatus.textContent = "Generating image…";
+t2iBtn.disabled = true;
+t2iImg.style.display = "none";
 
-<section class="hero hero-image">
-<h1>Text → Video</h1>
-<p>Generate videos from prompts. (Using <strong>/api/text-to-video</strong>)</p>
-</section>
+try {
+const res = await fetch("/api/text-to-image", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ prompt }),
+});
 
-<section class="create-panel">
+const data = await res.json().catch(() => ({}));
 
-<!-- PREVIEW -->
-<div class="preview-shell">
-<video
-id="t2vVideo"
-class="result-preview"
-controls
-playsinline
-style="display:none;"
-></video>
+if (!res.ok || !data.ok) {
+throw new Error(data.error || "Generation failed");
+}
 
-<div id="t2vStatus" class="help-text">
-Your generated video will appear here.
-</div>
-</div>
+t2iImg.src = `data:${data.mimeType};base64,${data.base64}`;
+t2iImg.style.display = "block";
+t2iStatus.textContent = "✅ Image generated";
+} catch (err) {
+console.error(err);
+t2iStatus.textContent = `❌ Error generating image: ${err.message || err}`;
+} finally {
+t2iBtn.disabled = false;
+}
+});
+}
 
-<!-- PROMPT -->
-<div class="prompt-shell">
-<textarea
-id="t2vPrompt"
-class="prompt-input"
-placeholder='Example: "A cinematic 3D city at sunset"'
-></textarea>
+// ======================================================
+// TEXT -> VIDEO (supports BOTH HTML ID styles)
+//
+// Style A (your script expected):
+// t2vPrompt, t2vBtn, t2vStatus, t2vVideo
+//
+// Style B (your HTML screenshots show):
+// prompt, generateBtn, status, resultVideo
+// ======================================================
 
-<!-- NEW: LENGTH DROPDOWN -->
-<div class="help-text" style="margin-top:10px;">
-<strong>Length:</strong>
-<select id="t2vDuration" style="margin-left:10px;">
-<option value="8" selected>8s (recommended)</option>
-<option value="10">10s</option>
-<option value="15">15s</option>
-<option value="30">30s</option>
-<option value="60">60s (1 min)</option>
-<option value="120">120s (2 min)</option>
-<option value="300">300s (5 min)</option>
-</select>
-<div style="margin-top:6px; opacity:.85;">
-Note: the model may cap length depending on your Veo access/tier. If capped, we’ll stitch clips.
-</div>
-</div>
+const pickFirst = (...ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
 
-<div class="actions-row">
-<button id="t2vBtn" type="button" class="primary-btn">Generate Video</button>
+const t2vPrompt = pickFirst("t2vPrompt", "prompt");
+const t2vBtn = pickFirst("t2vBtn", "generateBtn");
+const t2vStatus = pickFirst("t2vStatus", "status", "statusText", "outputStatus");
+const t2vVideo = pickFirst("t2vVideo", "resultVideo", "video");
 
-<a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">
-Download
-</a>
+// If missing, don’t crash — but tell you exactly what’s wrong.
+if (!t2vPrompt || !t2vBtn || !t2vVideo) {
+console.warn("⚠️ Text→Video UI not found. Missing IDs:", {
+promptFound: Boolean(t2vPrompt),
+buttonFound: Boolean(t2vBtn),
+videoFound: Boolean(t2vVideo),
+statusFound: Boolean(t2vStatus),
+});
+return;
+}
 
-<button id="deleteBtn" class="danger-btn" style="display:none;">
-Delete
-</button>
-</div>
+let lastObjectUrl = null;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-<div class="help-text">
-Tip: After generating, you can download or delete the video.
-</div>
-</div>
+function setStatus(msg) {
+if (t2vStatus) t2vStatus.textContent = msg;
+console.log("[T2V]", msg);
+}
 
-</section>
-</div>
-</main>
-</div>
+async function startTextToVideoJob(prompt) {
+const res = await fetch("/api/text-to-video", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ prompt }),
+});
 
-<script src="/script.js"></script>
-</body>
-</html>
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok || !data.ok) {
+throw new Error(data.error || "Failed to start video job");
+}
+if (!data.operationName) {
+throw new Error("Server did not return operationName");
+}
+return data.operationName;
+}
+
+async function pollTextToVideo(operationName) {
+// Poll up to ~5 minutes (100 * 3s)
+const maxAttempts = 100;
+
+for (let i = 1; i <= maxAttempts; i++) {
+setStatus(`Generating video… (${i}/${maxAttempts})`);
+await sleep(3000);
+
+const res = await fetch("/api/text-to-video/status", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ operationName }),
+});
+
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok || !data.ok) {
+throw new Error(data.error || "Status check failed");
+}
+
+if (data.done) {
+if (data.videoUrl) return { videoUrl: data.videoUrl };
+if (data.base64) return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
+throw new Error("Video finished, but no videoUrl/base64 returned");
+}
+}
+
+throw new Error("Timed out waiting for the video to finish");
+}
+
+async function generateVideo(prompt) {
+t2vBtn.disabled = true;
+
+// reset video UI
+t2vVideo.style.display = "none";
+t2vVideo.removeAttribute("src");
+t2vVideo.load();
+
+// cleanup old object url if we created one
+if (lastObjectUrl) {
+URL.revokeObjectURL(lastObjectUrl);
+lastObjectUrl = null;
+}
+
+try {
+setStatus("Starting video job…");
+const opName = await startTextToVideoJob(prompt);
+
+const result = await pollTextToVideo(opName);
+
+if (result.videoUrl) {
+t2vVideo.src = result.videoUrl;
+t2vVideo.style.display = "block";
+setStatus("✅ Video ready");
+return;
+}
+
+// base64 fallback
+if (result.base64) {
+const byteChars = atob(result.base64);
+const byteNumbers = new Array(byteChars.length);
+for (let i = 0; i < byteChars.length; i++) {
+byteNumbers[i] = byteChars.charCodeAt(i);
+}
+const blob = new Blob([new Uint8Array(byteNumbers)], { type: result.mimeType || "video/mp4" });
+lastObjectUrl = URL.createObjectURL(blob);
+
+t2vVideo.src = lastObjectUrl;
+t2vVideo.style.display = "block";
+setStatus("✅ Video ready");
+return;
+}
+
+throw new Error("Unknown video response format");
+} catch (err) {
+console.error(err);
+setStatus(`❌ ${err.message || err}`);
+} finally {
+t2vBtn.disabled = false;
+}
+}
+
+// Attach click
+t2vBtn.addEventListener("click", () => {
+const prompt = t2vPrompt.value.trim();
+if (!prompt) {
+setStatus("Please enter a prompt.");
+return;
+}
+generateVideo(prompt);
+});
+
+console.log("✅ Text→Video wired:", {
+promptId: t2vPrompt.id,
+btnId: t2vBtn.id,
+statusId: t2vStatus ? t2vStatus.id : "(none)",
+videoId: t2vVideo.id,
+});
+});
+
+
 
 
