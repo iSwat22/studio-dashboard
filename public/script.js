@@ -45,6 +45,27 @@ document.addEventListener("DOMContentLoaded", () => {
       button.disabled = false;
     }
   });
+  async function generateVideo(prompt) {
+const status = document.getElementById("status");
+status.textContent = "Generating video...";
+
+const res = await fetch("/api/text-to-video", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ prompt })
+});
+
+const data = await res.json();
+
+if (!data.ok) {
+status.textContent = data.error || "Video failed";
+return;
+}
+
+status.textContent = "Video job started!";
+console.log("Operation name:", data.operationName);
+}
+  
 });
 
 
