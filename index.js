@@ -36,7 +36,7 @@ limits: { fileSize: 8 * 1024 * 1024 }, // 8MB per image
 // Veo (Vertex AI) helpers
 // =========================================================
 
-// Put your SERVICE ACCOUNT JSON in Render as GEMINI_API_KEY_VIDEO.
+// Put your SERVICE ACCOUNT JSON in Render as GOOGLE_APPLICATION_CREDENTIALS_JSON.
 // (Yes, the name is weird, but that's what you wanted for the video credential.)
 const VIDEO_CREDS_RAW = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
