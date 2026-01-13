@@ -38,7 +38,7 @@ limits: { fileSize: 8 * 1024 * 1024 }, // 8MB per image
 
 // Put your SERVICE ACCOUNT JSON in Render as GEMINI_API_KEY_VIDEO.
 // (Yes, the name is weird, but that's what you wanted for the video credential.)
-const VIDEO_CREDS_RAW = process.env.GEMINI_API_KEY_VIDEO;
+const VIDEO_CREDS_RAW = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
 // Optional: set these in Render too (recommended)
 const VERTEX_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT; // ex: "my-project-id"
@@ -118,8 +118,8 @@ app.get("/api/health", (req, res) => {
 res.json({
 ok: true,
 status: "healthy",
-textImageKeyPresent: Boolean(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY),
-videoCredsPresent: Boolean(process.env.GEMINI_API_KEY_VIDEO),
+textImageKeyPresent: Boolean(process.env.GOOGLE_API_KEY || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON),
+videoCredsPresent: Boolean(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON),
 project: process.env.GOOGLE_CLOUD_PROJECT || null,
 location: process.env.GOOGLE_CLOUD_LOCATION || VERTEX_LOCATION,
 veoModel: VEO_MODEL_ID,
@@ -136,11 +136,11 @@ const prompt = (req.body?.prompt || "").trim();
 if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
 // Must have creds
-if (!process.env.GEMINI_API_KEY_VIDEO) {
+if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
 return res.status(500).json({
 ok: false,
 error:
-"Missing video credentials. Set GEMINI_API_KEY_VIDEO (Service Account JSON) in Render env vars.",
+"Missing video credentials. Set GOOGLE_APPLICATION_CREDENTIALS_JSON (Service Account JSON) in Render env vars.",
 });
 }
 
@@ -219,11 +219,11 @@ try {
 const operationName = (req.body?.operationName || "").trim();
 if (!operationName) return res.status(400).json({ ok: false, error: "Missing operationName" });
 
-if (!process.env.GEMINI_API_KEY_VIDEO) {
+if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
 return res.status(500).json({
 ok: false,
 error:
-"Missing video credentials. Set GEMINI_API_KEY_VIDEO (Service Account JSON) in Render env vars.",
+"Missing video credentials. Set GOOGLE_APPLICATION_CREDENTIALS_JSON (Service Account JSON) in Render env vars.",
 });
 }
 
@@ -298,11 +298,11 @@ try {
 const prompt = (req.body?.prompt || "").trim();
 if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
-const API_KEY = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+const API_KEY = process.env.GOOGLE_API_KEY || process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 if (!API_KEY) {
 return res.status(500).json({
 ok: false,
-error: "Missing API key. Set GOOGLE_API_KEY (or GEMINI_API_KEY) in Render Environment.",
+error: "Missing API key. Set GOOGLE_API_KEY (or GOOGLE_APPLICATION_CREDENTIALS_JSON) in Render Environment.",
 });
 }
 
