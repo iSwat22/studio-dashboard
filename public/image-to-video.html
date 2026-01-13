@@ -52,6 +52,7 @@
 
 <!-- INPUTS (BOTTOM) -->
 <div class="prompt-shell">
+<!-- NOTE: keep single for now; we can make it multiple later -->
 <input id="imageFile" class="prompt-input" type="file" accept="image/*" />
 
 <div class="actions-row">
@@ -72,6 +73,7 @@ Tip: Choose an image first, then generate. After generating, you can download or
 </main>
 </div>
 
-<script src="./app.js"></script>
+<!-- IMPORTANT: Image→Video uses script.js, not app.js -->
+<script src="./script.js" defer></script>
 </body>
 </html>
