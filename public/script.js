@@ -105,7 +105,7 @@ Tip: After generating, you can download or delete the video.
 </main>
 </div>
 
-<script src="./script.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>
 
