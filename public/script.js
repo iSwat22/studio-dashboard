@@ -50,23 +50,30 @@ t2iBtn.disabled = false;
 }
 
 // ======================================================
-// TEXT -> VIDEO (supports BOTH HTML ID styles)
-//
-// Style A (your script expected):
+// TEXT -> VIDEO
+// Uses your page IDs:
 // t2vPrompt, t2vBtn, t2vStatus, t2vVideo
-//
-// Style B (your HTML screenshots show):
-// prompt, generateBtn, status, resultVideo
+// PLUS new controls:
+// t2vDuration, t2vAspect, downloadBtn, deleteBtn, saveToAssetsBtn
 // ======================================================
 
-const pickFirst = (...ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
+const pickFirst = (...ids) =>
+ids.map((id) => document.getElementById(id)).find(Boolean);
 
 const t2vPrompt = pickFirst("t2vPrompt", "prompt");
 const t2vBtn = pickFirst("t2vBtn", "generateBtn");
 const t2vStatus = pickFirst("t2vStatus", "status", "statusText", "outputStatus");
 const t2vVideo = pickFirst("t2vVideo", "resultVideo", "video");
 
-// If missing, don’t crash — but tell you exactly what’s wrong.
+// NEW UI controls (from your updated text-to-video.html)
+const t2vDuration = document.getElementById("t2vDuration");
+const t2vAspect = document.getElementById("t2vAspect");
+
+const downloadBtn = document.getElementById("downloadBtn");
+const deleteBtn = document.getElementById("deleteBtn");
+const saveToAssetsBtn = document.getElementById("saveToAssetsBtn");
+
+// If missing core UI, don’t crash — just log.
 if (!t2vPrompt || !t2vBtn || !t2vVideo) {
 console.warn("⚠️ Text→Video UI not found. Missing IDs:", {
 promptFound: Boolean(t2vPrompt),
@@ -85,11 +92,59 @@ if (t2vStatus) t2vStatus.textContent = msg;
 console.log("[T2V]", msg);
 }
 
-async function startTextToVideoJob(prompt) {
+function hideActionButtons() {
+if (downloadBtn) downloadBtn.style.display = "none";
+if (deleteBtn) deleteBtn.style.display = "none";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "none";
+}
+
+function showActionButtons(finalUrl) {
+// Download
+if (downloadBtn) {
+downloadBtn.href = finalUrl;
+downloadBtn.download = "quannaleap-text-video.mp4";
+downloadBtn.style.display = "inline-flex";
+}
+// Delete
+if (deleteBtn) {
+deleteBtn.style.display = "inline-flex";
+}
+// Save to Assets
+if (saveToAssetsBtn) {
+saveToAssetsBtn.style.display = "inline-flex";
+}
+}
+
+function clearVideoUI() {
+// cleanup old object url if we created one
+if (lastObjectUrl) {
+URL.revokeObjectURL(lastObjectUrl);
+lastObjectUrl = null;
+}
+
+t2vVideo.pause?.();
+t2vVideo.removeAttribute("src");
+t2vVideo.load();
+t2vVideo.style.display = "none";
+
+hideActionButtons();
+setStatus("Your generated video will appear here.");
+}
+
+async function startTextToVideoJob(prompt, options) {
+const payload = {
+prompt,
+// backend already supports aspectRatio
+aspectRatio: options.aspectRatio,
+// backend may NOT support durationSeconds yet (we’ll wire it next),
+// but sending it now is safe and keeps everything consistent.
+durationSeconds: options.durationSeconds,
+};
+
 const res = await fetch("/api/text-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt }),
+body: JSON.stringify(payload),
 });
 
 const data = await res.json().catch(() => ({}));
@@ -135,32 +190,36 @@ throw new Error("Timed out waiting for the video to finish");
 
 async function generateVideo(prompt) {
 t2vBtn.disabled = true;
+clearVideoUI();
 
-// reset video UI
-t2vVideo.style.display = "none";
-t2vVideo.removeAttribute("src");
-t2vVideo.load();
-
-// cleanup old object url if we created one
-if (lastObjectUrl) {
-URL.revokeObjectURL(lastObjectUrl);
-lastObjectUrl = null;
-}
+// Read UI options (safe defaults)
+const durationSeconds = Number(t2vDuration?.value || 8);
+const aspectRatio = String(t2vAspect?.value || "16:9");
 
 try {
 setStatus("Starting video job…");
-const opName = await startTextToVideoJob(prompt);
+
+const opName = await startTextToVideoJob(prompt, {
+durationSeconds,
+aspectRatio,
+});
 
 const result = await pollTextToVideo(opName);
 
+// Option A: videoUrl
 if (result.videoUrl) {
 t2vVideo.src = result.videoUrl;
 t2vVideo.style.display = "block";
 setStatus("✅ Video ready");
+showActionButtons(result.videoUrl);
+
+// store last result so refresh keeps it
+localStorage.setItem("ql_last_t2v_url", result.videoUrl);
+localStorage.setItem("ql_last_t2v_meta", JSON.stringify({ prompt, durationSeconds, aspectRatio }));
 return;
 }
 
-// base64 fallback
+// Option B: base64 fallback
 if (result.base64) {
 const byteChars = atob(result.base64);
 const byteNumbers = new Array(byteChars.length);
@@ -173,6 +232,10 @@ lastObjectUrl = URL.createObjectURL(blob);
 t2vVideo.src = lastObjectUrl;
 t2vVideo.style.display = "block";
 setStatus("✅ Video ready");
+showActionButtons(lastObjectUrl);
+
+localStorage.setItem("ql_last_t2v_url", lastObjectUrl);
+localStorage.setItem("ql_last_t2v_meta", JSON.stringify({ prompt, durationSeconds, aspectRatio }));
 return;
 }
 
@@ -180,9 +243,21 @@ throw new Error("Unknown video response format");
 } catch (err) {
 console.error(err);
 setStatus(`❌ ${err.message || err}`);
+hideActionButtons();
 } finally {
 t2vBtn.disabled = false;
 }
+}
+
+// Restore last video on refresh (optional)
+const savedUrl = localStorage.getItem("ql_last_t2v_url");
+if (savedUrl) {
+t2vVideo.src = savedUrl;
+t2vVideo.style.display = "block";
+setStatus("✅ Video ready");
+showActionButtons(savedUrl);
+} else {
+hideActionButtons();
 }
 
 // Attach click
@@ -195,11 +270,58 @@ return;
 generateVideo(prompt);
 });
 
+// Delete button
+if (deleteBtn) {
+deleteBtn.addEventListener("click", () => {
+localStorage.removeItem("ql_last_t2v_url");
+localStorage.removeItem("ql_last_t2v_meta");
+clearVideoUI();
+});
+}
+
+// Save to Assets button (stores locally)
+if (saveToAssetsBtn) {
+saveToAssetsBtn.addEventListener("click", () => {
+const url = t2vVideo.getAttribute("src");
+if (!url) return;
+
+let meta = {};
+try {
+meta = JSON.parse(localStorage.getItem("ql_last_t2v_meta") || "{}");
+} catch {}
+
+const item = {
+type: "video",
+url,
+prompt: meta.prompt || t2vPrompt.value.trim() || "",
+durationSeconds: meta.durationSeconds || Number(t2vDuration?.value || 8),
+aspectRatio: meta.aspectRatio || String(t2vAspect?.value || "16:9"),
+createdAt: new Date().toISOString(),
+};
+
+const key = "ql_assets";
+let arr = [];
+try {
+arr = JSON.parse(localStorage.getItem(key) || "[]");
+if (!Array.isArray(arr)) arr = [];
+} catch {
+arr = [];
+}
+
+arr.unshift(item);
+localStorage.setItem(key, JSON.stringify(arr));
+
+setStatus("⭐ Saved to Assets (local)");
+});
+}
+
 console.log("✅ Text→Video wired:", {
 promptId: t2vPrompt.id,
 btnId: t2vBtn.id,
 statusId: t2vStatus ? t2vStatus.id : "(none)",
 videoId: t2vVideo.id,
+durationId: t2vDuration ? t2vDuration.id : "(none)",
+aspectId: t2vAspect ? t2vAspect.id : "(none)",
 });
 });
 
