@@ -37,7 +37,6 @@ limits: { fileSize: 8 * 1024 * 1024 }, // 8MB per image
 // =========================================================
 
 // Put your SERVICE ACCOUNT JSON in Render as GOOGLE_APPLICATION_CREDENTIALS_JSON.
-// (Yes, the name is weird, but that's what you wanted for the video credential.)
 const VIDEO_CREDS_RAW = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
 // Optional: set these in Render too (recommended)
@@ -59,19 +58,16 @@ if (cachedAuth && cachedStorage) return { auth: cachedAuth, storage: cachedStora
 
 let authOptions = { scopes: ["https://www.googleapis.com/auth/cloud-platform"] };
 
-// If GEMINI_API_KEY_VIDEO contains JSON, use it directly.
 if (VIDEO_CREDS_RAW) {
 try {
 const creds = JSON.parse(VIDEO_CREDS_RAW);
 authOptions.credentials = creds;
 
-// If GOOGLE_CLOUD_PROJECT not set, try to infer from creds
 if (!process.env.GOOGLE_CLOUD_PROJECT && creds.project_id) {
 process.env.GOOGLE_CLOUD_PROJECT = creds.project_id;
 }
 } catch {
-// If it's not JSON, assume it's using normal ADC (rare on Render)
-// or you provided a path (not recommended on Render).
+// If it's not JSON, assume it's using normal ADC or a path (not recommended on Render).
 }
 }
 
@@ -139,8 +135,7 @@ if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" })
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
 return res.status(500).json({
 ok: false,
-error:
-"Missing video credentials. Set GOOGLE_APPLICATION_CREDENTIALS_JSON (Service Account JSON) in Render env vars.",
+error: "Missing video credentials. Set GOOGLE_APPLICATION_CREDENTIALS_JSON (Service Account JSON) in Render env vars.",
 });
 }
 
@@ -161,10 +156,15 @@ const aspectRatio = (req.body?.aspectRatio || "16:9").toString(); // "16:9" or "
 const sampleCount = Number(req.body?.sampleCount ?? 1); // 1-4
 const storageUri = (req.body?.outputGcsUri || DEFAULT_OUTPUT_GCS_URI || "").trim();
 
+// ✅ NEW: durationSeconds (clamped to 1..300 for safety; you can raise later)
+const durationSecondsRaw = Number(req.body?.durationSeconds ?? 8);
+const durationSeconds = Math.max(1, Math.min(durationSecondsRaw, 300));
+
 const body = {
 instances: [{ prompt }],
 parameters: {
 aspectRatio,
+durationSeconds, // ✅ NEW
 sampleCount,
 ...(storageUri ? { storageUri } : {}),
 ...(req.body?.negativePrompt ? { negativePrompt: String(req.body.negativePrompt) } : {}),
@@ -198,7 +198,6 @@ details: data,
 });
 }
 
-// Response contains an operation name
 return res.json({
 ok: true,
 operationName: data?.name,
@@ -222,8 +221,7 @@ if (!operationName) return res.status(400).json({ ok: false, error: "Missing ope
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
 return res.status(500).json({
 ok: false,
-error:
-"Missing video credentials. Set GOOGLE_APPLICATION_CREDENTIALS_JSON (Service Account JSON) in Render env vars.",
+error: "Missing video credentials. Set GOOGLE_APPLICATION_CREDENTIALS_JSON (Service Account JSON) in Render env vars.",
 });
 }
 
@@ -263,12 +261,10 @@ details: data,
 });
 }
 
-// If not done yet
 if (!data?.done) {
 return res.json({ ok: true, done: false, operation: data });
 }
 
-// Done — try to pull video GCS URI
 const gcsUri =
 data?.response?.videos?.[0]?.gcsUri ||
 data?.response?.generatedVideos?.[0]?.video?.uri ||
@@ -283,7 +279,7 @@ return res.json({
 ok: true,
 done: true,
 gcsUri: gcsUri || null,
-videoUrl, // playable if present
+videoUrl,
 operation: data,
 });
 } catch (err) {
