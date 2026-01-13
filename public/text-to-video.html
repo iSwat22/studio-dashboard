@@ -66,6 +66,20 @@ class="prompt-input"
 placeholder='Example: "A cinematic 3D city at sunset"'
 ></textarea>
 
+<!-- NEW: TIME LENGTH -->
+<div class="help-text" style="margin-top:10px;">
+<label for="t2vDuration" style="display:block; margin-bottom:6px; opacity:0.9;">
+Video Length
+</label>
+<select id="t2vDuration" class="prompt-input" style="height:44px;">
+<option value="10">10 seconds</option>
+<option value="15">15 seconds</option>
+<option value="30" selected>30 seconds</option>
+<option value="60">60 seconds</option>
+<option value="300">5 minutes</option>
+</select>
+</div>
+
 <div class="actions-row">
 <button id="t2vBtn" type="button" class="primary-btn">Generate Video</button>
 
@@ -91,4 +105,3 @@ Tip: After generating, you can download or delete the video.
 <script src="./script.js"></script>
 </body>
 </html>
-
