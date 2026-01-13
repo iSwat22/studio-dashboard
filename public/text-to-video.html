@@ -60,6 +60,32 @@ Your generated video will appear here.
 
 <!-- PROMPT -->
 <div class="prompt-shell">
+
+<!-- NEW: Settings row (Duration + Aspect Ratio) -->
+<div class="actions-row" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+<label style="display:flex; align-items:center; gap:8px;">
+<span style="opacity:.85;">Length</span>
+<select id="t2vDuration" class="ghost-btn" style="padding:10px 12px;">
+<option value="8" selected>8s (default)</option>
+<option value="10">10s</option>
+<option value="15">15s</option>
+<option value="30">30s</option>
+<option value="60">60s</option>
+<option value="120">2 min</option>
+<option value="300">5 min</option>
+</select>
+</label>
+
+<label style="display:flex; align-items:center; gap:8px;">
+<span style="opacity:.85;">Format</span>
+<select id="t2vAspect" class="ghost-btn" style="padding:10px 12px;">
+<option value="16:9" selected>16:9 (YouTube)</option>
+<option value="9:16">9:16 (Shorts/TikTok)</option>
+<option value="1:1">1:1 (Square)</option>
+</select>
+</label>
+</div>
+
 <textarea
 id="t2vPrompt"
 class="prompt-input"
@@ -68,6 +94,11 @@ placeholder='Example: "A cinematic 3D city at sunset"'
 
 <div class="actions-row">
 <button id="t2vBtn" type="button" class="primary-btn">Generate Video</button>
+
+<!-- NEW: Save to Assets button (UI only for now) -->
+<button id="saveToAssetsBtn" type="button" class="ghost-btn" style="display:none;">
+⭐ Save to Assets
+</button>
 
 <a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">
 Download
@@ -79,7 +110,7 @@ Delete
 </div>
 
 <div class="help-text">
-Tip: After generating, you can download or delete the video.
+Tip: Pick a length + format, then generate. After it’s ready you can save, download, or delete.
 </div>
 </div>
 
@@ -92,3 +123,4 @@ Tip: After generating, you can download or delete the video.
 <script src="./script.js" defer></script>
 </body>
 </html>
+
