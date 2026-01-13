@@ -50,22 +50,40 @@ t2iBtn.disabled = false;
 }
 
 // ======================================================
-// TEXT -> VIDEO (needs these HTML IDs to exist)
-// t2vPrompt (textarea/input)
-// t2vBtn (button)
-// t2vStatus (div/span/p)
-// t2vVideo (video tag)
+// TEXT -> VIDEO (supports BOTH HTML ID styles)
+//
+// Style A (your script expected):
+// t2vPrompt, t2vBtn, t2vStatus, t2vVideo
+//
+// Style B (your HTML screenshots show):
+// prompt, generateBtn, status, resultVideo
 // ======================================================
-const t2vPrompt = document.getElementById("t2vPrompt");
-const t2vBtn = document.getElementById("t2vBtn");
-const t2vStatus = document.getElementById("t2vStatus");
-const t2vVideo = document.getElementById("t2vVideo");
 
-// If this page doesn’t have the Text→Video card, just skip it.
-if (t2vPrompt && t2vBtn && t2vStatus && t2vVideo) {
+const pickFirst = (...ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
+
+const t2vPrompt = pickFirst("t2vPrompt", "prompt");
+const t2vBtn = pickFirst("t2vBtn", "generateBtn");
+const t2vStatus = pickFirst("t2vStatus", "status", "statusText", "outputStatus");
+const t2vVideo = pickFirst("t2vVideo", "resultVideo", "video");
+
+// If missing, don’t crash — but tell you exactly what’s wrong.
+if (!t2vPrompt || !t2vBtn || !t2vVideo) {
+console.warn("⚠️ Text→Video UI not found. Missing IDs:", {
+promptFound: Boolean(t2vPrompt),
+buttonFound: Boolean(t2vBtn),
+videoFound: Boolean(t2vVideo),
+statusFound: Boolean(t2vStatus),
+});
+return;
+}
+
 let lastObjectUrl = null;
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function setStatus(msg) {
+if (t2vStatus) t2vStatus.textContent = msg;
+console.log("[T2V]", msg);
+}
 
 async function startTextToVideoJob(prompt) {
 const res = await fetch("/api/text-to-video", {
@@ -73,6 +91,7 @@ method: "POST",
 headers: { "Content-Type": "application/json" },
 body: JSON.stringify({ prompt }),
 });
+
 const data = await res.json().catch(() => ({}));
 
 if (!res.ok || !data.ok) {
@@ -85,11 +104,11 @@ return data.operationName;
 }
 
 async function pollTextToVideo(operationName) {
-// Poll up to ~3 minutes (60 * 3s)
-const maxAttempts = 60;
+// Poll up to ~5 minutes (100 * 3s)
+const maxAttempts = 100;
 
 for (let i = 1; i <= maxAttempts; i++) {
-t2vStatus.textContent = `Generating video… (${i}/${maxAttempts})`;
+setStatus(`Generating video… (${i}/${maxAttempts})`);
 await sleep(3000);
 
 const res = await fetch("/api/text-to-video/status", {
@@ -105,13 +124,8 @@ throw new Error(data.error || "Status check failed");
 }
 
 if (data.done) {
-// Prefer playable signed URL (recommended path)
 if (data.videoUrl) return { videoUrl: data.videoUrl };
-
-// If your backend ever returns base64 instead, support it too
 if (data.base64) return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
-
-// If done but nothing usable came back:
 throw new Error("Video finished, but no videoUrl/base64 returned");
 }
 }
@@ -121,6 +135,8 @@ throw new Error("Timed out waiting for the video to finish");
 
 async function generateVideo(prompt) {
 t2vBtn.disabled = true;
+
+// reset video UI
 t2vVideo.style.display = "none";
 t2vVideo.removeAttribute("src");
 t2vVideo.load();
@@ -132,7 +148,7 @@ lastObjectUrl = null;
 }
 
 try {
-t2vStatus.textContent = "Starting video job…";
+setStatus("Starting video job…");
 const opName = await startTextToVideoJob(prompt);
 
 const result = await pollTextToVideo(opName);
@@ -140,7 +156,7 @@ const result = await pollTextToVideo(opName);
 if (result.videoUrl) {
 t2vVideo.src = result.videoUrl;
 t2vVideo.style.display = "block";
-t2vStatus.textContent = "✅ Video ready";
+setStatus("✅ Video ready");
 return;
 }
 
@@ -156,28 +172,34 @@ lastObjectUrl = URL.createObjectURL(blob);
 
 t2vVideo.src = lastObjectUrl;
 t2vVideo.style.display = "block";
-t2vStatus.textContent = "✅ Video ready";
+setStatus("✅ Video ready");
 return;
 }
 
 throw new Error("Unknown video response format");
 } catch (err) {
 console.error(err);
-t2vStatus.textContent = `❌ ${err.message || err}`;
+setStatus(`❌ ${err.message || err}`);
 } finally {
 t2vBtn.disabled = false;
 }
 }
 
+// Attach click
 t2vBtn.addEventListener("click", () => {
 const prompt = t2vPrompt.value.trim();
 if (!prompt) {
-t2vStatus.textContent = "Please enter a prompt.";
+setStatus("Please enter a prompt.");
 return;
 }
 generateVideo(prompt);
 });
-}
-});
 
+console.log("✅ Text→Video wired:", {
+promptId: t2vPrompt.id,
+btnId: t2vBtn.id,
+statusId: t2vStatus ? t2vStatus.id : "(none)",
+videoId: t2vVideo.id,
+});
+});
 
