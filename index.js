@@ -1,179 +1,219 @@
-// ---- Image -> Video (Veo on Vertex AI) ----
-// Accepts ONE image as first frame + optional prompt
-app.post("/api/image-to-video", upload.single("image"), async (req, res) => {
+// index.js (FULL FILE) — replace your entire index.js with this exactly
+
+import express from "express";
+import path from "path";
+import fs from "fs";
+import os from "os";
+import { spawn } from "child_process";
+import multer from "multer";
+import { fileURLToPath } from "url";
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ---- Path helpers (ES Modules) ----
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ---- Middleware ----
+app.use(express.json({ limit: "10mb" })); // bigger for images/base64 if needed
+app.use(express.static(path.join(__dirname, "public")));
+
+// ---- Multer (uploads for image->video) ----
+const TMP_DIR = os.tmpdir();
+const upload = multer({
+storage: multer.diskStorage({
+destination: (req, file, cb) => cb(null, TMP_DIR),
+filename: (req, file, cb) => {
+const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+cb(null, `${Date.now()}_${Math.random().toString(16).slice(2)}_${safe}`);
+},
+}),
+limits: { fileSize: 8 * 1024 * 1024 }, // 8MB per image
+});
+
+// ---- Health check ----
+app.get("/api/health", (req, res) => {
+res.json({
+ok: true,
+status: "healthy",
+node: process.version,
+hasGoogleApiKey: Boolean(process.env.GOOGLE_API_KEY),
+});
+});
+
+// =========================================================
+// TEXT -> IMAGE (Gemini 3 Pro Image via API KEY)
+// Needs: GOOGLE_API_KEY in Render env vars
+// =========================================================
+app.post("/api/text-to-image", async (req, res) => {
 try {
-const file = req.file;
-const prompt = (req.body?.prompt || "").toString().trim();
+const prompt = (req.body?.prompt || "").trim();
+if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
-if (!file) {
-return res.status(400).json({ ok: false, error: "Missing image file" });
-}
-
-// Must have creds
-if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+const API_KEY = process.env.GOOGLE_API_KEY;
+if (!API_KEY) {
 return res.status(500).json({
 ok: false,
-error:
-"Missing GOOGLE_APPLICATION_CREDENTIALS_JSON (Service Account JSON) in Render env vars.",
+error: "Missing GOOGLE_API_KEY in Render Environment.",
 });
 }
 
-const projectId = process.env.GOOGLE_CLOUD_PROJECT || VERTEX_PROJECT_ID;
-if (!projectId) {
-return res.status(500).json({
-ok: false,
-error: "Missing GOOGLE_CLOUD_PROJECT in Render env vars.",
-});
-}
+const url =
+"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent";
 
-const accessToken = await getAccessToken();
-
-const endpoint =
-`https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/` +
-`projects/${projectId}/locations/${VERTEX_LOCATION}/publishers/google/models/${VEO_MODEL_ID}:predictLongRunning`;
-
-// Keep it short for testing
-const durationSecondsRaw = Number(req.body?.durationSeconds ?? 6);
-const durationSeconds = Math.max(1, Math.min(durationSecondsRaw, 20));
-
-const aspectRatio = (req.body?.aspectRatio || "16:9").toString();
-
-// Optional output bucket (RECOMMENDED)
-// Example: gs://your-bucket/veo-output/
-const storageUri = (DEFAULT_OUTPUT_GCS_URI || "").trim();
-
-const body = {
-instances: [
-{
-...(prompt ? { prompt } : {}),
-image: {
-mimeType: file.mimetype,
-bytesBase64Encoded: fs.readFileSync(file.path).toString("base64"),
-},
-},
-],
-parameters: {
-aspectRatio,
-durationSeconds,
-sampleCount: 1,
-...(storageUri ? { storageUri } : {}),
+const payload = {
+contents: [{ parts: [{ text: prompt }] }],
+generationConfig: {
+imageConfig: { aspectRatio: "1:1", imageSize: "1024" },
 },
 };
 
-// 1) Start generation
-const startResp = await fetch(endpoint, {
+const apiRes = await fetch(url, {
 method: "POST",
 headers: {
-Authorization: `Bearer ${accessToken}`,
-"Content-Type": "application/json; charset=utf-8",
+"Content-Type": "application/json",
+"x-goog-api-key": API_KEY,
 },
-body: JSON.stringify(body),
+body: JSON.stringify(payload),
 });
 
-const startText = await startResp.text();
-let startJson = null;
+const text = await apiRes.text();
+let data;
 try {
-startJson = JSON.parse(startText);
-} catch {}
-
-if (!startResp.ok) {
-return res.status(502).json({
+data = JSON.parse(text);
+} catch {
+return res.status(500).json({
 ok: false,
-error: `Veo start failed (${startResp.status})`,
-details: startJson || startText,
+error: "Gemini returned non-JSON response",
+raw: text.slice(0, 500),
 });
 }
 
-const operationName = startJson?.name;
-if (!operationName) {
-return res.status(502).json({
+if (!apiRes.ok) {
+return res.status(apiRes.status).json({
 ok: false,
-error: "No operation name returned from Veo",
-details: startJson,
+error: data?.error?.message || "Gemini request failed",
+details: data,
 });
 }
 
-// 2) Poll
-const pollEndpoint =
-`https://${VERTEX_LOCATION}-aiplatform.googleapis.com/v1/` +
-`projects/${projectId}/locations/${VERTEX_LOCATION}/publishers/google/models/${VEO_MODEL_ID}:fetchPredictOperation`;
+const parts = data?.candidates?.[0]?.content?.parts || [];
+const imagePart = parts.find((p) => p.inlineData && p.inlineData.data);
 
-for (let attempt = 1; attempt <= 40; attempt++) {
-await new Promise((r) => setTimeout(r, 3000));
+if (!imagePart) {
+return res.status(500).json({
+ok: false,
+error: "No image returned from model",
+details: data,
+});
+}
 
-const pollResp = await fetch(pollEndpoint, {
-method: "POST",
-headers: {
-Authorization: `Bearer ${accessToken}`,
-"Content-Type": "application/json; charset=utf-8",
-},
-body: JSON.stringify({ operationName }),
+const mimeType = imagePart.inlineData.mimeType || "image/png";
+const base64 = imagePart.inlineData.data;
+
+return res.json({ ok: true, mimeType, base64 });
+} catch (err) {
+console.error("text-to-image error:", err);
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
+}
 });
 
-const pollText = await pollResp.text();
-let pollJson = null;
+// =========================================================
+// IMAGE -> VIDEO (FFmpeg slideshow)
+// Upload field name MUST be: images (multiple)
+// Optional: secondsPerImage (default 1.5)
+// =========================================================
+app.post("/api/image-to-video", upload.array("images", 20), async (req, res) => {
+const uploaded = req.files || [];
+const secondsPerImage = Number(req.body?.secondsPerImage ?? 1.5);
+
+if (!uploaded.length) {
+return res.status(400).json({ ok: false, error: "No images uploaded" });
+}
+if (!Number.isFinite(secondsPerImage) || secondsPerImage <= 0 || secondsPerImage > 10) {
+return res.status(400).json({ ok: false, error: "secondsPerImage must be between 0 and 10" });
+}
+
+const outPath = path.join(
+TMP_DIR,
+`out_${Date.now()}_${Math.random().toString(16).slice(2)}.mp4`
+);
+
 try {
-pollJson = JSON.parse(pollText);
+const args = ["-y"];
+
+// Add each image as its own looped input
+for (const f of uploaded) {
+args.push("-loop", "1", "-t", String(secondsPerImage), "-i", f.path);
+}
+
+const n = uploaded.length;
+const filter = `concat=n=${n}:v=1:a=0,format=yuv420p`;
+
+args.push(
+"-filter_complex",
+filter,
+"-r",
+"30",
+"-pix_fmt",
+"yuv420p",
+"-movflags",
+"+faststart",
+outPath
+);
+
+await new Promise((resolve, reject) => {
+const ff = spawn("ffmpeg", args);
+let errBuf = "";
+
+ff.stderr.on("data", (d) => (errBuf += d.toString()));
+
+ff.on("close", (code) => {
+if (code === 0) return resolve();
+reject(new Error(`FFmpeg failed (code ${code}). ${errBuf.slice(-900)}`));
+});
+});
+
+res.setHeader("Content-Type", "video/mp4");
+res.setHeader("Content-Disposition", 'inline; filename="slideshow.mp4"');
+
+const stream = fs.createReadStream(outPath);
+stream.pipe(res);
+
+stream.on("close", () => {
+try {
+fs.unlinkSync(outPath);
 } catch {}
-
-if (!pollResp.ok) {
-return res.status(502).json({
-ok: false,
-error: `Veo poll failed (${pollResp.status})`,
-details: pollJson || pollText,
+for (const f of uploaded) {
+try {
+fs.unlinkSync(f.path);
+} catch {}
+}
 });
-}
-
-if (pollJson?.done) {
-const videos = pollJson?.response?.videos || [];
-if (!videos.length) {
-return res.status(502).json({
-ok: false,
-error: "Veo finished but returned no videos",
-details: pollJson,
-});
-}
-
-const v0 = videos[0];
-
-// If bytes returned
-if (v0?.bytesBase64Encoded) {
-return res.json({
-ok: true,
-mimeType: v0.mimeType || "video/mp4",
-base64: v0.bytesBase64Encoded,
-});
-}
-
-// If GCS returned
-if (v0?.gcsUri) {
-const signed = await signGcsUrl(v0.gcsUri);
-return res.json({
-ok: true,
-mimeType: v0.mimeType || "video/mp4",
-gcsUri: v0.gcsUri,
-videoUrl: signed, // playable
-});
-}
-
-return res.status(502).json({
-ok: false,
-error: "Unknown video payload format",
-details: v0,
-});
-}
-}
-
-return res.status(504).json({ ok: false, error: "Timed out waiting for Veo" });
 } catch (err) {
 console.error("image-to-video error:", err);
-return res.status(500).json({ ok: false, error: err?.message || "Server error" });
-} finally {
-// cleanup uploaded temp file
+
 try {
-if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+} catch {}
+for (const f of uploaded) {
+try {
+fs.unlinkSync(f.path);
 } catch {}
 }
+
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
+}
+});
+
+// ---- Fallback to index.html ----
+app.get("*", (req, res) => {
+res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.listen(PORT, () => {
+console.log(`Server running on port ${PORT}`);
 });
 
 
