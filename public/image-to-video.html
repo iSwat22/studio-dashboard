@@ -8,7 +8,6 @@
 </head>
 
 <body class="bg-stars" data-mode="image-to-video">
-<!-- TOPBAR -->
 <header class="topbar">
 <div class="topbar-left">
 <a class="brand" href="./index.html">
@@ -42,25 +41,19 @@
 </section>
 
 <section class="create-panel">
-<!-- PREVIEW (ABOVE) -->
 <div class="preview-shell">
-<!-- Show selected image OR generated video -->
 <img id="sourceImg" class="result-preview" alt="Selected image preview" style="display:none;" />
-<video id="resultVideo" class="result-preview" controls playsinline style="display:none;"></video>
+<video id="i2vResultVideo" class="result-preview" controls playsinline style="display:none;"></video>
 <div id="emptyState" class="help-text">Your selected image / generated video will appear here.</div>
 </div>
 
-<!-- INPUTS (BOTTOM) -->
 <div class="prompt-shell">
-<!-- NOTE: keep single for now; we can make it multiple later -->
 <input id="imageFile" class="prompt-input" type="file" accept="image/*" />
 
 <div class="actions-row">
-<button id="generateBtn" class="primary-btn" type="button">Generate Video</button>
-
-<!-- Hidden until a video exists -->
-<a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">Download</a>
-<button id="deleteBtn" class="danger-btn" type="button" style="display:none;">Delete</button>
+<button id="i2vGenerateBtn" class="primary-btn" type="button">Generate Video</button>
+<a id="i2vDownloadBtn" class="ghost-btn" href="#" download style="display:none;">Download</a>
+<button id="i2vDeleteBtn" class="danger-btn" type="button" style="display:none;">Delete</button>
 </div>
 
 <div class="help-text">
@@ -73,7 +66,8 @@ Tip: Choose an image first, then generate. After generating, you can download or
 </main>
 </div>
 
-<!-- IMPORTANT: Image→Video uses script.js, not app.js -->
+<!-- IMPORTANT: use script.js (NOT app.js) -->
 <script src="./script.js" defer></script>
 </body>
 </html>
+
