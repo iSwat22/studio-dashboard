@@ -35,6 +35,9 @@
 <h1 class="headline">Create</h1>
 <p class="subhead" id="selectionLine">Your selection will appear here.</p>
 
+<!-- Selected Mode chips -->
+<div class="modeChips" id="modeChips"></div>
+
 <div class="createGrid">
 <div class="panel">
 <div class="panelTitle">Prompt</div>
@@ -49,7 +52,7 @@
 <div class="panel">
 <div class="panelTitle">Quick Settings</div>
 
-<div class="field" id="ratioField">
+<div class="field">
 <label>Aspect Ratio</label>
 <select id="ratioSelect">
 <option value="16:9">16:9 (YouTube)</option>
@@ -59,7 +62,7 @@
 </div>
 
 <div class="field" id="durationField">
-<label id="durationLabel">Duration</label>
+<label>Duration</label>
 <select id="durationSelect"></select>
 </div>
 
@@ -81,7 +84,7 @@
 </div>
 
 <div class="tinyNote">
-(Generate is still placeholder — next page is the results screen.)
+(Generate will go to the output page — backend wiring later.)
 </div>
 </div>
 </div>
