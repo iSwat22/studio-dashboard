@@ -33,21 +33,11 @@
 
 <main class="container">
 <h1 class="headline">Create</h1>
-<p class="subhead" id="selectionLine">Loading your selection…</p>
+<p class="subhead" id="selectionLine">Your selection will appear here.</p>
 
 <div class="createGrid">
 <div class="panel">
 <div class="panelTitle">Prompt</div>
-
-<!-- only used for Image->Video mode -->
-<div class="uploadRow" id="uploadRow" style="display:none;">
-<label class="uploadLabel">Reference Image (for Image → Video)</label>
-<input class="uploadInput" id="refImageInput" type="file" accept="image/*" />
-<div class="uploadPreviewWrap">
-<img id="refPreview" class="uploadPreview" alt="Preview" style="display:none;" />
-</div>
-</div>
-
 <textarea id="promptBox" class="promptBox" placeholder="Your prompt will load here..."></textarea>
 
 <div class="panelActions">
@@ -59,7 +49,7 @@
 <div class="panel">
 <div class="panelTitle">Quick Settings</div>
 
-<div class="field">
+<div class="field" id="ratioField">
 <label>Aspect Ratio</label>
 <select id="ratioSelect">
 <option value="16:9">16:9 (YouTube)</option>
@@ -69,7 +59,7 @@
 </div>
 
 <div class="field" id="durationField">
-<label>Duration</label>
+<label id="durationLabel">Duration</label>
 <select id="durationSelect"></select>
 </div>
 
@@ -91,7 +81,7 @@
 </div>
 
 <div class="tinyNote">
-(Next page will show the result output. We’ll wire real generation to your backend.)
+(Generate is still placeholder — next page is the results screen.)
 </div>
 </div>
 </div>
@@ -100,3 +90,4 @@
 <script src="script.js"></script>
 </body>
 </html>
+
