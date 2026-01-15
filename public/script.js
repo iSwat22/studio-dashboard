@@ -1,16 +1,13 @@
 /* =========================
 Quanna Leap v1 Home/Create
-- Two rows: Themes + Styles
-- Cards are generated in JS (not HTML)
-- Uses JPEGs in /public
 ========================= */
 
 // ====== USER / PLAN (temporary placeholders) ======
 const USER = {
 name: "KC",
 role: "Admin",
-plan: "Standard",
-stars: 430,
+plan: "Silver",
+stars: "∞",
 isAdmin: true
 };
 
@@ -22,11 +19,16 @@ const profileRole = document.getElementById("profileRole");
 const avatarCircle = document.getElementById("avatarCircle");
 
 if (planPill) planPill.textContent = USER.plan;
-if (starsPill) starsPill.textContent = USER.isAdmin ? "★ ∞" : `★ ${USER.stars}`;
+if (starsPill) starsPill.textContent = "★ ∞";
 if (profileName) profileName.textContent = USER.name;
 if (profileRole) profileRole.textContent = USER.role;
 if (avatarCircle) avatarCircle.textContent = (USER.name || "U").trim().charAt(0).toUpperCase();
 }
+
+// ====== IMPORTANT: IMAGE PATH ======
+// Put your JPEGs in: /public/quannaleap_cards/
+// Example: /public/quannaleap_cards/Kids_Story.jpeg
+const IMAGE_BASE = "quannaleap_cards/";
 
 // ====== CARD DATA (JPEG FILES) ======
 const THEMES = [
@@ -47,7 +49,7 @@ promptSeed: `Create a respectful biblical-inspired epic with emotional moments, 
 {
 id: "Neon_City_Heist",
 title: "Neon City Heist",
-sub: "GTA-ish vibe (original)",
+sub: "Neon crime story (original)",
 image: "Neon_City_Heist.jpeg",
 promptSeed: `Create a neon cyber-city heist story: fast pacing, clever plan, twists, and a stylish futuristic setting.`
 },
@@ -83,15 +85,23 @@ image: "Anime_Fantasy.jpeg",
 styleSeed: `Style: anime-inspired cinematic look, dynamic camera moves, expressive eyes, dramatic lighting and atmosphere.`
 },
 {
-id: "Realistic_Cinema",
-title: "Realistic Cinema",
-sub: "live-action vibe",
-image: "Realistic_Cinema.jpeg",
-styleSeed: `Style: realistic cinematic live-action look, natural textures, film lighting, shallow depth of field.`
+id: "Biblical_Style",
+title: "Biblical Style",
+sub: "faithful + respectful",
+image: "Biblical_Style.jpeg",
+styleSeed: `Style: respectful biblical tone, cinematic lighting, warm hope-filled mood, historically inspired environments.`
 }
 ];
 
-// ====== SELECTION STATE ======
+// ====== MODE (Text→Image etc.) ======
+const MODES = [
+{ id: "text-to-image", label: "Text → Image" },
+{ id: "text-to-video", label: "Text → Video" },
+{ id: "image-to-video", label: "Image → Video" },
+{ id: "text-to-voice", label: "Text → Voice" }
+];
+
+let selectedMode = null;
 let selectedTheme = null;
 let selectedStyle = null;
 
@@ -106,7 +116,14 @@ return e;
 function buildCard(item, type) {
 const card = el("div", "card", { "data-id": item.id, "data-type": type });
 
-const img = el("img", "cardImg", { alt: item.title, src: item.image });
+// ✅ FIXED PATH (uses /public/quannaleap_cards/)
+const img = el("img", "cardImg", { alt: item.title, src: IMAGE_BASE + item.image });
+
+// If image fails, show a helpful console message
+img.addEventListener("error", () => {
+console.warn(`❌ Missing image: ${IMAGE_BASE + item.image}. Check filename + .jpeg + capitalization.`);
+});
+
 const body = el("div", "cardBody");
 const title = el("div", "cardTitle");
 title.textContent = item.title;
@@ -142,14 +159,27 @@ c.classList.toggle("selected", c.getAttribute("data-id") === selectedId);
 });
 }
 
+function setMode(modeId) {
+selectedMode = modeId;
+
+// highlight buttons
+document.querySelectorAll(".modeBtn").forEach(btn => {
+btn.classList.toggle("active", btn.getAttribute("data-mode") === modeId);
+});
+
+updateReady();
+}
+
 function updateReady() {
 const btn = document.getElementById("goCreateBtn");
 const line = document.getElementById("readySub");
-const ok = !!(selectedTheme && selectedStyle);
+
+const ok = !!(selectedMode && selectedTheme && selectedStyle);
 
 if (line) {
-if (!ok) line.textContent = "Choose 1 Theme + 1 Style, then go create.";
-else line.textContent = `Selected: ${selectedTheme.title} + ${selectedStyle.title}`;
+if (!selectedMode) line.textContent = "Pick a Mode first (Text→Image, Image→Video, etc.)";
+else if (!selectedTheme || !selectedStyle) line.textContent = "Choose 1 Theme + 1 Style, then go create.";
+else line.textContent = `Mode: ${selectedMode} • ${selectedTheme.title} + ${selectedStyle.title}`;
 }
 
 if (btn) btn.disabled = !ok;
@@ -159,26 +189,38 @@ function buildFinalPrompt() {
 const theme = selectedTheme ? selectedTheme.promptSeed : "";
 const style = selectedStyle ? selectedStyle.styleSeed : "";
 
+// Different prompt tips depending on mode
+const modeHint =
+selectedMode === "image-to-video"
+? `Mode: IMAGE → VIDEO. Describe camera movement + motion. Keep character consistent.`
+: selectedMode === "text-to-video"
+? `Mode: TEXT → VIDEO. Keep it 5–8 seconds per clip. Write as one scene.`
+: selectedMode === "text-to-image"
+? `Mode: TEXT → IMAGE. Describe framing, lighting, and details.`
+: `Mode: TEXT → VOICE. Provide dialogue and tone instructions.`;
+
 return `
+${modeHint}
+
 ${theme}
 
 ${style}
 
 Rules:
-- No narrator unless requested
 - Strong dialogue and clear scene progression
-- Provide scene-by-scene beats (or one continuous script if requested)
-- Include camera + movement suggestions for image-to-video
+- Include camera + movement suggestions (especially for image/video)
+- Output must be ready to paste
 
 Output:
 - Title
 - Short logline
-- Full prompt ready to paste
+- Final prompt
 `.trim();
 }
 
 function goToCreate() {
 const payload = {
+mode: selectedMode,
 themeId: selectedTheme?.id,
 styleId: selectedStyle?.id,
 themeTitle: selectedTheme?.title,
@@ -199,6 +241,14 @@ if (!themeRail || !styleRail) return;
 
 THEMES.forEach(t => themeRail.appendChild(buildCard(t, "theme")));
 STYLES.forEach(s => styleRail.appendChild(buildCard(s, "style")));
+
+// Mode buttons
+document.querySelectorAll(".modeBtn").forEach(btn => {
+btn.addEventListener("click", () => setMode(btn.getAttribute("data-mode")));
+});
+
+// default mode
+setMode("image-to-video");
 
 if (goBtn) goBtn.addEventListener("click", goToCreate);
 
@@ -222,7 +272,10 @@ return;
 }
 
 const data = JSON.parse(raw);
-if (selectionLine) selectionLine.textContent = `Theme: ${data.themeTitle || "—"} • Style: ${data.styleTitle || "—"}`;
+if (selectionLine) {
+selectionLine.textContent =
+`Mode: ${data.mode || "—"} • Theme: ${data.themeTitle || "—"} • Style: ${data.styleTitle || "—"}`;
+}
 if (promptBox) promptBox.value = data.prompt || "";
 
 if (copyBtn && promptBox) {
@@ -240,14 +293,12 @@ clearBtn.addEventListener("click", () => (promptBox.value = ""));
 
 // ====== BOOT ======
 document.addEventListener("DOMContentLoaded", () => {
-// Detect which page we are on
 const isHome = document.getElementById("themeRail") && document.getElementById("styleRail");
 const isCreate = document.getElementById("promptBox");
 
 if (isHome) initHome();
 if (isCreate) initCreate();
 });
-
 
 
 
