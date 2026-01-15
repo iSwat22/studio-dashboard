@@ -39,39 +39,40 @@
 <h1 class="headline">What would you like to create today?</h1>
 <p class="subhead">Pick a <b>Mode</b> + a <b>Theme</b> + a <b>Style</b>. Then we auto-build your prompt.</p>
 
-<!-- MODE -->
-<section class="modeRow">
+<!-- MODE ROW -->
+<section class="row">
 <div class="rowHeader">
 <h2>Pick a Mode</h2>
-<span class="hint">Tap one</span>
+<div class="rowActions">
+<button class="pill btnTiny" id="clearModeBtn" type="button">Clear</button>
+</div>
 </div>
 
-<div class="modePills" id="modePills"></div>
+<div class="modeBar" id="modeBar" aria-label="Mode picker"></div>
+<div class="tinyHint">Choose one or more.</div>
 </section>
 
 <!-- THEMES ROW -->
 <section class="row">
 <div class="rowHeader">
-<div class="rowTitleWrap">
 <h2>Pick a Theme</h2>
-<button class="miniBtn" id="clearThemeBtn" type="button">Clear</button>
-</div>
+<div class="rowActions">
 <span class="hint">Scroll left/right</span>
+<button class="pill btnTiny" id="clearThemeBtn" type="button">Clear</button>
 </div>
-
+</div>
 <div class="rail" id="themeRail" aria-label="Theme scroller"></div>
 </section>
 
 <!-- STYLES ROW -->
 <section class="row">
 <div class="rowHeader">
-<div class="rowTitleWrap">
 <h2>Pick a Style</h2>
-<button class="miniBtn" id="clearStyleBtn" type="button">Clear</button>
-</div>
+<div class="rowActions">
 <span class="hint">Scroll left/right</span>
+<button class="pill btnTiny" id="clearStyleBtn" type="button">Clear</button>
 </div>
-
+</div>
 <div class="rail" id="styleRail" aria-label="Style scroller"></div>
 </section>
 
@@ -79,7 +80,7 @@
 <section class="readyBox">
 <div class="readyText">
 <div class="readyTitle">Ready?</div>
-<div class="readySub" id="readySub">Choose 1 Mode + 1 Theme + 1 Style, then go create.</div>
+<div class="readySub" id="readySub">Choose 1 or more Mode + 1 Theme + 1 Style, then go create.</div>
 </div>
 <button class="cta" id="goCreateBtn" disabled>Go to Create →</button>
 </section>
