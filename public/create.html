@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -19,8 +20,8 @@
 
 <div class="topRight">
 <a class="pill btn" href="index.html">← Home</a>
-<span class="pill" id="planPill">Standard</span>
-<span class="pill stars" id="starsPill">★ 430</span>
+<span class="pill" id="planPill">Silver</span>
+<span class="pill stars" id="starsPill">★ ∞</span>
 <div class="profile" id="profileBox">
 <div class="avatar" id="avatarCircle">K</div>
 <div class="profileMeta">
@@ -61,25 +62,10 @@
 <div class="field">
 <label>Duration</label>
 <select id="durationSelect">
+<option value="8s">8 sec (Veo clip)</option>
 <option value="1min">1 min</option>
 <option value="3min">3 min</option>
 <option value="5min">5 min</option>
-<option value="10min">10 min</option>
-<option value="15min">15 min</option>
-<option value="30min">30 min</option>
-</select>
-</div>
-
-<div class="field">
-<label>Language</label>
-<select id="langSelect">
-<option>English</option>
-<option>Español</option>
-<option>Português</option>
-<option>中文</option>
-<option>العربية</option>
-<option>Deutsch</option>
-<option>Français</option>
 </select>
 </div>
 
@@ -87,8 +73,8 @@
 <button class="cta" id="generateBtn">Generate →</button>
 </div>
 
-<div class="tinyNote">
-(Generate button is placeholder — we’ll wire this to your backend later.)
+<div class="tinyNote" id="genNote">
+(Generate button is placeholder — we’ll wire this to your backend.)
 </div>
 </div>
 </div>
