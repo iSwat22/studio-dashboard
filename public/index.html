@@ -19,8 +19,8 @@
 </div>
 
 <div class="topRight">
-<span class="pill" id="planPill">Standard</span>
-<span class="pill stars" id="starsPill">★ 430</span>
+<span class="pill" id="planPill">Silver</span>
+<span class="pill stars" id="starsPill">★ ∞</span>
 
 <button class="pill btn" id="signInBtn">Sign in</button>
 
@@ -34,10 +34,20 @@
 </div>
 </header>
 
+<!-- NEW: Mode bar (under top bar) -->
+<nav class="modebar">
+<button class="modeBtn" data-mode="text-to-image">Text → Image</button>
+<button class="modeBtn" data-mode="text-to-video">Text → Video</button>
+<button class="modeBtn" data-mode="image-to-video">Image → Video</button>
+<button class="modeBtn" data-mode="text-to-voice">Text → Voice</button>
+</nav>
+
 <!-- Main -->
 <main class="container">
 <h1 class="headline">What would you like to create today?</h1>
-<p class="subhead">Pick a <b>Theme</b> + a <b>Style</b>. Then we auto-build your prompt.</p>
+<p class="subhead">
+Pick a <b>Mode</b> + a <b>Theme</b> + a <b>Style</b>. Then we auto-build your prompt.
+</p>
 
 <!-- THEMES ROW -->
 <section class="row">
@@ -63,7 +73,7 @@
 <section class="readyBox">
 <div class="readyText">
 <div class="readyTitle">Ready?</div>
-<div class="readySub" id="readySub">Choose 1 Theme + 1 Style, then go create.</div>
+<div class="readySub" id="readySub">Choose Mode + 1 Theme + 1 Style, then go create.</div>
 </div>
 <button class="cta" id="goCreateBtn" disabled>Go to Create →</button>
 </section>
