@@ -19,6 +19,7 @@
 
 <div class="topRight">
 <a class="pill btn" href="index.html">← Home</a>
+<a class="pill btn" href="create.html">← Back to Create</a>
 <span class="pill plan" id="planPill">Platinum</span>
 <span class="pill stars" id="starsPill">★ ∞</span>
 <div class="profile" id="profileBox">
@@ -33,15 +34,20 @@
 
 <main class="container">
 <h1 class="headline">Result</h1>
-<p class="subhead" id="resultLine">This is where the image/video output will appear.</p>
+<p class="subhead" id="resultLine">Generating…</p>
 
 <div class="panel">
-<div class="panelTitle">Output Preview</div>
-<div class="resultBox">
+<div class="panelTitle">Preview</div>
+<div class="resultBox" id="resultBox">
 <div class="resultPlaceholder">
-Output placeholder (image/video player will go here)
+Your generated image/video/audio will show here once backend is wired.
 </div>
 </div>
+</div>
+
+<div class="panel" style="margin-top:14px;">
+<div class="panelTitle">Prompt Used</div>
+<pre class="promptPreview" id="promptPreview"></pre>
 </div>
 </main>
 
