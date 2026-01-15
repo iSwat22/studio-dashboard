@@ -1,212 +1,282 @@
 /* =========================
-Quanna Leap — script.js (FIXED)
-- Modes route to their own create pages
-- Themes & Styles ALWAYS route to create.html
-- No cross-pollination of IDs
+Quanna Leap — public/script.js (FINAL FIX)
+- Mode bubbles SELECT only (no navigation)
+- Theme/Style cards SELECT only (no navigation)
+- Ready box shows selections
+- Go to Create navigates + passes prompt seeds
 ========================= */
 
-/* ===== USER (TEMP) ===== */
-const USER = {
-name: "KC",
-role: "Admin",
-plan: "Platinum",
-stars: "∞",
-};
+(function () {
+// ---------- DATA ----------
+// IMPORTANT: These MUST include the cards you want to show.
 
-/* ===== APPLY USER UI ===== */
-function applyUserUI() {
-const planPill = document.getElementById("planPill");
-const starsPill = document.getElementById("starsPill");
-const profileName = document.getElementById("profileName");
-const profileRole = document.getElementById("profileRole");
-const avatarCircle = document.getElementById("avatarCircle");
-
-if (planPill) planPill.textContent = USER.plan;
-if (starsPill) starsPill.textContent = `★ ${USER.stars}`;
-if (profileName) profileName.textContent = USER.name;
-if (profileRole) profileRole.textContent = USER.role;
-if (avatarCircle) avatarCircle.textContent = USER.name.charAt(0);
-}
-
-/* =====================================================
-MODES (THE ONLY THING THAT CONTROLS PAGE ROUTING)
-===================================================== */
 const MODES = [
-{ id: "text-image", label: "Text → Image", page: "create-image.html" },
-{ id: "text-video", label: "Text → Video", page: "create-video.html" },
-{ id: "image-video", label: "Image → Video", page: "create-image-video.html" },
-{ id: "text-voice", label: "Text → Voice", page: "create-voice.html" },
+{ id: "text_image", label: "Text → Image", page: "create-image.html" },
+{ id: "text_video", label: "Text → Video", page: "create-video.html" },
+{ id: "image_video", label: "Image → Video", page: "create-image-video.html" },
+{ id: "text_voice", label: "Text → Voice", page: "create-voice.html" },
 ];
 
-/* =====================================================
-THEMES — ALWAYS GO TO create.html
-===================================================== */
+// THEMES (TOP ROW)
 const THEMES = [
 {
-id: "kids_story",
+id: "Kids_Story",
 title: "Kids Story",
+sub: "Kid-friendly adventure",
 image: "Kids_Story.jpeg",
-promptSeed: "Create a kid-friendly story with warmth and hope.",
-page: "create.html",
+promptSeed:
+"Theme: Kids Story. Tone: warm, hopeful, kid-friendly. Simple dialogue, clear action, wholesome lesson.",
 },
 {
-id: "biblical_epic",
+id: "Biblical_Epic",
 title: "Biblical Epic",
+sub: "Faith + cinematic scale",
 image: "Biblical_Epic.jpeg",
-promptSeed: "Create a respectful biblical-style epic.",
-page: "create.html",
+promptSeed:
+"Theme: Biblical Epic. Tone: respectful, inspiring, cinematic scale. Emotional beats, meaningful moments, uplifting resolution.",
 },
 {
-id: "neon_city",
+id: "Neon_City_Heist",
 title: "Neon City Heist",
+sub: "Futuristic heist vibe",
 image: "Neon_City_Heist.jpeg",
-promptSeed: "Create a futuristic neon city heist story.",
-page: "create.html",
+promptSeed:
+"Theme: Neon City Heist. Tone: stylish cyber-city. Fast pacing, clever plan, twists, neon atmosphere, sleek futuristic tech.",
+},
+{
+id: "Future_Ops",
+title: "Future Ops",
+sub: "Tactical sci-fi action",
+image: "Future_Ops.jpeg",
+promptSeed:
+"Theme: Future Ops. Tone: tactical sci-fi action. Special-ops mission, planning, high-tech gear, intense action, team dialogue.",
 },
 ];
 
-/* =====================================================
-STYLES — ALWAYS GO TO create.html
-===================================================== */
+// STYLES (BOTTOM ROW)
 const STYLES = [
 {
-id: "pixar",
+id: "Pixar_Style",
 title: "Pixar Style",
+sub: "3D, emotional, cinematic",
 image: "Pixar_Style.jpeg",
-styleSeed: "High-quality 3D animated family-film style.",
-page: "create.html",
+styleSeed:
+"Style: High-quality 3D animated family-film look. Expressive characters, soft cinematic lighting, emotional beats, smooth camera movement.",
 },
 {
-id: "disney",
+id: "Disney_Style",
 title: "Disney Style",
+sub: "Magical, bright, classic",
 image: "Disney_Style.jpeg",
-styleSeed: "Bright, magical, classic animated style.",
-page: "create.html",
+styleSeed:
+"Style: Magical, bright, classic animated feel. Charming environments, uplifting tone, clean silhouettes, warm highlights, storybook color palette.",
 },
 {
-id: "anime",
+id: "Anime_Fantasy",
 title: "Anime Fantasy",
+sub: "Dramatic + stylized",
 image: "Anime_Fantasy.jpeg",
-styleSeed: "Anime-inspired cinematic style.",
-page: "create.html",
+styleSeed:
+"Style: Anime-inspired cinematic fantasy. Dynamic camera moves, expressive eyes, dramatic lighting, atmospheric backgrounds, vibrant effects.",
+},
+{
+id: "Realistic_Cinema",
+title: "Realistic Cinema",
+sub: "Live-action vibe",
+image: "Realistic_Cinema.jpeg",
+styleSeed:
+"Style: Realistic cinematic live-action look. Natural textures, film lighting, shallow depth of field, grounded color grading, handheld realism (subtle).",
 },
 ];
 
-/* ===== STATE ===== */
-let selectedTheme = null;
-let selectedStyle = null;
+// ---------- STATE ----------
+let selectedMode = null; // MODES item
+let selectedTheme = null; // THEMES item
+let selectedStyle = null; // STYLES item
 
-/* ===== HELPERS ===== */
-function el(tag, cls) {
-const e = document.createElement(tag);
-if (cls) e.className = cls;
-return e;
+// ---------- DOM HOOKS ----------
+// These ids/classes should match your HTML (based on your screenshots)
+const modeRail = document.getElementById("modeRail");
+const themeRail = document.getElementById("themeRail");
+const styleRail = document.getElementById("styleRail");
+
+const readyTitle = document.getElementById("readyTitle"); // optional
+const readySub = document.getElementById("readySub"); // optional
+const goBtn = document.getElementById("goCreateBtn"); // button
+
+// Fallbacks if your HTML uses different names:
+const readyBox = document.querySelector(".readyBox");
+const fallbackGoBtn =
+goBtn || document.querySelector(".cta") || document.querySelector("[data-go-create]");
+
+// ---------- HELPERS ----------
+function clearSelected(nodes) {
+nodes.forEach((n) => n.classList.remove("selected"));
 }
 
-/* =====================================================
-BUILD MODE BUBBLES (ROUTING HAPPENS HERE ONLY)
-===================================================== */
-function initModes() {
-const rail = document.getElementById("modeRail");
-if (!rail) return;
+function setReadyText() {
+if (!readyBox) return;
 
-MODES.forEach(mode => {
-const pill = el("div", "modeCard");
-pill.textContent = mode.label;
+const parts = [];
+if (selectedMode) parts.push(`Mode: ${selectedMode.label}`);
+if (selectedTheme) parts.push(`Theme: ${selectedTheme.title}`);
+if (selectedStyle) parts.push(`Style: ${selectedStyle.title}`);
 
-pill.onclick = () => {
-window.location.href = mode.page;
-};
+const titleEl = readyTitle || readyBox.querySelector(".readyTitle") || readyBox.querySelector("strong");
+const subEl = readySub || readyBox.querySelector(".readySub") || readyBox.querySelector("small");
 
-rail.appendChild(pill);
-});
+if (titleEl) titleEl.textContent = "Ready?";
+if (subEl) {
+subEl.textContent =
+parts.length > 0
+? parts.join(" | ")
+: "Choose at least one option to continue.";
 }
 
-/* =====================================================
-BUILD THEME / STYLE CARDS
-===================================================== */
-function buildCard(item, type) {
-const card = el("div", "card");
-const img = el("img", "cardImg");
+if (fallbackGoBtn) {
+fallbackGoBtn.disabled = parts.length === 0; // enable when any selection is made
+}
+}
+
+function cardTemplate(item) {
+const card = document.createElement("div");
+card.className = "card";
+card.tabIndex = 0;
+
+const img = document.createElement("img");
+img.className = "cardImg";
 img.src = item.image;
+img.alt = item.title;
 
-const body = el("div", "cardBody");
-const title = el("div", "cardTitle");
+const body = document.createElement("div");
+body.className = "cardBody";
+
+const title = document.createElement("div");
+title.className = "cardTitle";
 title.textContent = item.title;
 
+const sub = document.createElement("div");
+sub.className = "cardSub";
+sub.textContent = item.sub || "";
+
 body.appendChild(title);
+body.appendChild(sub);
+
 card.appendChild(img);
 card.appendChild(body);
-
-card.onclick = () => {
-if (type === "theme") selectedTheme = item;
-if (type === "style") selectedStyle = item;
-
-saveSelection();
-window.location.href = "create.html";
-};
 
 return card;
 }
 
-/* ===== SAVE SELECTION ===== */
-function saveSelection() {
-localStorage.setItem(
-"ql_selection",
-JSON.stringify({
-theme: selectedTheme,
-style: selectedStyle,
-})
-);
+function pillTemplate(item) {
+const pill = document.createElement("div");
+pill.className = "modeCard";
+pill.textContent = item.label;
+pill.tabIndex = 0;
+return pill;
 }
 
-/* =====================================================
-HOME INIT
-===================================================== */
-function initHome() {
-const themeRail = document.getElementById("themeRail");
-const styleRail = document.getElementById("styleRail");
+function buildModeRail() {
+if (!modeRail) return;
 
-THEMES.forEach(t => themeRail.appendChild(buildCard(t, "theme")));
-STYLES.forEach(s => styleRail.appendChild(buildCard(s, "style")));
+modeRail.innerHTML = "";
+MODES.forEach((m) => {
+const pill = pillTemplate(m);
 
-initModes();
-applyUserUI();
-}
-
-/* =====================================================
-CREATE PAGE INIT
-===================================================== */
-function initCreate() {
-applyUserUI();
-
-const data = JSON.parse(localStorage.getItem("ql_selection") || "{}");
-const promptBox = document.getElementById("promptBox");
-const line = document.getElementById("selectionLine");
-
-if (line && data.theme && data.style) {
-line.textContent = `${data.theme.title} • ${data.style.title}`;
-}
-
-if (promptBox && data.theme && data.style) {
-promptBox.value = `
-${data.theme.promptSeed}
-
-${data.style.styleSeed}
-
-Rules:
-- Clear scenes
-- Strong visuals
-- Ready for image/video generation
-`.trim();
-}
-}
-
-/* ===== BOOT ===== */
-document.addEventListener("DOMContentLoaded", () => {
-if (document.getElementById("themeRail")) initHome();
-if (document.getElementById("promptBox")) initCreate();
+pill.addEventListener("click", () => {
+selectedMode = m;
+clearSelected(Array.from(modeRail.children));
+pill.classList.add("selected");
+setReadyText();
 });
+
+pill.addEventListener("keydown", (e) => {
+if (e.key === "Enter" || e.key === " ") pill.click();
+});
+
+modeRail.appendChild(pill);
+});
+}
+
+function buildThemeRail() {
+if (!themeRail) return;
+
+themeRail.innerHTML = "";
+THEMES.forEach((t) => {
+const card = cardTemplate(t);
+
+card.addEventListener("click", () => {
+selectedTheme = t;
+clearSelected(Array.from(themeRail.children));
+card.classList.add("selected");
+setReadyText();
+});
+
+card.addEventListener("keydown", (e) => {
+if (e.key === "Enter" || e.key === " ") card.click();
+});
+
+themeRail.appendChild(card);
+});
+}
+
+function buildStyleRail() {
+if (!styleRail) return;
+
+styleRail.innerHTML = "";
+STYLES.forEach((s) => {
+const card = cardTemplate(s);
+
+card.addEventListener("click", () => {
+selectedStyle = s;
+clearSelected(Array.from(styleRail.children));
+card.classList.add("selected");
+setReadyText();
+});
+
+card.addEventListener("keydown", (e) => {
+if (e.key === "Enter" || e.key === " ") card.click();
+});
+
+styleRail.appendChild(card);
+});
+}
+
+function goToCreate() {
+// Default mode if none selected (optional)
+const mode = selectedMode || MODES.find((m) => m.id === "text_video") || MODES[0];
+
+const params = new URLSearchParams();
+params.set("mode", mode.id);
+
+if (selectedTheme) {
+params.set("theme", selectedTheme.id);
+params.set("themeTitle", selectedTheme.title);
+params.set("themeSeed", selectedTheme.promptSeed || "");
+}
+if (selectedStyle) {
+params.set("style", selectedStyle.id);
+params.set("styleTitle", selectedStyle.title);
+params.set("styleSeed", selectedStyle.styleSeed || "");
+}
+
+// Navigate ONLY on the button click (not card click)
+window.location.href = `${mode.page}?${params.toString()}`;
+}
+
+// ---------- INIT ----------
+buildModeRail();
+buildThemeRail();
+buildStyleRail();
+setReadyText();
+
+if (fallbackGoBtn) {
+fallbackGoBtn.addEventListener("click", (e) => {
+e.preventDefault();
+goToCreate();
+});
+}
+})()
 
 
 
