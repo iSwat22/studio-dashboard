@@ -1,23 +1,31 @@
 /* =========================
-Quanna Leap UI — Dark Future (FINAL)
-- Blue neon hover/selected glow everywhere
-- Mode bubbles SPREAD across the full mode box (same size)
-- Theme/Style cards spaced to remove the big right-side gap (when they fit)
-- Bigger images so heads aren’t cut off
+Quanna Leap UI — Dark Future (CLEAN)
+GOALS FIXED:
+1) Mode buttons are REAL dark “bubbles” (no white backgrounds)
+2) Mode bubbles spread across the FULL mode box (same bubble size)
+3) Theme/Style cards fill the row better (less right-side gap when they fit)
+4) Blue hover/selected glow everywhere
+5) Bigger card images so heads aren’t cut off
 ========================= */
 
+/* ===== Theme Vars ===== */
 :root{
 --bg0:#05070c;
 --bg1:#0b1220;
+
 --panel:rgba(255,255,255,0.06);
---panel2:rgba(255,255,255,0.08);
+--panelSoft:rgba(255,255,255,0.05);
+--stroke:rgba(255,255,255,0.12);
+
 --text:#eaf2ff;
 --muted:#a9b8d6;
+
 --blue:#37b6ff;
---blue2:#2a7cff;
---stroke:rgba(255,255,255,0.12);
+--blueGlow:rgba(55,182,255,0.30);
+--blueRing:rgba(55,182,255,0.22);
 }
 
+/* ===== Base ===== */
 *{box-sizing:border-box}
 html,body{height:100%}
 
@@ -51,11 +59,13 @@ background:rgba(255,255,255,0.06);
 border:1px solid rgba(255,255,255,0.10);
 font-weight:800;
 }
+.brandText{display:flex; flex-direction:column}
 .brandName{font-weight:800}
 .brandTag{font-size:12px;color:var(--muted);margin-top:2px}
 
 .topRight{display:flex; align-items:center; gap:10px;}
 
+/* Pills (Plan, Stars, etc.) */
 .pill{
 display:inline-flex; align-items:center; gap:8px;
 padding:8px 12px;
@@ -64,15 +74,32 @@ background:rgba(255,255,255,0.06);
 border:1px solid rgba(255,255,255,0.12);
 color:var(--text);
 font-size:13px;
+transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
 }
 .pill.btn{cursor:pointer; text-decoration:none;}
+.pill:hover{
+border-color: rgba(55,182,255,0.55);
+box-shadow:
+0 0 0 2px var(--blueRing),
+0 0 26px var(--blueGlow);
+transform: translateY(-1px);
+}
 
+/* Profile */
 .profile{
 display:flex; align-items:center; gap:10px;
 padding:7px 10px;
 border-radius:14px;
 background:rgba(255,255,255,0.06);
 border:1px solid rgba(255,255,255,0.12);
+transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
+}
+.profile:hover{
+border-color: rgba(55,182,255,0.55);
+box-shadow:
+0 0 0 2px var(--blueRing),
+0 0 26px var(--blueGlow);
+transform: translateY(-1px);
 }
 .avatar{
 width:34px;height:34px;border-radius:12px;
@@ -85,34 +112,12 @@ font-weight:800;
 .profileName{font-weight:800}
 .profileRole{font-size:12px;color:var(--muted)}
 
-/* ===== Global Hover Glow (blue highlighter) ===== */
-.hoverGlow{
-transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
-}
-.hoverGlow:hover{
-border-color: rgba(55,182,255,0.55) !important;
-box-shadow:
-0 0 0 2px rgba(55,182,255,0.22),
-0 0 26px rgba(55,182,255,0.30);
-transform: translateY(-1px);
-}
-
-/* Make pills + profile glow on hover */
-.pill.hoverGlow:hover,
-.profile.hoverGlow:hover{
-border-color: rgba(55,182,255,0.55) !important;
-box-shadow:
-0 0 0 2px rgba(55,182,255,0.22),
-0 0 26px rgba(55,182,255,0.30);
-}
-
-/* ===== Page container ===== */
+/* ===== Page Container ===== */
 .container{
 max-width:1180px;
 margin:0 auto;
 padding:26px 18px 42px;
 }
-
 .headline{
 margin:18px 0 6px;
 font-size:48px;
@@ -132,93 +137,136 @@ margin:0 0 10px;
 .hint{color:var(--muted);font-size:12px}
 
 /* =========================================================
-MODE (BUBBLES) — IMPORTANT FIX
-Your HTML shows: <div class="rail" id="modeRail"> ... .modeCard ...
-We make them spread across the FULL width of that box,
-but KEEP bubble size the same.
-========================================================= */
-#modeRail{
-display:flex;
-align-items:center;
-justify-content:space-between; /* spreads them left-to-right */
-gap:0; /* spacing comes from space-between */
-width:100%;
-padding:10px 14px 16px; /* breathing room inside the box */
-flex-wrap:wrap; /* wraps on smaller screens */
-}
-
-/* MODE BUBBLES */
-.modeCard{
-padding:10px 18px;
-border-radius:999px;
-background:rgba(255,255,255,0.04);
-border:1px solid rgba(255,255,255,0.12);
-color:var(--text);
-font-size:14px;
-cursor:pointer;
-transition: all 0.2s ease;
-user-select:none;
-white-space:nowrap; /* keep text on one line */
-}
-
-/* Hover glow */
-.modeCard:hover{
-border-color: var(--blue);
-box-shadow: 0 0 0 2px rgba(58,160,255,0.25);
-}
-
-/* Selected glow */
-.modeCard.selected{
-border-color: var(--blue);
-background: rgba(58,160,255,0.15);
-box-shadow: 0 0 0 2px rgba(58,160,255,0.35);
-}
-
-/* =========================================================
-RAILS (THEMES + STYLES)
-Fix the “big gap on the right” when cards fit on screen:
-- justify-content: space-between distributes extra space
-- still scrolls when there are too many cards
+RAIL BASE (Theme + Style)
 ========================================================= */
 .rail{
 display:flex;
-align-items:stretch;
-justify-content:space-between; /* removes that big right-side empty gap (when not overflowing) */
-gap:14px; /* still keeps a clean gap */
+gap:14px;
 overflow:auto;
 padding:14px;
 border-radius:18px;
-background:rgba(255,255,255,0.05);
+background:var(--panelSoft);
 border:1px solid rgba(255,255,255,0.10);
 scroll-snap-type:x mandatory;
+align-items:stretch;
 }
 
+/* Scrollbar */
 .rail::-webkit-scrollbar{height:10px}
 .rail::-webkit-scrollbar-thumb{
 background:rgba(255,255,255,0.14);
 border-radius:999px;
 }
 
-/* ===== Cards ===== */
+/* =========================================================
+MODE RAIL (SPECIAL) — spreads bubbles across the full box
+Your HTML: <div class="rail" id="modeRail"> ... .modeCard ...
+========================================================= */
+#modeRail{
+/* keep the nice panel look */
+background:var(--panelSoft);
+border:1px solid rgba(255,255,255,0.10);
+
+/* override rail scrolling behavior for mode */
+overflow:visible;
+scroll-snap-type:none;
+
+/* spread bubbles across */
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+/* keep it clean */
+gap:0;
+padding:14px;
+flex-wrap:wrap;
+}
+
+/* ===== Mode Bubble Reset (THIS prevents the white boxes) ===== */
+#modeRail .modeCard,
+#modeRail .modeCard:link,
+#modeRail .modeCard:visited,
+#modeRail button.modeCard,
+#modeRail a.modeCard{
+/* hard reset default button/link styles that turn things white */
+appearance:none;
+-webkit-appearance:none;
+background:none;
+border:none;
+padding:0;
+margin:0;
+font:inherit;
+color:inherit;
+text-decoration:none;
+outline:none;
+}
+
+/* ===== Actual Mode Bubble Style ===== */
+#modeRail .modeCard{
+display:inline-flex;
+align-items:center;
+justify-content:center;
+
+padding:10px 18px;
+border-radius:999px;
+
+background:rgba(255,255,255,0.04) !important; /* FORCE dark bubble */
+border:1px solid rgba(255,255,255,0.12) !important;
+
+color:var(--text) !important; /* FORCE white text */
+font-size:14px;
+font-weight:700;
+letter-spacing:.2px;
+
+cursor:pointer;
+user-select:none;
+white-space:nowrap;
+
+transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease, background .18s ease;
+}
+
+#modeRail .modeCard:hover{
+border-color: rgba(55,182,255,0.55) !important;
+box-shadow:
+0 0 0 2px var(--blueRing),
+0 0 22px var(--blueGlow);
+transform: translateY(-1px);
+}
+
+#modeRail .modeCard.selected{
+border-color: rgba(55,182,255,0.75) !important;
+background: rgba(55,182,255,0.14) !important;
+box-shadow:
+0 0 0 2px rgba(55,182,255,0.26),
+0 0 26px rgba(55,182,255,0.36);
+}
+
+/* =========================================================
+CARDS (Theme + Style)
+========================================================= */
 .card{
 min-width:250px;
 max-width:250px;
+
 border-radius:18px;
 overflow:hidden;
+
 background:rgba(255,255,255,0.06);
 border:1px solid rgba(255,255,255,0.12);
+
 cursor:pointer;
 scroll-snap-align:start;
-position:relative;
+
 transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
+position:relative;
 }
 
 /* Bigger image area so heads don’t cut off */
 .cardImg{
 width:100%;
-height:170px; /* slightly taller */
+height:170px;
 object-fit:cover;
-object-position: 50% 18%; /* push crop UP so you see more face/head */
+object-position: 50% 18%;
 display:block;
 }
 
@@ -226,7 +274,6 @@ display:block;
 .cardTitle{font-weight:900;font-size:16px;}
 .cardSub{margin-top:4px;color:var(--muted);font-size:13px;}
 
-/* Hover + Selected glow for cards */
 .card:hover{
 border-color: rgba(55,182,255,0.55);
 box-shadow:
@@ -241,6 +288,23 @@ box-shadow:
 0 0 30px rgba(55,182,255,0.36);
 }
 
+/* =========================================================
+“Fill the right gap” for Theme/Style rows (when cards fit)
+This ONLY kicks in when the rail is NOT overflowing
+========================================================= */
+@supports selector(:has(*)){
+/* no-op; keep compatibility */
+}
+
+/* Practical approach: if the viewport is wide enough for 4 cards,
+let them space out nicely across the row.
+(Still scrolls fine when there are more cards / smaller screens.) */
+@media (min-width: 1100px){
+.rail{
+justify-content:space-between;
+}
+}
+
 /* ===== Ready Box ===== */
 .readyBox{
 margin-top:18px;
@@ -248,8 +312,10 @@ display:flex;
 align-items:center;
 justify-content:space-between;
 gap:14px;
+
 padding:18px;
 border-radius:18px;
+
 background:rgba(255,255,255,0.06);
 border:1px solid rgba(255,255,255,0.12);
 }
@@ -260,16 +326,19 @@ border:1px solid rgba(255,255,255,0.12);
 cursor:pointer;
 padding:12px 16px;
 border-radius:14px;
+
 border:1px solid rgba(55,182,255,0.38);
 background:linear-gradient(180deg, rgba(55,182,255,0.18), rgba(55,182,255,0.10));
+
 color:var(--text);
 font-weight:900;
+
 transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
 }
 .cta:hover{
 border-color: rgba(55,182,255,0.70);
 box-shadow:
-0 0 0 2px rgba(55,182,255,0.22),
+0 0 0 2px var(--blueRing),
 0 0 28px rgba(55,182,255,0.34);
 transform: translateY(-1px);
 }
@@ -279,7 +348,7 @@ cursor:not-allowed;
 box-shadow:none;
 }
 
-/* ===== Create page layout ===== */
+/* ===== Create Page Layout ===== */
 .createGrid{
 margin-top:14px;
 display:grid;
@@ -302,6 +371,7 @@ background:rgba(0,0,0,0.20);
 border:1px solid rgba(255,255,255,0.14);
 color:var(--text);
 padding:12px;
+
 font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 font-size:13px;
 line-height:1.35;
@@ -323,76 +393,26 @@ display:flex;
 gap:10px;
 margin-top:12px;
 }
-
 .tinyNote{
 margin-top:10px;
 color:var(--muted);
 font-size:12px;
 }
 
-/* Responsive */
+/* ===== Responsive ===== */
 @media (max-width: 920px){
 .headline{font-size:38px}
 .createGrid{grid-template-columns:1fr}
+
 .card{min-width:230px;max-width:230px}
 .cardImg{height:160px}
-#modeRail{justify-content:center; gap:14px;} /* on small screens, center looks better */
-}
-/* =========================
-FIX: MODE BUBBLES (force dark pill look)
-Put this at the VERY BOTTOM of style.css
-========================= */
 
+/* On small screens: center mode bubbles instead of huge spacing */
 #modeRail{
-display:flex;
-align-items:center;
-justify-content:space-between; /* spread left → right */
-width:100%;
-padding:10px 14px 16px;
-gap:0;
-flex-wrap:wrap;
+justify-content:center;
+gap:14px;
+}
 }
 
-/* FORCE mode items to look like bubbles (even if they're buttons/links/divs) */
-#modeRail .modeCard{
-appearance:none;
--webkit-appearance:none;
-border:1px solid rgba(255,255,255,0.14) !important;
-background: rgba(255,255,255,0.06) !important; /* dark bubble */
-color: var(--text) !important;
-padding:10px 18px !important;
-border-radius:999px !important;
-font-size:14px !important;
-font-weight:700;
-cursor:pointer;
-user-select:none;
-white-space:nowrap;
-text-decoration:none;
-outline:none;
-box-shadow:none;
-transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease, background .18s ease;
-}
 
-/* Hover glow */
-#modeRail .modeCard:hover{
-border-color: rgba(55,182,255,0.55) !important;
-box-shadow:
-0 0 0 2px rgba(55,182,255,0.20),
-0 0 22px rgba(55,182,255,0.28);
-transform: translateY(-1px);
-}
-
-/* Selected glow */
-#modeRail .modeCard.selected{
-border-color: rgba(55,182,255,0.75) !important;
-background: rgba(55,182,255,0.15) !important;
-box-shadow:
-0 0 0 2px rgba(55,182,255,0.26),
-0 0 28px rgba(55,182,255,0.36);
-}
-
-/* Mobile: center them nicely */
-@media (max-width: 920px){
-#modeRail{justify-content:center; gap:14px;}
-}
 
