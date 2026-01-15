@@ -338,3 +338,61 @@ font-size:12px;
 .cardImg{height:160px}
 #modeRail{justify-content:center; gap:14px;} /* on small screens, center looks better */
 }
+/* =========================
+FIX: MODE BUBBLES (force dark pill look)
+Put this at the VERY BOTTOM of style.css
+========================= */
+
+#modeRail{
+display:flex;
+align-items:center;
+justify-content:space-between; /* spread left → right */
+width:100%;
+padding:10px 14px 16px;
+gap:0;
+flex-wrap:wrap;
+}
+
+/* FORCE mode items to look like bubbles (even if they're buttons/links/divs) */
+#modeRail .modeCard{
+appearance:none;
+-webkit-appearance:none;
+border:1px solid rgba(255,255,255,0.14) !important;
+background: rgba(255,255,255,0.06) !important; /* dark bubble */
+color: var(--text) !important;
+padding:10px 18px !important;
+border-radius:999px !important;
+font-size:14px !important;
+font-weight:700;
+cursor:pointer;
+user-select:none;
+white-space:nowrap;
+text-decoration:none;
+outline:none;
+box-shadow:none;
+transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease, background .18s ease;
+}
+
+/* Hover glow */
+#modeRail .modeCard:hover{
+border-color: rgba(55,182,255,0.55) !important;
+box-shadow:
+0 0 0 2px rgba(55,182,255,0.20),
+0 0 22px rgba(55,182,255,0.28);
+transform: translateY(-1px);
+}
+
+/* Selected glow */
+#modeRail .modeCard.selected{
+border-color: rgba(55,182,255,0.75) !important;
+background: rgba(55,182,255,0.15) !important;
+box-shadow:
+0 0 0 2px rgba(55,182,255,0.26),
+0 0 28px rgba(55,182,255,0.36);
+}
+
+/* Mobile: center them nicely */
+@media (max-width: 920px){
+#modeRail{justify-content:center; gap:14px;}
+}
+
