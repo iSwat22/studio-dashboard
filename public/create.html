@@ -1,100 +1,57 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Create • QuannaLeap.AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" href="./style.css" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quanna Leap — Create</title>
+<link rel="stylesheet" href="style.css" />
 </head>
-
-<body class="bg-stars">
+<body>
 <header class="topbar">
-<div class="topbar-left">
-<a class="brand" href="./index.html" aria-label="QuannaLeap.AI Home">
-<!-- ✅ MATCHES index.html -->
-<img class="brand-logo" src="./logo.png?v=2" alt="QuannaLeap.AI logo" />
-</a>
-
-<!-- ✅ TOP NAV LINKS (same as index) -->
-<nav class="topnav" aria-label="Main navigation">
-<a href="./index.html">🏠 Home</a>
-<a href="./assets.html">🗂️ Assets</a>
-<a href="./characters.html">🧑‍🎨 Characters</a>
-</nav>
+<div class="brand">
+<div class="brandMark">QL</div>
+<div class="brandText">
+<div class="brandName">Quanna Leap</div>
+<div class="brandTag">Prompt Builder</div>
+</div>
 </div>
 
-<div class="topbar-right">
-<div class="pill"><span class="dot dot-green"></span><span>Standard Plan</span></div>
-<div class="pill"><span class="star">★</span><span id="creditsCount">430</span></div>
-<button class="icon-btn" type="button" aria-label="Notifications">🔔</button>
-<button class="profile-btn" type="button" aria-label="Profile">
-<!-- ✅ MATCHES index.html -->
-<img src="./empty-projects.png" alt="Profile" />
-</button>
+<div class="topbarRight">
+<a class="btnGhost" href="index.html">← Home</a>
+<div class="pill" id="planPill">Standard</div>
+<div class="pill starPill">
+<span class="starIcon">✦</span>
+<span id="starsCount">430</span>
+</div>
 </div>
 </header>
 
-<div class="app">
-<!-- Sidebar kept (CSS hides it). Safe to leave. -->
-<aside class="sidebar">
-<nav class="side-nav">
-<a class="side-link" href="./index.html">🏠 Home</a>
-<a class="side-link" href="./assets.html">🗂️ Assets</a>
-<a class="side-link" href="./characters.html">🧑‍🎨 Characters</a>
-</nav>
-<div class="side-footer"><div class="tiny">QuannaLeap.AI • v0.1</div></div>
-</aside>
+<main class="page">
+<section class="hero">
+<h1>Create</h1>
+<p>Your Theme + Style are already applied. Edit anything you want.</p>
+</section>
 
-<main class="main">
-<div class="hero">
-<h1 id="pageTitle">Create</h1>
-<p id="pageDesc">Choose your workflow.</p>
+<section class="panel">
+<div class="panelHead">
+<div class="panelTitle">Prompt</div>
+<div class="panelMeta" id="selectionMeta">Theme: — • Style: —</div>
 </div>
 
-<!-- Centered like your sketch -->
-<div class="create-panel">
-<div class="preview-shell">
-<!-- You can swap img/video depending on mode -->
-<img id="heroImg" class="result-preview" src="./card-image-to-video.png" alt="Preview" />
+<textarea id="promptBox" class="promptBox" placeholder="Your prompt will appear here..."></textarea>
+
+<div class="panelActions">
+<button class="btnGhost" id="clearBtn" type="button">Clear</button>
+<button class="btnPrimary" id="saveBtn" type="button">Save Draft</button>
+<button class="btnPrimary" id="generateBtn" type="button">Generate</button>
 </div>
 
-<div class="prompt-shell">
-<!-- IMAGE -> VIDEO -->
-<div id="panelI2V">
-<h2 style="font-size:20px; font-weight:900;">Image → Video</h2>
-<p class="help-text">Upload images and generate a clip.</p>
-
-<div class="actions-row">
-<input id="i2vFiles" type="file" accept="image/*" multiple />
-<button class="primary-btn" id="i2vGenerate" type="button">Generate Video</button>
-<button class="ghost-btn" id="i2vClear" type="button">Clear</button>
+<div class="note">
+<b>Note:</b> “Generate” is wired as a placeholder right now. This weekend we’ll connect it to your Text-to-Image / Text-to-Video endpoints.
 </div>
-
-<div id="i2vStatus" class="help-text" style="margin-top:10px;"></div>
-<video id="i2vResult" controls style="display:none; width:100%; margin-top:12px; border-radius:14px;"></video>
-</div>
-
-<!-- TEXT -> VIDEO -->
-<div id="panelT2V" style="display:none;">
-<h2 style="font-size:20px; font-weight:900;">Text → Video</h2>
-<p class="help-text">Enter a prompt and generate a scene.</p>
-
-<textarea id="t2vPrompt" class="prompt-input" rows="5" placeholder='Example: "A cinematic 3D ark at sunrise"'></textarea>
-
-<div class="actions-row">
-<button class="primary-btn" id="t2vGenerate" type="button">Generate Video</button>
-<button class="ghost-btn" id="t2vClear" type="button">Clear</button>
-</div>
-
-<div id="t2vStatus" class="help-text" style="margin-top:10px;"></div>
-<video id="t2vResult" controls style="display:none; width:100%; margin-top:12px; border-radius:14px;"></video>
-</div>
-</div>
-</div>
+</section>
 </main>
-</div>
 
-<script src="./create.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
