@@ -295,9 +295,3 @@ document.addEventListener("DOMContentLoaded", () => {
   if (isHome) initHome();
   if (isCreate) initCreate();
 });
-
-
-
-
-
-
