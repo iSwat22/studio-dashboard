@@ -1,55 +1,97 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Quanna Leap — Create</title>
 <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 <header class="topbar">
 <div class="brand">
-<div class="brandMark">QL</div>
+<div class="logo">QL</div>
 <div class="brandText">
 <div class="brandName">Quanna Leap</div>
-<div class="brandTag">Prompt Builder</div>
+<div class="brandTag">Create in the future.</div>
 </div>
 </div>
 
-<div class="topbarRight">
-<a class="btnGhost" href="index.html">← Home</a>
-<div class="pill" id="planPill">Standard</div>
-<div class="pill starPill">
-<span class="starIcon">✦</span>
-<span id="starsCount">430</span>
+<div class="topRight">
+<a class="pill btn" href="index.html">← Home</a>
+<span class="pill" id="planPill">Standard</span>
+<span class="pill stars" id="starsPill">★ 430</span>
+<div class="profile" id="profileBox">
+<div class="avatar" id="avatarCircle">K</div>
+<div class="profileMeta">
+<div class="profileName" id="profileName">KC</div>
+<div class="profileRole" id="profileRole">Admin</div>
+</div>
 </div>
 </div>
 </header>
 
-<main class="page">
-<section class="hero">
-<h1>Create</h1>
-<p>Your Theme + Style are already applied. Edit anything you want.</p>
-</section>
+<main class="container">
+<h1 class="headline">Create</h1>
+<p class="subhead" id="selectionLine">Your selection will appear here.</p>
 
-<section class="panel">
-<div class="panelHead">
+<div class="createGrid">
+<div class="panel">
 <div class="panelTitle">Prompt</div>
-<div class="panelMeta" id="selectionMeta">Theme: — • Style: —</div>
-</div>
-
-<textarea id="promptBox" class="promptBox" placeholder="Your prompt will appear here..."></textarea>
+<textarea id="promptBox" class="promptBox" placeholder="Your prompt will load here..."></textarea>
 
 <div class="panelActions">
-<button class="btnGhost" id="clearBtn" type="button">Clear</button>
-<button class="btnPrimary" id="saveBtn" type="button">Save Draft</button>
-<button class="btnPrimary" id="generateBtn" type="button">Generate</button>
+<button class="pill btn" id="copyBtn">Copy</button>
+<button class="pill btn" id="clearBtn">Clear</button>
+</div>
 </div>
 
-<div class="note">
-<b>Note:</b> “Generate” is wired as a placeholder right now. This weekend we’ll connect it to your Text-to-Image / Text-to-Video endpoints.
+<div class="panel">
+<div class="panelTitle">Quick Settings</div>
+
+<div class="field">
+<label>Aspect Ratio</label>
+<select id="ratioSelect">
+<option value="16:9">16:9 (YouTube)</option>
+<option value="9:16">9:16 (Shorts)</option>
+<option value="1:1">1:1</option>
+</select>
 </div>
-</section>
+
+<div class="field">
+<label>Duration</label>
+<select id="durationSelect">
+<option value="1min">1 min</option>
+<option value="3min">3 min</option>
+<option value="5min">5 min</option>
+<option value="10min">10 min</option>
+<option value="15min">15 min</option>
+<option value="30min">30 min</option>
+</select>
+</div>
+
+<div class="field">
+<label>Language</label>
+<select id="langSelect">
+<option>English</option>
+<option>Español</option>
+<option>Português</option>
+<option>中文</option>
+<option>العربية</option>
+<option>Deutsch</option>
+<option>Français</option>
+</select>
+</div>
+
+<div class="panelActions">
+<button class="cta" id="generateBtn">Generate →</button>
+</div>
+
+<div class="tinyNote">
+(Generate button is placeholder — we’ll wire this to your backend later.)
+</div>
+</div>
+</div>
 </main>
 
 <script src="script.js"></script>
