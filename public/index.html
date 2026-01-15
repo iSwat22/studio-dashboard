@@ -1,112 +1,85 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>QuannaLeap.AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" href="./style.css" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quanna Leap — Home</title>
+<link rel="stylesheet" href="style.css" />
 </head>
-
-<body class="bg-stars">
-<!-- TOP HEADER -->
+<body>
+<!-- Top bar -->
 <header class="topbar">
-<div class="topbar-left">
-<a class="brand" href="./index.html" aria-label="QuannaLeap.AI Home">
-<img class="brand-logo" src="./logo.png?v=2" alt="QuannaLeap.AI logo" />
-</a>
-
-<nav class="topnav" aria-label="Main navigation">
-<a class="active" href="./index.html">🏠 Home</a>
-<a href="./assets.html">🗂️ Assets</a>
-<a href="./characters.html">🧑‍🎨 Characters</a>
-</nav>
+<div class="brand">
+<div class="brandMark">QL</div>
+<div class="brandText">
+<div class="brandName">Quanna Leap</div>
+<div class="brandTag">Create in the future.</div>
+</div>
 </div>
 
-<div class="topbar-right">
-<div class="pill">
-<span class="dot dot-green"></span>
-<span>Standard Plan</span>
+<div class="topbarRight">
+<div class="pill" id="planPill">Standard</div>
+<div class="pill starPill">
+<span class="starIcon">✦</span>
+<span id="starsCount">430</span>
 </div>
 
-<div class="pill">
-<span class="star">★</span>
-<span id="creditCount">Unlimited</span>
+<!-- Login button placeholder (Google login later) -->
+<button class="btnGhost" id="loginBtn" type="button">Sign in</button>
+
+<!-- Profile (shown when "logged in") -->
+<div class="profile" id="profileWrap" hidden>
+<div class="avatar" id="avatar">K</div>
+<div class="profileMeta">
+<div class="profileName" id="profileName">KC</div>
+<div class="profileRole" id="profileRole">Admin</div>
 </div>
-
-<button class="icon-btn" type="button" aria-label="Notifications">🔔</button>
-
-<button class="profile-btn" type="button" aria-label="Profile">
-<img src="./images/brand/profile.jpg" alt="Profile" />
-</button>
+</div>
 </div>
 </header>
 
-<!-- APP SHELL -->
-<div class="app">
-<main class="main">
-<div class="hero">
-<h1>What Would You Like To Create Today?</h1>
-<p>Choose a workflow below. Clean dashboard now — we’ll plug in engines next.</p>
+<main class="page">
+<section class="hero">
+<h1>What would you like to create today?</h1>
+<p>Pick a <b>Theme</b> + a <b>Style</b>. Then we auto-build your prompt.</p>
+</section>
+
+<!-- THEMES row -->
+<section class="rowBlock">
+<div class="rowHeader">
+<h2>Pick a Theme</h2>
+<div class="rowHint">Scroll left/right</div>
 </div>
 
-<section class="grid">
-<!-- Image -> Video -->
-<a class="card" href="./image-to-video.html">
-<div class="card-media">
-<img src="./card-image-to-video.png" alt="Image to Video" />
-<video class="card-video" muted loop playsinline preload="metadata"
-data-src="./hover-image-to-video.mp4"></video>
+<div class="hScroll" id="themesRow" aria-label="Themes">
+<!-- Cards injected by JS -->
 </div>
-<div class="card-body">
-<h2>Image → Video</h2>
-<p>Upload images and generate cinematic clips.</p>
-<div class="card-cta">Create</div>
-</div>
-</a>
+</section>
 
-<!-- Text -> Video -->
-<a class="card" href="./text-to-video.html">
-<div class="card-media">
-<img src="./card-text-to-video.png" alt="Text to Video" />
-<video class="card-video" muted loop playsinline preload="metadata"
-data-src="./hover-text-to-video.mp4"></video>
+<!-- STYLES row -->
+<section class="rowBlock">
+<div class="rowHeader">
+<h2>Pick a Style</h2>
+<div class="rowHint">Scroll left/right</div>
 </div>
-<div class="card-body">
-<h2>Text → Video</h2>
-<p>Turn a prompt into a full cinematic scene.</p>
-<div class="card-cta">Create</div>
-</div>
-</a>
 
-<!-- Text -> Image -->
-<a class="card" href="./text-to-image.html">
-<div class="card-media">
-<img src="./card-text-to-image.png" alt="Text to Image" />
-<video class="card-video" muted loop playsinline preload="metadata"
-data-src="./hover-text-to-image.mp4"></video>
+<div class="hScroll" id="stylesRow" aria-label="Styles">
+<!-- Cards injected by JS -->
 </div>
-<div class="card-body">
-<h2>Text → Image</h2>
-<p>Generate images with your style prompts.</p>
-<div class="card-cta">Create</div>
-</div>
-</a>
+</section>
 
-<!-- Text -> Voice -->
-<a class="card" href="./text-to-voice.html">
-<div class="card-media">
-<img src="./card-text-to-video.png" alt="Text to Voice" />
+<!-- CTA -->
+<section class="ctaBar">
+<div class="ctaLeft">
+<div class="ctaTitle">Ready?</div>
+<div class="ctaSub">Choose 1 Theme + 1 Style, then go create.</div>
 </div>
-<div class="card-body">
-<h2>Text → Voice</h2>
-<p>Create voice audio from scripts and prompts.</p>
-<div class="card-cta">Create</div>
-</div>
-</a>
+<button class="btnPrimary" id="goCreateBtn" type="button" disabled>
+Go to Create →
+</button>
 </section>
 </main>
-</div>
 
-<script src="./app.js?v=3"></script>
+<script src="script.js"></script>
 </body>
-</html
+</html>
