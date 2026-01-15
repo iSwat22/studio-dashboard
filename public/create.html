@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -20,7 +19,7 @@
 
 <div class="topRight">
 <a class="pill btn" href="index.html">← Home</a>
-<span class="pill" id="planPill">Silver</span>
+<span class="pill plan" id="planPill">Platinum</span>
 <span class="pill stars" id="starsPill">★ ∞</span>
 <div class="profile" id="profileBox">
 <div class="avatar" id="avatarCircle">K</div>
@@ -34,11 +33,21 @@
 
 <main class="container">
 <h1 class="headline">Create</h1>
-<p class="subhead" id="selectionLine">Your selection will appear here.</p>
+<p class="subhead" id="selectionLine">Loading your selection…</p>
 
 <div class="createGrid">
 <div class="panel">
 <div class="panelTitle">Prompt</div>
+
+<!-- only used for Image->Video mode -->
+<div class="uploadRow" id="uploadRow" style="display:none;">
+<label class="uploadLabel">Reference Image (for Image → Video)</label>
+<input class="uploadInput" id="refImageInput" type="file" accept="image/*" />
+<div class="uploadPreviewWrap">
+<img id="refPreview" class="uploadPreview" alt="Preview" style="display:none;" />
+</div>
+</div>
+
 <textarea id="promptBox" class="promptBox" placeholder="Your prompt will load here..."></textarea>
 
 <div class="panelActions">
@@ -59,13 +68,21 @@
 </select>
 </div>
 
-<div class="field">
+<div class="field" id="durationField">
 <label>Duration</label>
-<select id="durationSelect">
-<option value="8s">8 sec (Veo clip)</option>
-<option value="1min">1 min</option>
-<option value="3min">3 min</option>
-<option value="5min">5 min</option>
+<select id="durationSelect"></select>
+</div>
+
+<div class="field">
+<label>Language</label>
+<select id="langSelect">
+<option>English</option>
+<option>Español</option>
+<option>Português</option>
+<option>中文</option>
+<option>العربية</option>
+<option>Deutsch</option>
+<option>Français</option>
 </select>
 </div>
 
@@ -73,8 +90,8 @@
 <button class="cta" id="generateBtn">Generate →</button>
 </div>
 
-<div class="tinyNote" id="genNote">
-(Generate button is placeholder — we’ll wire this to your backend.)
+<div class="tinyNote">
+(Next page will show the result output. We’ll wire real generation to your backend.)
 </div>
 </div>
 </div>
