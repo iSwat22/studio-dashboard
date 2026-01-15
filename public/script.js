@@ -1,27 +1,24 @@
 /* =========================
-Quanna Leap v1 Home/Create
-- Modes row (Text→Image / Text→Video / Image→Video / Text→Voice)
-- Two rails: Themes + Styles
-- Cards generated in JS (images are JPEGs)
-- Blue highlight on hover + selected state (CSS classes)
+Quanna Leap v1
+HOME:
+- Mode bubbles (Text→Image, Text→Video, Image→Video, Text→Voice)
+- Theme cards + Style cards (optional)
+- Clicking a MODE goes straight to its create page
+- Saves selections in localStorage
+
+CREATE PAGES:
+- Loads saved selection + auto-fills promptBox (if present)
 ========================= */
 
-/** IMPORTANT:
-* Your images are in /public on your repo.
-* Most setups serve /public as the site root, so the correct URL is:
-* /Kids_Story.jpeg (NOT /public/Kids_Story.jpeg)
-*
-* If your images do NOT load, flip IMG_BASE below to "public/".
-*/
-const IMG_BASE = ""; // "" OR "public/"
-
-// ====== USER / PLAN (temporary placeholders) ======
+// =========================
+// USER / PLAN (placeholders)
+// =========================
 const USER = {
 name: "KC",
 role: "Admin",
-plan: "Platinum", // <- per your request
-stars: 430,
-isAdmin: true
+plan: "Platinum",
+stars: Infinity,
+isAdmin: true,
 };
 
 function applyUserUI() {
@@ -36,90 +33,51 @@ if (starsPill) starsPill.textContent = USER.isAdmin ? "★ ∞" : `★ ${USER.st
 if (profileName) profileName.textContent = USER.name;
 if (profileRole) profileRole.textContent = USER.role;
 if (avatarCircle) avatarCircle.textContent = (USER.name || "U").trim().charAt(0).toUpperCase();
-
-// Add hover-glow class to top-right items (CSS handles glow)
-[planPill, starsPill, document.getElementById("profileBox")].forEach(el => {
-if (el) el.classList.add("hoverGlow");
-});
 }
 
-// ====== MODES ======
+// =========================
+// DATA (images must be in /public)
+// =========================
 const MODES = [
-{ id: "text_image", title: "Text → Image" },
-{ id: "text_video", title: "Text → Video" },
-{ id: "image_video", title: "Image → Video" },
-{ id: "text_voice", title: "Text → Voice" }
+{ id: "text_image", label: "Text → Image", page: "create-image.html" },
+{ id: "text_video", label: "Text → Video", page: "create-video.html" },
+{ id: "image_video", label: "Image → Video", page: "create-image-video.html" },
+{ id: "text_voice", label: "Text → Voice", page: "create-voice.html" },
 ];
 
-// ====== CARD DATA (JPEG FILES) ======
+// NOTE: image filenames here must match exactly what you uploaded (JPEGs in /public)
 const THEMES = [
-{
-id: "Kids_Story",
-title: "Kids Story",
-sub: "Kid-friendly adventure",
-image: "Kids_Story.jpeg",
-promptSeed: `Create a kid-friendly story with warm, hopeful tone. Simple dialogue, clear action, and a meaningful lesson.`
-},
-{
-id: "Biblical_Epic",
-title: "Biblical Epic",
-sub: "Faith + cinematic scale",
-image: "Biblical_Epic.jpeg",
-promptSeed: `Create a respectful biblical-inspired epic with emotional moments, dramatic stakes, and uplifting resolution.`
-},
-{
-id: "Neon_City_Heist",
-title: "Neon City Heist",
-sub: "Neon crime story (original)",
-image: "Neon_City_Heist.jpeg",
-promptSeed: `Create a neon cyber-city heist story: fast pacing, clever plan, twists, and a stylish futuristic setting.`
-},
-{
-id: "Future_Ops",
-title: "Future Ops",
-sub: "Tactical sci-fi action",
-image: "Future_Ops.jpeg",
-promptSeed: `Create a futuristic special-ops mission story: tactical planning, high-tech gear, intense action, and team dialogue.`
-}
+{ id: "Kids_Story", title: "Kids Story", sub: "Kid-friendly adventure", image: "Kids_Story.jpeg",
+promptSeed: "Create a kid-friendly story with warm, hopeful tone. Simple dialogue, clear action, meaningful lesson." },
+{ id: "Biblical_Epic", title: "Biblical Epic", sub: "Faith + cinematic scale", image: "Biblical_Epic.jpeg",
+promptSeed: "Create a respectful biblical-inspired epic with emotional moments, dramatic stakes, uplifting resolution." },
+{ id: "Neon_City_Heist", title: "Neon City Heist", sub: "Futuristic heist vibe", image: "Neon_City_Heist.jpeg",
+promptSeed: "Create a neon cyber-city heist: fast pacing, clever plan, twists, stylish futuristic setting." },
+{ id: "Future_Ops", title: "Future Ops", sub: "Tactical sci-fi action", image: "Future_Ops.jpeg",
+promptSeed: "Create a futuristic special-ops mission: tactical planning, high-tech gear, intense action, team dialogue." },
 ];
 
 const STYLES = [
-{
-id: "Pixar_Style",
-title: "Pixar Style",
-sub: "3D, emotional, cinematic",
-image: "Pixar_Style.jpeg",
-styleSeed: `Style: high-quality 3D animated family film look, expressive characters, soft cinematic lighting, emotional beats.`
-},
-{
-id: "Disney_Style",
-title: "Disney Style",
-sub: "magical, bright, classic",
-image: "Disney_Style.jpeg",
-styleSeed: `Style: magical, bright, family-friendly animated feel, charming environments, uplifting tone.`
-},
-{
-id: "Anime_Fantasy",
-title: "Anime Fantasy",
-sub: "dramatic + stylized",
-image: "Anime_Fantasy.jpeg",
-styleSeed: `Style: anime-inspired cinematic look, dynamic camera moves, expressive eyes, dramatic lighting and atmosphere.`
-},
-{
-id: "Realistic_Cinema",
-title: "Realistic Cinema",
-sub: "live-action vibe",
-image: "Realistic_Cinema.jpeg",
-styleSeed: `Style: realistic cinematic live-action look, natural textures, film lighting, shallow depth of field.`
-}
+{ id: "Pixar_Style", title: "Pixar Style", sub: "3D, emotional, cinematic", image: "Pixar_Style.jpeg",
+styleSeed: "Style: high-quality 3D animated family-film look, expressive characters, soft cinematic lighting, emotional beats." },
+{ id: "Disney_Style", title: "Disney Style", sub: "Magical, bright, classic", image: "Disney_Style.jpeg",
+styleSeed: "Style: magical, bright, family-friendly animated feel, charming environments, uplifting tone." },
+{ id: "Anime_Fantasy", title: "Anime Fantasy", sub: "Dramatic + stylized", image: "Anime_Fantasy.jpeg",
+styleSeed: "Style: anime-inspired cinematic look, dynamic camera moves, expressive eyes, dramatic lighting, atmospheric scenes." },
+{ id: "Realistic_Cinema", title: "Realistic Cinema", sub: "Live-action vibe", image: "Realistic_Cinema.jpeg",
+styleSeed: "Style: realistic cinematic live-action look, natural textures, film lighting, shallow depth of field." },
 ];
 
-// ====== SELECTION STATE ======
+// =========================
+// STATE
+// =========================
 let selectedMode = null;
 let selectedTheme = null;
 let selectedStyle = null;
 
-// ====== HELPERS ======
+// =========================
+// DOM HELPERS
+// =========================
 function el(tag, className, attrs = {}) {
 const e = document.createElement(tag);
 if (className) e.className = className;
@@ -127,50 +85,41 @@ Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
 return e;
 }
 
-function imageSrc(fileName) {
-// Most setups: /public is served as root => "/Kids_Story.jpeg"
-// If not: flip IMG_BASE = "public/"
-return `${IMG_BASE}${fileName}`;
-}
+// =========================
+// BUILD UI (HOME)
+// =========================
+function buildModeBubble(m) {
+const b = el("div", "modeCard", { "data-id": m.id });
+b.textContent = m.label;
 
-function attachImageFallback(img, fileName) {
-img.addEventListener("error", () => {
-// If one base fails, try the other automatically
-if (IMG_BASE === "") img.src = `public/${fileName}`;
-else img.src = `${fileName}`;
-}, { once: true });
-}
+b.addEventListener("click", () => {
+// select mode (for highlight)
+selectedMode = m;
+markSelectedMode(m.id);
 
-function buildModePill(mode) {
-const pill = el("button", "modePill", { type: "button", "data-id": mode.id });
-pill.textContent = mode.title;
+// save selections (theme/style optional)
+persistSelection();
 
-pill.addEventListener("click", () => {
-selectedMode = mode;
-markSelectedMode(mode.id);
-updateReady();
-
-// Per your request: clicking a mode takes you to Create automatically
-goToCreate();
+// go straight to correct create page
+window.location.href = m.page;
 });
 
-return pill;
+return b;
 }
 
 function markSelectedMode(modeId) {
 const rail = document.getElementById("modeRail");
 if (!rail) return;
-[...rail.querySelectorAll(".modePill")].forEach(p => {
-p.classList.toggle("selected", p.getAttribute("data-id") === modeId);
+[...rail.querySelectorAll(".modeCard")].forEach((node) => {
+node.classList.toggle("selected", node.getAttribute("data-id") === modeId);
 });
 }
 
 function buildCard(item, type) {
-const card = el("div", "card hoverGlow", { "data-id": item.id, "data-type": type, role: "button", tabindex: "0" });
+const card = el("div", "card", { "data-id": item.id, "data-type": type });
 
-const img = el("img", "cardImg", { alt: item.title });
-img.src = imageSrc(item.image);
-attachImageFallback(img, item.image);
+// IMPORTANT: images load from /public because src is just the filename
+const img = el("img", "cardImg", { alt: item.title, src: item.image });
 
 const body = el("div", "cardBody");
 const title = el("div", "cardTitle");
@@ -185,7 +134,7 @@ body.appendChild(sub);
 card.appendChild(img);
 card.appendChild(body);
 
-function pick() {
+card.addEventListener("click", () => {
 if (type === "theme") {
 selectedTheme = item;
 markSelected("themeRail", item.id);
@@ -193,15 +142,8 @@ markSelected("themeRail", item.id);
 selectedStyle = item;
 markSelected("styleRail", item.id);
 }
+persistSelection();
 updateReady();
-}
-
-card.addEventListener("click", pick);
-card.addEventListener("keydown", (e) => {
-if (e.key === "Enter" || e.key === " ") {
-e.preventDefault();
-pick();
-}
 });
 
 return card;
@@ -210,50 +152,65 @@ return card;
 function markSelected(railId, selectedId) {
 const rail = document.getElementById(railId);
 if (!rail) return;
-[...rail.querySelectorAll(".card")].forEach(c => {
+[...rail.querySelectorAll(".card")].forEach((c) => {
 c.classList.toggle("selected", c.getAttribute("data-id") === selectedId);
 });
 }
 
-function updateReady() {
-const btn = document.getElementById("goCreateBtn");
-const line = document.getElementById("readySub");
+function persistSelection() {
+const payload = {
+modeId: selectedMode?.id || null,
+modeLabel: selectedMode?.label || null,
+modePage: selectedMode?.page || null,
 
-// MUST pick at least 1 thing (mode OR theme OR style)
-const ok = !!(selectedMode || selectedTheme || selectedStyle);
+themeId: selectedTheme?.id || null,
+themeTitle: selectedTheme?.title || null,
+themePromptSeed: selectedTheme?.promptSeed || null,
+
+styleId: selectedStyle?.id || null,
+styleTitle: selectedStyle?.title || null,
+styleSeed: selectedStyle?.styleSeed || null,
+
+prompt: buildFinalPrompt(),
+};
+
+localStorage.setItem("ql_selection", JSON.stringify(payload));
+}
+
+function updateReady() {
+const line = document.getElementById("readySub");
+const btn = document.getElementById("goCreateBtn");
+
+// Your rule: “choose 1 or more”
+// Since mode is what determines the create page now, we allow:
+// - Mode alone ✅
+// - Theme alone ❌ (needs a mode to know where to go)
+// - Style alone ❌ (needs a mode)
+const ok = !!selectedMode;
 
 if (line) {
-if (!ok) {
-line.textContent = "Choose 1 or more Mode + Theme + Style, then go create.";
-} else {
-const parts = [];
-if (selectedMode) parts.push(selectedMode.title);
-if (selectedTheme) parts.push(selectedTheme.title);
-if (selectedStyle) parts.push(selectedStyle.title);
-line.textContent = `Selected: ${parts.join(" + ")}`;
+if (!ok) line.textContent = "Choose 1 Mode (you can also pick a Theme/Style).";
+else {
+const t = selectedTheme ? selectedTheme.title : "—";
+const s = selectedStyle ? selectedStyle.title : "—";
+line.textContent = `Mode: ${selectedMode.label} • Theme: ${t} • Style: ${s}`;
 }
 }
-
 if (btn) btn.disabled = !ok;
 }
 
 function buildFinalPrompt() {
-const modeLine = selectedMode ? `Mode: ${selectedMode.title}` : "Mode: (not selected)";
-const theme = selectedTheme ? selectedTheme.promptSeed : "Theme: (not selected)";
-const style = selectedStyle ? selectedStyle.styleSeed : "Style: (not selected)";
+const theme = selectedTheme?.promptSeed ? selectedTheme.promptSeed : "";
+const style = selectedStyle?.styleSeed ? selectedStyle.styleSeed : "";
 
 return `
-${modeLine}
-
 ${theme}
 
 ${style}
 
 Rules:
-- No narrator unless requested
 - Strong dialogue and clear scene progression
-- Provide scene-by-scene beats (or one continuous script if requested)
-- Include camera + movement suggestions for image-to-video
+- Include camera + movement suggestions (especially for image-to-video)
 
 Output:
 - Title
@@ -262,74 +219,45 @@ Output:
 `.trim();
 }
 
-function goToCreate() {
-const payload = {
-modeId: selectedMode?.id || null,
-modeTitle: selectedMode?.title || null,
-themeId: selectedTheme?.id || null,
-styleId: selectedStyle?.id || null,
-themeTitle: selectedTheme?.title || null,
-styleTitle: selectedStyle?.title || null,
-prompt: buildFinalPrompt()
-};
-localStorage.setItem("ql_selection", JSON.stringify(payload));
-window.location.href = "create.html";
-}
-
-// ====== Inject Mode Row if HTML doesn't have it ======
-function ensureModeRow() {
-if (document.getElementById("modeRail")) return;
-
-const container = document.querySelector("main.container");
-const subhead = document.querySelector("p.subhead");
-
-if (!container || !subhead) return;
-
-const row = el("section", "row");
-const rowHeader = el("div", "rowHeader");
-const h2 = el("h2");
-h2.textContent = "Pick a Mode";
-const hint = el("span", "hint");
-hint.textContent = "Click to go to Create";
-
-rowHeader.appendChild(h2);
-rowHeader.appendChild(hint);
-
-const modeWrap = el("div", "modeWrap");
-const modeRail = el("div", "modeRail", { id: "modeRail", "aria-label": "Mode selector" });
-modeWrap.appendChild(modeRail);
-
-row.appendChild(rowHeader);
-row.appendChild(modeWrap);
-
-// Insert right after subhead
-subhead.insertAdjacentElement("afterend", row);
+function goToCreateFromButton() {
+if (!selectedMode) return;
+persistSelection();
+window.location.href = selectedMode.page;
 }
 
 function initHome() {
-ensureModeRow();
+applyUserUI();
 
 const modeRail = document.getElementById("modeRail");
 const themeRail = document.getElementById("themeRail");
 const styleRail = document.getElementById("styleRail");
 const goBtn = document.getElementById("goCreateBtn");
 
-// Build modes
+// build mode bubbles if the rail exists
 if (modeRail) {
-MODES.forEach(m => modeRail.appendChild(buildModePill(m)));
+modeRail.innerHTML = "";
+MODES.forEach((m) => modeRail.appendChild(buildModeBubble(m)));
 }
 
-// Build cards
-if (themeRail) THEMES.forEach(t => themeRail.appendChild(buildCard(t, "theme")));
-if (styleRail) STYLES.forEach(s => styleRail.appendChild(buildCard(s, "style")));
+if (themeRail) {
+themeRail.innerHTML = "";
+THEMES.forEach((t) => themeRail.appendChild(buildCard(t, "theme")));
+}
 
-if (goBtn) goBtn.addEventListener("click", goToCreate);
+if (styleRail) {
+styleRail.innerHTML = "";
+STYLES.forEach((s) => styleRail.appendChild(buildCard(s, "style")));
+}
 
-applyUserUI();
+if (goBtn) goBtn.addEventListener("click", goToCreateFromButton);
+
 updateReady();
 }
 
-function initCreate() {
+// =========================
+// CREATE PAGES (shared)
+// =========================
+function initCreateAny() {
 applyUserUI();
 
 const selectionLine = document.getElementById("selectionLine");
@@ -345,11 +273,12 @@ return;
 
 const data = JSON.parse(raw);
 
-const parts = [];
-if (data.modeTitle) parts.push(`Mode: ${data.modeTitle}`);
-if (data.themeTitle) parts.push(`Theme: ${data.themeTitle}`);
-if (data.styleTitle) parts.push(`Style: ${data.styleTitle}`);
-if (selectionLine) selectionLine.textContent = parts.length ? parts.join(" • ") : "Your selection will appear here.";
+if (selectionLine) {
+const mode = data.modeLabel ? data.modeLabel : "—";
+const theme = data.themeTitle ? data.themeTitle : "—";
+const style = data.styleTitle ? data.styleTitle : "—";
+selectionLine.textContent = `Mode: ${mode} • Theme: ${theme} • Style: ${style}`;
+}
 
 if (promptBox) promptBox.value = data.prompt || "";
 
@@ -366,13 +295,15 @@ clearBtn.addEventListener("click", () => (promptBox.value = ""));
 }
 }
 
-// ====== BOOT ======
+// =========================
+// BOOT
+// =========================
 document.addEventListener("DOMContentLoaded", () => {
-const isHome = document.getElementById("themeRail") && document.getElementById("styleRail");
+const isHome = document.getElementById("modeRail") || document.getElementById("themeRail");
 const isCreate = document.getElementById("promptBox");
 
 if (isHome) initHome();
-if (isCreate) initCreate();
+if (isCreate) initCreateAny();
 });
 
 
