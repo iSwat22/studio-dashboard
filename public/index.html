@@ -1,35 +1,31 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Quanna Leap — Home</title>
 <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-<!-- Top bar -->
+<!-- Top Bar -->
 <header class="topbar">
 <div class="brand">
-<div class="brandMark">QL</div>
+<div class="logo">QL</div>
 <div class="brandText">
 <div class="brandName">Quanna Leap</div>
 <div class="brandTag">Create in the future.</div>
 </div>
 </div>
 
-<div class="topbarRight">
-<div class="pill" id="planPill">Standard</div>
-<div class="pill starPill">
-<span class="starIcon">✦</span>
-<span id="starsCount">430</span>
-</div>
+<div class="topRight">
+<span class="pill" id="planPill">Standard</span>
+<span class="pill stars" id="starsPill">★ 430</span>
 
-<!-- Login button placeholder (Google login later) -->
-<button class="btnGhost" id="loginBtn" type="button">Sign in</button>
+<button class="pill btn" id="signInBtn">Sign in</button>
 
-<!-- Profile (shown when "logged in") -->
-<div class="profile" id="profileWrap" hidden>
-<div class="avatar" id="avatar">K</div>
+<div class="profile" id="profileBox" title="Profile">
+<div class="avatar" id="avatarCircle">K</div>
 <div class="profileMeta">
 <div class="profileName" id="profileName">KC</div>
 <div class="profileRole" id="profileRole">Admin</div>
@@ -38,45 +34,38 @@
 </div>
 </header>
 
-<main class="page">
-<section class="hero">
-<h1>What would you like to create today?</h1>
-<p>Pick a <b>Theme</b> + a <b>Style</b>. Then we auto-build your prompt.</p>
-</section>
+<!-- Main -->
+<main class="container">
+<h1 class="headline">What would you like to create today?</h1>
+<p class="subhead">Pick a <b>Theme</b> + a <b>Style</b>. Then we auto-build your prompt.</p>
 
-<!-- THEMES row -->
-<section class="rowBlock">
+<!-- THEMES ROW -->
+<section class="row">
 <div class="rowHeader">
 <h2>Pick a Theme</h2>
-<div class="rowHint">Scroll left/right</div>
+<span class="hint">Scroll left/right</span>
 </div>
 
-<div class="hScroll" id="themesRow" aria-label="Themes">
-<!-- Cards injected by JS -->
-</div>
+<div class="rail" id="themeRail" aria-label="Theme scroller"></div>
 </section>
 
-<!-- STYLES row -->
-<section class="rowBlock">
+<!-- STYLES ROW -->
+<section class="row">
 <div class="rowHeader">
 <h2>Pick a Style</h2>
-<div class="rowHint">Scroll left/right</div>
+<span class="hint">Scroll left/right</span>
 </div>
 
-<div class="hScroll" id="stylesRow" aria-label="Styles">
-<!-- Cards injected by JS -->
-</div>
+<div class="rail" id="styleRail" aria-label="Style scroller"></div>
 </section>
 
-<!-- CTA -->
-<section class="ctaBar">
-<div class="ctaLeft">
-<div class="ctaTitle">Ready?</div>
-<div class="ctaSub">Choose 1 Theme + 1 Style, then go create.</div>
+<!-- READY -->
+<section class="readyBox">
+<div class="readyText">
+<div class="readyTitle">Ready?</div>
+<div class="readySub" id="readySub">Choose 1 Theme + 1 Style, then go create.</div>
 </div>
-<button class="btnPrimary" id="goCreateBtn" type="button" disabled>
-Go to Create →
-</button>
+<button class="cta" id="goCreateBtn" disabled>Go to Create →</button>
 </section>
 </main>
 
