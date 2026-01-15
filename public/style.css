@@ -1,376 +1,231 @@
-/* =========================================
-QuannaLeap.AI — Neon Tech UI (CLEAN REBUILD)
-Single source of truth for ALL pages:
-- Home dashboard grid (cards)
-- Generator pages (Text→Image, Text→Video, Image→Video, Text→Voice)
-- Preview sizing (image/video FITS box)
-- Neon hover glow (nav + buttons)
-========================================= */
-
-/* RESET */
-*{ box-sizing:border-box; margin:0; padding:0; }
-img, video{ display:block; max-width:100%; }
-a{ color:inherit; text-decoration:none; }
-textarea, button{ font:inherit; }
-
-/* VARIABLES */
 :root{
---bg1:#020617;
---bg2:#0b1224;
-
---card: rgba(2,6,23,.55);
---panel: rgba(2,6,23,.65);
-
---stroke: rgba(255,255,255,.12);
---text:#e5e7eb;
---muted: rgba(229,231,235,.75);
-
---blue:#38bdf8;
---blue2:#2563eb;
-
---radius: 16px;
-
-/* neon glow */
---neon: rgba(56,189,248,.95);
---neonSoft: rgba(56,189,248,.35);
---neonGlow1: 0 0 10px rgba(56,189,248,.35);
---neonGlow2: 0 0 24px rgba(56,189,248,.28);
---neonGlow3: 0 0 48px rgba(56,189,248,.18);
+--bg0:#070A12;
+--bg1:#0B1022;
+--card:#0E1633;
+--card2:#0B142E;
+--text:#EAF0FF;
+--muted:#9FB0D8;
+--neon:#2DE3FF;
+--neon2:#7A5CFF;
+--border:rgba(255,255,255,.10);
+--shadow: 0 18px 55px rgba(0,0,0,.55);
 }
 
-/* PAGE */
-html, body{ height:100%; }
+*{box-sizing:border-box}
+html,body{height:100%}
 body{
-font-family: Inter, Arial, sans-serif;
-color: var(--text);
-background: radial-gradient(circle at top, #0f172a, #020617);
-}
-
-/* BACKGROUND */
-.bg-stars{
+margin:0;
+font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+color:var(--text);
 background:
-radial-gradient(circle at top, rgba(56,189,248,.12), transparent 45%),
-linear-gradient(180deg, rgba(2,6,23,.86), rgba(2,6,23,.96));
-background-size: cover;
-background-position: center;
+radial-gradient(1100px 600px at 20% -10%, rgba(45,227,255,.22), transparent 55%),
+radial-gradient(900px 500px at 90% 0%, rgba(122,92,255,.18), transparent 60%),
+linear-gradient(180deg, var(--bg0), var(--bg1));
 }
 
-/* =========================================
-TOP BAR
-========================================= */
 .topbar{
-height: 78px;
-display:flex;
-align-items:center;
-justify-content:space-between;
-padding: 0 18px;
-border-bottom: 1px solid rgba(56,189,248,.20);
-background: rgba(2,6,23,.65);
-backdrop-filter: blur(12px);
+position:sticky; top:0; z-index:50;
+display:flex; align-items:center; justify-content:space-between;
+padding:14px 18px;
+background: rgba(7,10,18,.72);
+backdrop-filter: blur(10px);
+border-bottom:1px solid var(--border);
 }
 
-.topbar-left{
-display:flex;
-align-items:center;
-gap:18px;
+.brand{display:flex; align-items:center; gap:12px}
+.brandMark{
+width:40px;height:40px;border-radius:12px;
+display:grid;place-items:center;
+background: linear-gradient(135deg, rgba(45,227,255,.22), rgba(122,92,255,.22));
+border:1px solid rgba(45,227,255,.35);
+box-shadow: 0 0 0 1px rgba(122,92,255,.12) inset;
+font-weight:800;
 }
+.brandName{font-weight:800; letter-spacing:.2px}
+.brandTag{font-size:12px; color:var(--muted); margin-top:2px}
 
-.brand{ display:flex; align-items:center; }
-.brand-logo{ height:56px; width:auto; }
-
-/* TOP NAV */
-.topnav{
-display:flex;
-gap:10px;
-}
-
-.topnav a{
-display:inline-flex;
-align-items:center;
-gap:8px;
-padding: 10px 12px;
-border-radius: 999px;
-border: 1px solid rgba(56,189,248,.20);
-background: rgba(2,6,23,.35);
-font-weight: 900;
-transition: .18s ease;
-}
-
-.topnav a.active{
-border-color: rgba(56,189,248,.70);
-background: rgba(56,189,248,.15);
-box-shadow: var(--neonGlow1);
-}
-
-.topnav a:hover{
-border-color: rgba(56,189,248,.90);
-background: rgba(56,189,248,.18);
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-transform: translateY(-1px);
-}
-
-/* RIGHT */
-.topbar-right{
-display:flex;
-gap:10px;
-align-items:center;
-}
-
+.topbarRight{display:flex; align-items:center; gap:10px}
 .pill{
-display:flex;
-align-items:center;
-gap:8px;
-padding:10px 12px;
+padding:8px 12px;
 border-radius:999px;
-border:1px solid rgba(56,189,248,.25);
-background: rgba(2,6,23,.45);
-font-weight:900;
-font-size:13px;
+border:1px solid var(--border);
+background: rgba(255,255,255,.04);
+color:var(--muted);
+font-size:12px;
 }
+.starPill{display:flex; align-items:center; gap:6px}
+.starIcon{color:var(--neon)}
 
-.dot{ width:8px; height:8px; border-radius:50%; }
-.dot-green{ background:#22c55e; }
-.star{ color:#fbbf24; }
-
-.icon-btn,
-.profile-btn{
-height:42px;
-width:42px;
+.btnGhost{
+padding:10px 12px;
 border-radius:12px;
-border:1px solid rgba(56,189,248,.25);
-background: rgba(2,6,23,.45);
+border:1px solid var(--border);
+background: rgba(255,255,255,.03);
+color:var(--text);
 cursor:pointer;
-transition:.18s ease;
+text-decoration:none;
+}
+.btnGhost:hover{
+border-color: rgba(45,227,255,.45);
+box-shadow: 0 0 0 2px rgba(45,227,255,.10);
 }
 
-.icon-btn:hover,
-.profile-btn:hover{
-border-color: rgba(56,189,248,.85);
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-transform: translateY(-1px);
+.profile{display:flex; align-items:center; gap:10px}
+.avatar{
+width:36px;height:36px;border-radius:12px;
+display:grid;place-items:center;
+background: rgba(45,227,255,.14);
+border:1px solid rgba(45,227,255,.35);
+font-weight:800;
 }
+.profileName{font-weight:700; font-size:13px}
+.profileRole{font-size:11px; color:var(--muted)}
 
-.profile-btn img{
-width:100%;
-height:100%;
-object-fit:cover;
-border-radius:10px;
+.page{max-width:1100px; margin:0 auto; padding:26px 18px 40px}
+.hero h1{margin:10px 0 6px; font-size:34px}
+.hero p{margin:0; color:var(--muted); line-height:1.5}
+
+.rowBlock{margin-top:22px}
+.rowHeader{
+display:flex; align-items:end; justify-content:space-between;
+margin-bottom:10px;
 }
+.rowHeader h2{margin:0; font-size:16px}
+.rowHint{font-size:12px; color:var(--muted)}
 
-/* =========================================
-APP LAYOUT
-========================================= */
-.app{ padding: 26px; }
-.sidebar{ display:none; } /* kept hidden per your baseline */
-
-.main{
-max-width: 1180px;
-margin: 0 auto;
+.hScroll{
+display:flex;
+gap:14px;
+padding:12px;
+overflow-x:auto;
+scroll-snap-type:x mandatory;
+border:1px solid var(--border);
+border-radius:18px;
+background: rgba(255,255,255,.02);
 }
-
-/* HERO */
-.hero{ margin-bottom: 20px; }
-.hero h1{ font-size: 34px; font-weight: 900; }
-.hero p{ margin-top: 8px; color: var(--muted); }
-
-/* =========================================
-HOME DASHBOARD GRID (CARDS)
-This fixes: “stacked huge cards” / “giant images”
-========================================= */
-.grid{
-display:grid;
-grid-template-columns: repeat(4, minmax(220px, 1fr));
-gap:16px;
+.hScroll::-webkit-scrollbar{height:10px}
+.hScroll::-webkit-scrollbar-thumb{
+background: rgba(255,255,255,.12);
+border-radius:999px;
+}
+.hScroll::-webkit-scrollbar-thumb:hover{
+background: rgba(45,227,255,.25);
 }
 
 .card{
-display:flex;
-flex-direction:column;
-border-radius: var(--radius);
-border: 2px solid rgba(56,189,248,.30);
-background: var(--card);
+width:190px; /* “slightly bigger than mobile app card” */
+min-width:190px;
+border-radius:18px;
 overflow:hidden;
-color: var(--text);
-transition:.18s ease;
-}
-
-.card:hover{
-border-color: rgba(56,189,248,.80);
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-transform: translateY(-2px);
-}
-
-.card-media{
-position:relative;
-height:200px;
-overflow:hidden;
-background:#000;
-}
-
-.card-media img{
-width:100%;
-height:100%;
-object-fit:cover;
-}
-
-.card-video{
-position:absolute;
-inset:0;
-width:100%;
-height:100%;
-object-fit:cover;
-opacity:0;
-pointer-events:none;
-}
-
-.card-body{ padding:16px; }
-.card h2{ font-size:20px; font-weight:900; }
-.card p{ margin-top:6px; font-size:14px; color: var(--muted); }
-
-.card-cta{
-margin-top:12px;
-display:inline-block;
-padding:10px 14px;
-border-radius:12px;
-font-weight:900;
-color:#061018;
-background: linear-gradient(135deg, var(--blue), var(--blue2));
-box-shadow: 0 10px 24px rgba(37,99,235,.18);
-}
-
-/* =========================================
-GENERATOR PAGES — UNIFIED LAYOUT
-Matches your sketch:
-Header area -> Preview box -> Prompt box
-========================================= */
-.page-wrap{
-width:100%;
-}
-
-.create-panel{
-margin-top: 20px;
-padding: 16px;
-border-radius: var(--radius);
-border: 2px solid rgba(56,189,248,.30);
-background: var(--panel);
-}
-
-/* Preview container (consistent across pages) */
-.preview-shell{
-width:100%;
-border-radius: 14px;
-border: 2px solid rgba(56,189,248,.35);
-background: rgba(0,0,0,.55);
-overflow:hidden;
-
-/* common “clean” preview size */
-height: clamp(320px, 46vh, 520px);
-
-display:flex;
-align-items:center;
-justify-content:center;
-padding: 14px;
-}
-
-/* The actual preview media ALWAYS fits inside the box */
-.result-preview{
-width:100%;
-height:100%;
-object-fit: contain; /* THIS makes image/video fit cleanly */
-border-radius: 10px;
-}
-
-/* Empty helper text inside preview */
-.help-text{
-color: var(--muted);
-font-weight: 800;
-text-align:center;
-}
-
-/* Prompt shell under preview */
-.prompt-shell{
-margin-top: 14px;
-border-radius: 14px;
-border: 2px solid rgba(56,189,248,.25);
-background: rgba(2,6,23,.35);
-padding: 14px;
-}
-
-.prompt-input{
-width:100%;
-min-height: 110px;
-resize: vertical;
-border-radius: 12px;
-border: 1px solid rgba(56,189,248,.25);
-background: rgba(2,6,23,.35);
-color: var(--text);
-padding: 12px;
-outline:none;
-}
-
-.prompt-input:focus{
-border-color: rgba(56,189,248,.75);
-box-shadow: var(--neonGlow1);
-}
-
-/* Buttons row */
-.actions-row{
-margin-top: 12px;
-display:flex;
-gap:10px;
-flex-wrap: wrap;
-}
-
-/* Button system */
-.primary-btn,
-.ghost-btn,
-.danger-btn{
-border-radius: 12px;
-font-weight: 900;
-padding: 10px 14px;
+background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+border:1px solid var(--border);
+box-shadow: 0 12px 35px rgba(0,0,0,.35);
 cursor:pointer;
-transition:.18s ease;
-border: 1px solid rgba(56,189,248,.25);
+scroll-snap-align:start;
+position:relative;
+transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.card:hover{
+transform: translateY(-3px);
+border-color: rgba(45,227,255,.55); /* neon blue highlight */
+box-shadow: 0 0 0 2px rgba(45,227,255,.14), var(--shadow);
+}
+.card.selected{
+border-color: rgba(45,227,255,.85);
+box-shadow: 0 0 0 2px rgba(45,227,255,.22), 0 22px 60px rgba(0,0,0,.55);
 }
 
-.primary-btn{
-color:#061018;
-background: linear-gradient(135deg, var(--blue), var(--blue2));
-border-color: rgba(56,189,248,.45);
+.cardImg{
+height:132px;
+background: #0A0F22;
+}
+.cardImg img{
+width:100%; height:100%;
+object-fit:cover;
+display:block;
+}
+.cardBody{padding:10px 12px 12px}
+.cardTitle{font-weight:800; font-size:13px; margin:0 0 4px}
+.cardSub{font-size:12px; color:var(--muted); margin:0}
+
+.badge{
+position:absolute; top:10px; left:10px;
+padding:6px 10px;
+border-radius:999px;
+font-size:11px;
+background: rgba(7,10,18,.65);
+border:1px solid rgba(255,255,255,.14);
+}
+.badge.neon{
+border-color: rgba(45,227,255,.35);
+box-shadow: 0 0 0 1px rgba(45,227,255,.10) inset;
 }
 
-.ghost-btn{
-background: rgba(2,6,23,.35);
-color: var(--text);
+.ctaBar{
+margin-top:22px;
+display:flex; align-items:center; justify-content:space-between;
+gap:12px;
+padding:14px;
+border-radius:18px;
+border:1px solid var(--border);
+background: rgba(255,255,255,.03);
+}
+.ctaTitle{font-weight:900}
+.ctaSub{font-size:12px; color:var(--muted); margin-top:3px}
+
+.btnPrimary{
+padding:12px 14px;
+border-radius:14px;
+border:1px solid rgba(45,227,255,.55);
+background: linear-gradient(135deg, rgba(45,227,255,.22), rgba(122,92,255,.18));
+color:var(--text);
+font-weight:800;
+cursor:pointer;
+}
+.btnPrimary:disabled{
+opacity:.45;
+cursor:not-allowed;
+filter:saturate(.6);
 }
 
-.danger-btn{
-background: rgba(239,68,68,.18);
-color: #fecaca;
-border-color: rgba(239,68,68,.35);
+.panel{
+margin-top:18px;
+padding:16px;
+border-radius:18px;
+border:1px solid var(--border);
+background: rgba(255,255,255,.03);
+}
+.panelHead{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.panelTitle{font-weight:900}
+.panelMeta{font-size:12px; color:var(--muted)}
+
+.promptBox{
+margin-top:12px;
+width:100%;
+min-height:240px;
+resize:vertical;
+border-radius:16px;
+border:1px solid rgba(255,255,255,.14);
+background: rgba(7,10,18,.55);
+color:var(--text);
+padding:14px;
+outline:none;
+line-height:1.5;
+}
+.promptBox:focus{
+border-color: rgba(45,227,255,.55);
+box-shadow: 0 0 0 3px rgba(45,227,255,.10);
 }
 
-.primary-btn:hover,
-.ghost-btn:hover{
-box-shadow: var(--neonGlow1), var(--neonGlow2);
-border-color: rgba(56,189,248,.85);
-transform: translateY(-1px);
+.panelActions{
+margin-top:12px;
+display:flex; gap:10px; justify-content:flex-end;
+flex-wrap:wrap;
 }
 
-.danger-btn:hover{
-box-shadow: 0 0 18px rgba(239,68,68,.25);
-transform: translateY(-1px);
-}
-
-/* =========================================
-RESPONSIVE
-========================================= */
-@media (max-width: 1100px){
-.grid{ grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 700px){
-.grid{ grid-template-columns: 1fr; }
-.topnav{ display:none; }
-.app{ padding: 18px; }
+.note{
+margin-top:12px;
+font-size:12px;
+color:var(--muted);
+line-height:1.5;
 }
