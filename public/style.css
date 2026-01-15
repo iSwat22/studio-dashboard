@@ -1,28 +1,21 @@
 /* =========================
-Quanna Leap UI — Dark Future (CLEAN)
-Fixes:
-- Mode buttons are TRUE dark “bubbles” (no white)
-- Blue hover + selected glow
-- Mode bubbles spread across the full mode bar
-- Theme/Style cards space out to remove right-side gap (when they fit)
-- Bigger card images so heads aren’t cut off
+Quanna Leap UI — Dark Future (FINAL)
+- Blue neon hover/selected glow everywhere
+- Mode bubbles SPREAD across the full mode box (same size)
+- Theme/Style cards spaced to remove the big right-side gap (when they fit)
+- Bigger images so heads aren’t cut off
 ========================= */
 
 :root{
 --bg0:#05070c;
 --bg1:#0b1220;
-
+--panel:rgba(255,255,255,0.06);
+--panel2:rgba(255,255,255,0.08);
 --text:#eaf2ff;
 --muted:#a9b8d6;
-
---panel:rgba(255,255,255,0.06);
---panelStroke:rgba(255,255,255,0.12);
-
 --blue:#37b6ff;
-
---glowBorder: rgba(55,182,255,0.55);
---glowRing: rgba(55,182,255,0.22);
---glowFog: rgba(55,182,255,0.30);
+--blue2:#2a7cff;
+--stroke:rgba(255,255,255,0.12);
 }
 
 *{box-sizing:border-box}
@@ -38,9 +31,7 @@ radial-gradient(900px 450px at 20% 20%, rgba(42,124,255,0.12), transparent 60%),
 linear-gradient(180deg, var(--bg0), var(--bg1));
 }
 
-/* =========================
-TOP BAR
-========================= */
+/* ===== Top Bar ===== */
 .topbar{
 height:72px;
 padding:0 18px;
@@ -94,23 +85,28 @@ font-weight:800;
 .profileName{font-weight:800}
 .profileRole{font-size:12px;color:var(--muted)}
 
-/* =========================
-GLOBAL BLUE HOVER GLOW
-========================= */
-.pill, .profile, .card, #modeRail .modeCard, .cta{
-transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease, background .18s ease;
+/* ===== Global Hover Glow (blue highlighter) ===== */
+.hoverGlow{
+transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
 }
-.pill:hover, .profile:hover, .card:hover, #modeRail .modeCard:hover, .cta:hover{
-border-color: var(--glowBorder);
+.hoverGlow:hover{
+border-color: rgba(55,182,255,0.55) !important;
 box-shadow:
-0 0 0 2px var(--glowRing),
-0 0 26px var(--glowFog);
+0 0 0 2px rgba(55,182,255,0.22),
+0 0 26px rgba(55,182,255,0.30);
 transform: translateY(-1px);
 }
 
-/* =========================
-PAGE CONTAINER / HEADERS
-========================= */
+/* Make pills + profile glow on hover */
+.pill.hoverGlow:hover,
+.profile.hoverGlow:hover{
+border-color: rgba(55,182,255,0.55) !important;
+box-shadow:
+0 0 0 2px rgba(55,182,255,0.22),
+0 0 26px rgba(55,182,255,0.30);
+}
+
+/* ===== Page container ===== */
 .container{
 max-width:1180px;
 margin:0 auto;
@@ -124,6 +120,7 @@ letter-spacing:-0.02em;
 }
 .subhead{margin:0 0 18px; color:var(--muted)}
 
+/* ===== Rows ===== */
 .row{margin-top:18px;}
 .rowHeader{
 display:flex;
@@ -134,81 +131,65 @@ margin:0 0 10px;
 .rowHeader h2{margin:0;font-size:18px}
 .hint{color:var(--muted);font-size:12px}
 
-/* =========================
-MODE BAR (YOUR “BUBBLES”)
-HTML: <div class="rail" id="modeRail"><div class="modeCard">...</div>...
-========================= */
+/* =========================================================
+MODE (BUBBLES) — IMPORTANT FIX
+Your HTML shows: <div class="rail" id="modeRail"> ... .modeCard ...
+We make them spread across the FULL width of that box,
+but KEEP bubble size the same.
+========================================================= */
 #modeRail{
-/* keep your same box look */
 display:flex;
 align-items:center;
-
-/* IMPORTANT: spread across full width */
-justify-content:space-between;
-
-/* remove the “big empty” look but keep bubble size */
-gap:14px;
-
+justify-content:space-between; /* spreads them left-to-right */
+gap:0; /* spacing comes from space-between */
 width:100%;
-padding:14px;
-border-radius:18px;
-background:rgba(255,255,255,0.05);
-border:1px solid rgba(255,255,255,0.10);
-
-/* wrap on smaller screens */
-flex-wrap:wrap;
+padding:10px 14px 16px; /* breathing room inside the box */
+flex-wrap:wrap; /* wraps on smaller screens */
 }
 
-#modeRail .modeCard{
-/* bubble shape */
-display:inline-flex;
-align-items:center;
-justify-content:center;
-
+/* MODE BUBBLES */
+.modeCard{
 padding:10px 18px;
 border-radius:999px;
-
-/* FIX: NO WHITE BACKGROUND */
-background:rgba(255,255,255,0.06);
-
-border:1px solid rgba(255,255,255,0.14);
+background:rgba(255,255,255,0.04);
+border:1px solid rgba(255,255,255,0.12);
 color:var(--text);
 font-size:14px;
-font-weight:700;
-
 cursor:pointer;
+transition: all 0.2s ease;
 user-select:none;
-white-space:nowrap;
+white-space:nowrap; /* keep text on one line */
 }
 
-#modeRail .modeCard.selected{
-border-color: rgba(55,182,255,0.75);
-background: rgba(55,182,255,0.14);
-box-shadow:
-0 0 0 2px rgba(55,182,255,0.26),
-0 0 28px rgba(55,182,255,0.36);
-transform: translateY(-1px);
+/* Hover glow */
+.modeCard:hover{
+border-color: var(--blue);
+box-shadow: 0 0 0 2px rgba(58,160,255,0.25);
 }
 
-/* =========================
-THEME + STYLE RAILS (CARDS)
-Removes “right-side gap” by spacing cards across when they fit
-========================= */
+/* Selected glow */
+.modeCard.selected{
+border-color: var(--blue);
+background: rgba(58,160,255,0.15);
+box-shadow: 0 0 0 2px rgba(58,160,255,0.35);
+}
+
+/* =========================================================
+RAILS (THEMES + STYLES)
+Fix the “big gap on the right” when cards fit on screen:
+- justify-content: space-between distributes extra space
+- still scrolls when there are too many cards
+========================================================= */
 .rail{
 display:flex;
 align-items:stretch;
-
-/* KEY: spreads cards across the full box */
-justify-content:space-between;
-
-gap:14px;
+justify-content:space-between; /* removes that big right-side empty gap (when not overflowing) */
+gap:14px; /* still keeps a clean gap */
 overflow:auto;
-
 padding:14px;
 border-radius:18px;
 background:rgba(255,255,255,0.05);
 border:1px solid rgba(255,255,255,0.10);
-
 scroll-snap-type:x mandatory;
 }
 
@@ -218,7 +199,7 @@ background:rgba(255,255,255,0.14);
 border-radius:999px;
 }
 
-/* Cards */
+/* ===== Cards ===== */
 .card{
 min-width:250px;
 max-width:250px;
@@ -229,16 +210,15 @@ border:1px solid rgba(255,255,255,0.12);
 cursor:pointer;
 scroll-snap-align:start;
 position:relative;
+transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
 }
 
 /* Bigger image area so heads don’t cut off */
 .cardImg{
 width:100%;
-height:170px;
+height:170px; /* slightly taller */
 object-fit:cover;
-
-/* push crop UP so you see more head/face */
-object-position: 50% 18%;
+object-position: 50% 18%; /* push crop UP so you see more face/head */
 display:block;
 }
 
@@ -246,7 +226,118 @@ display:block;
 .cardTitle{font-weight:900;font-size:16px;}
 .cardSub{margin-top:4px;color:var(--muted);font-size:13px;}
 
+/* Hover + Selected glow for cards */
+.card:hover{
+border-color: rgba(55,182,255,0.55);
+box-shadow:
+0 0 0 2px rgba(55,182,255,0.18),
+0 0 26px rgba(55,182,255,0.28);
+transform: translateY(-2px);
+}
 .card.selected{
-border-color: rgba(55,182,255,0.75
+border-color: rgba(55,182,255,0.75);
+box-shadow:
+0 0 0 2px rgba(55,182,255,0.24),
+0 0 30px rgba(55,182,255,0.36);
+}
+
+/* ===== Ready Box ===== */
+.readyBox{
+margin-top:18px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:14px;
+padding:18px;
+border-radius:18px;
+background:rgba(255,255,255,0.06);
+border:1px solid rgba(255,255,255,0.12);
+}
+.readyTitle{font-weight:900;font-size:18px}
+.readySub{color:var(--muted);margin-top:2px}
+
+.cta{
+cursor:pointer;
+padding:12px 16px;
+border-radius:14px;
+border:1px solid rgba(55,182,255,0.38);
+background:linear-gradient(180deg, rgba(55,182,255,0.18), rgba(55,182,255,0.10));
+color:var(--text);
+font-weight:900;
+transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+.cta:hover{
+border-color: rgba(55,182,255,0.70);
+box-shadow:
+0 0 0 2px rgba(55,182,255,0.22),
+0 0 28px rgba(55,182,255,0.34);
+transform: translateY(-1px);
+}
+.cta:disabled{
+opacity:0.5;
+cursor:not-allowed;
+box-shadow:none;
+}
+
+/* ===== Create page layout ===== */
+.createGrid{
+margin-top:14px;
+display:grid;
+grid-template-columns: 1.2fr 0.8fr;
+gap:14px;
+}
+.panel{
+border-radius:18px;
+background:rgba(255,255,255,0.06);
+border:1px solid rgba(255,255,255,0.12);
+padding:14px;
+}
+.panelTitle{font-weight:900;margin-bottom:10px}
+
+.promptBox{
+width:100%;
+min-height:320px;
+border-radius:14px;
+background:rgba(0,0,0,0.20);
+border:1px solid rgba(255,255,255,0.14);
+color:var(--text);
+padding:12px;
+font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+font-size:13px;
+line-height:1.35;
+}
+
+.field{margin-top:10px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+select{
+width:100%;
+padding:10px 12px;
+border-radius:14px;
+background:rgba(0,0,0,0.18);
+border:1px solid rgba(255,255,255,0.14);
+color:var(--text);
+}
+
+.panelActions{
+display:flex;
+gap:10px;
+margin-top:12px;
+}
+
+.tinyNote{
+margin-top:10px;
+color:var(--muted);
+font-size:12px;
+}
+
+/* Responsive */
+@media (max-width: 920px){
+.headline{font-size:38px}
+.createGrid{grid-template-columns:1fr}
+.card{min-width:230px;max-width:230px}
+.cardImg{height:160px}
+#modeRail{justify-content:center; gap:14px;} /* on small screens, center looks better */
+}
+
 
 
