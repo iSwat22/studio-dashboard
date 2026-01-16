@@ -1,8 +1,8 @@
 /* =========================
-Quanna Leap — script.js (RESET / CLEAN)
+Quanne Leap — script.js (RESET / CLEAN)
 - Cards (Theme/Style) -> Ready box -> Go to Create -> create.html (with prompt)
 - Mode bubbles (Text→Image / Text→Video / Image→Video / Text→Voice) -> direct pages
-- Images load from /public/quannaleap_cards/
+- Images load from /public/quanneleap_cards/
 ========================= */
 
 /* ---------- USER UI (top-right pills) ---------- */
@@ -30,7 +30,7 @@ if (avatarCircle) avatarCircle.textContent = (USER.name || "U").trim().charAt(0)
 
 /* ---------- IMAGE PATH ---------- */
 /* Put JPEGs in: /public/quannaleap_cards/
-Example final URL: /quannaleap_cards/Kids_Story.jpeg
+Example final URL: /quanneleap_cards/Kids_Story.jpeg
 */
 const IMAGE_BASE = "/";
 
