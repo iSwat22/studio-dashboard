@@ -32,7 +32,7 @@ if (avatarCircle) avatarCircle.textContent = (USER.name || "U").trim().charAt(0)
 /* Put JPEGs in: /public/quannaleap_cards/
 Example final URL: /quannaleap_cards/Kids_Story.jpeg
 */
-const IMAGE_BASE = "quannaleap_cards/";
+const IMAGE_BASE = "/";
 
 /* ---------- CARDS DATA ---------- */
 const THEMES = [
