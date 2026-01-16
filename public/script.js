@@ -217,10 +217,7 @@ localStorage.setItem("ql_selection", JSON.stringify(payload));
 window.location.href = "create.html";
 }
 
-/* ---------- MODE BUBBLES (navigation only) ---------- */
-/* This must match your index.html bubble elements.
-Add data-target="create-image.html" etc on each bubble in HTML.
-*/
+
 function initModeBubbles() {
 const modeRail = document.getElementById("modeRail");
 if (!modeRail) return;
