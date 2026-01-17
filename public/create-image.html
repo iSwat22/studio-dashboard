@@ -5,29 +5,38 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Quanne Leap — Text → Image</title>
 
+<!-- Self-contained neon theme (matches your homepage vibe) -->
 <style>
 :root{
 --bg0:#070a12;
 --bg1:#0a1024;
 --card:rgba(255,255,255,.06);
+--card2:rgba(255,255,255,.08);
 --line:rgba(255,255,255,.12);
 --text:rgba(255,255,255,.92);
 --muted:rgba(255,255,255,.62);
 --blue:#2de2ff;
+--blue2:#42a5ff;
+--shadow: 0 20px 60px rgba(0,0,0,.55);
 --radius:18px;
+--radius2:14px;
 --font: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 *{box-sizing:border-box}
+html,body{height:100%}
 body{
 margin:0;
 font-family:var(--font);
 color:var(--text);
 background:
 radial-gradient(900px 420px at 52% 18%, rgba(45,226,255,.18), transparent 60%),
+radial-gradient(900px 420px at 20% 0%, rgba(66,165,255,.14), transparent 62%),
 linear-gradient(180deg, var(--bg0), var(--bg1));
+overflow-x:hidden;
 }
 
+/* Top bar */
 .topbar{
 position:sticky; top:0; z-index:10;
 backdrop-filter: blur(10px);
@@ -39,199 +48,394 @@ max-width:1200px;
 margin:0 auto;
 padding:14px 16px;
 display:flex;
-justify-content:space-between;
 align-items:center;
+justify-content:space-between;
+gap:12px;
 }
-.brand{display:flex; gap:10px; align-items:center}
+.brand{
+display:flex; align-items:center; gap:10px;
+user-select:none;
+}
 .brandMark{
-width:34px; height:34px;
-border-radius:10px;
+width:34px; height:34px; border-radius:10px;
 display:grid; place-items:center;
+background: linear-gradient(180deg, rgba(45,226,255,.22), rgba(255,255,255,.06));
+border:1px solid rgba(45,226,255,.25);
+box-shadow: 0 10px 30px rgba(45,226,255,.12);
 font-weight:800;
-background: rgba(45,226,255,.2);
-border:1px solid rgba(45,226,255,.3);
+letter-spacing:.5px;
+}
+.brandText{display:flex; flex-direction:column; line-height:1.05}
+.brandText b{font-size:14px}
+.brandText span{font-size:12px; color:var(--muted)}
+
+.rightPills{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+.pill{
+display:inline-flex; align-items:center; gap:8px;
+padding:8px 10px;
+border-radius:999px;
+background: rgba(255,255,255,.06);
+border:1px solid var(--line);
+color:var(--text);
+font-size:12px;
+}
+.pill .dot{
+width:8px; height:8px; border-radius:50%;
+background: var(--blue);
+box-shadow: 0 0 20px rgba(45,226,255,.65);
+}
+.avatar{
+width:30px; height:30px; border-radius:10px;
+display:grid; place-items:center;
+background: rgba(255,255,255,.08);
+border:1px solid var(--line);
+font-weight:700;
 }
 
+/* Page layout */
 .wrap{max-width:1200px; margin:0 auto; padding:18px 16px 28px;}
+.titleRow{
+margin:14px 0 16px;
+display:flex; align-items:flex-end; justify-content:space-between; gap:14px;
+}
+.titleRow h1{
+margin:0;
+font-size:34px;
+letter-spacing:-.5px;
+text-shadow: 0 0 30px rgba(45,226,255,.12);
+}
+.titleRow p{margin:6px 0 0; color:var(--muted); max-width:720px}
 
 .grid{
 display:grid;
 grid-template-columns: 330px 1fr 280px;
 gap:14px;
+align-items:start;
 }
-@media (max-width:980px){
-.grid{grid-template-columns:1fr}
+
+@media (max-width: 980px){
+.grid{grid-template-columns:1fr; }
 }
 
 .panel{
-background:var(--card);
+background: var(--card);
 border:1px solid var(--line);
-border-radius:var(--radius);
+border-radius: var(--radius);
+box-shadow: var(--shadow);
 overflow:hidden;
 }
 .panelHeader{
-padding:14px;
+padding:14px 14px 10px;
 border-bottom:1px solid rgba(255,255,255,.08);
+}
+.panelHeader h2{
+margin:0;
+font-size:14px;
+letter-spacing:.2px;
+color:rgba(255,255,255,.86);
 }
 .panelBody{padding:14px}
 
-.label{font-size:12px; color:var(--muted); margin:10px 0 8px; display:block}
-
-textarea{
+.label{display:block; font-size:12px; color:var(--muted); margin:10px 0 8px}
+.textarea{
 width:100%;
 min-height:180px;
+resize:vertical;
 border-radius:14px;
 border:1px solid rgba(255,255,255,.12);
-background:rgba(0,0,0,.25);
+background: rgba(0,0,0,.22);
 color:var(--text);
-padding:12px;
+padding:12px 12px;
+outline:none;
+box-shadow: inset 0 0 0 1px rgba(45,226,255,.0);
+}
+.textarea:focus{
+border-color: rgba(45,226,255,.38);
+box-shadow: inset 0 0 0 1px rgba(45,226,255,.22), 0 0 0 3px rgba(45,226,255,.10);
 }
 
+.row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
 .btn{
-padding:8px 14px;
-border-radius:999px;
-background:rgba(255,255,255,.08);
-border:1px solid var(--line);
-color:var(--text);
+border:none;
 cursor:pointer;
+border-radius:999px;
+padding:10px 14px;
+font-weight:700;
+font-size:13px;
+color:var(--text);
+background: rgba(255,255,255,.08);
+border:1px solid rgba(255,255,255,.14);
+}
+.btn:hover{background: rgba(255,255,255,.10)}
+.btnPrimary{
+width:100%;
+padding:12px 14px;
+background: linear-gradient(90deg, rgba(45,226,255,.20), rgba(66,165,255,.14));
+border:1px solid rgba(45,226,255,.32);
+box-shadow: 0 18px 45px rgba(45,226,255,.12);
+}
+.btnPrimary:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 18px 55px rgba(45,226,255,.18);
 }
 
-.styleGrid, .themeRow{
+.select{
+width:100%;
+border-radius:14px;
+border:1px solid rgba(255,255,255,.12);
+background: rgba(0,0,0,.22);
+color:var(--text);
+padding:11px 12px;
+outline:none;
+}
+.select:focus{
+border-color: rgba(45,226,255,.38);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10);
+}
+
+/* Style grid (little images you pick from) */
+.styleGrid{
 display:grid;
 grid-template-columns: repeat(3, 1fr);
 gap:10px;
 }
-
-.tile{
+.styleTile{
+position:relative;
 border-radius:14px;
-overflow:hidden;
 border:1px solid rgba(255,255,255,.12);
+background: rgba(0,0,0,.20);
+overflow:hidden;
 cursor:pointer;
+transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
+min-height:86px;
 }
-.tile img{
-width:100%;
-height:100%;
+.styleTile:hover{
+transform: translateY(-1px);
+border-color: rgba(45,226,255,.28);
+box-shadow: 0 14px 40px rgba(0,0,0,.35);
+}
+.styleTile.active{
+border-color: rgba(45,226,255,.60);
+box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
+}
+.styleTile img{
+width:100%; height:100%;
 object-fit:cover;
 display:block;
+filter: saturate(1.05) contrast(1.02);
+}
+.styleTile .caption{
+position:absolute; left:8px; right:8px; bottom:8px;
+font-size:11px;
+padding:6px 8px;
+border-radius:999px;
+background: rgba(0,0,0,.45);
+border:1px solid rgba(255,255,255,.12);
+color: rgba(255,255,255,.88);
+text-overflow: ellipsis;
+overflow:hidden;
+white-space: nowrap;
 }
 
+/* Center preview + bottom creations strip */
+.previewWrap{
+padding:14px;
+background: radial-gradient(600px 220px at 50% 18%, rgba(45,226,255,.12), transparent 62%);
+}
 .previewStage{
-height:420px;
-border-radius:var(--radius);
+border-radius: var(--radius);
 border:1px solid rgba(255,255,255,.12);
+background: rgba(0,0,0,.22);
+height:420px;
 display:grid;
 place-items:center;
-background:rgba(0,0,0,.25);
-position:relative; /* added (needed for download overlay button positioning) */
-overflow:hidden; /* added */
+overflow:hidden;
+position:relative;
+}
+.previewEmpty{
+text-align:center;
+color: rgba(255,255,255,.68);
+user-select:none;
+}
+.previewEmpty .icon{
+font-size:34px;
+filter: drop-shadow(0 12px 22px rgba(0,0,0,.55));
+}
+.previewEmpty .txt{margin-top:10px; font-weight:700}
+.previewImg{
+position:absolute; inset:0;
+width:100%; height:100%;
+object-fit:contain;
+display:none;
+background: rgba(0,0,0,.14);
 }
 
-/* ALIGN THEME WITH STYLE */
-.themeAlignSpacer{
-height:470px;
-}
-@media (max-width:980px){
-.themeAlignSpacer{height:0}
+.creationStrip{
+margin-top:12px;
+border-radius: var(--radius);
+border:1px solid rgba(255,255,255,.12);
+background: rgba(0,0,0,.18);
+padding:10px;
+display:flex;
+gap:10px;
+overflow:auto;
 }
 
-/* ✅ Download button (only addition) */
-.downloadBtn{
-position:absolute;
-right:12px;
-bottom:12px;
-padding:8px 12px;
-border-radius:999px;
-background:rgba(255,255,255,.10);
-border:1px solid rgba(255,255,255,.14);
-color:var(--text);
+.thumb{
+width:92px; height:64px;
+border-radius:12px;
+border:1px solid rgba(255,255,255,.12);
+background: rgba(255,255,255,.05);
+overflow:hidden;
+flex: 0 0 auto;
 cursor:pointer;
-font-weight:700;
-font-size:12px;
-backdrop-filter: blur(8px);
+position:relative; /* needed for delete button */
 }
-.downloadBtn:hover{
+.thumb:hover{border-color: rgba(45,226,255,.30)}
+.thumb img{width:100%; height:100%; object-fit:cover; display:block}
+
+/* DELETE (X) button on each thumb */
+.thumb .del{
+position:absolute;
+top:5px; right:5px;
+width:20px; height:20px;
+border-radius:999px;
+display:grid; place-items:center;
+border:1px solid rgba(255,255,255,.16);
+background: rgba(0,0,0,.55);
+color: rgba(255,255,255,.92);
+font-size:13px;
+line-height:1;
+cursor:pointer;
+user-select:none;
+transition: border-color .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+.thumb .del:hover{
 border-color: rgba(45,226,255,.45);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10);
+box-shadow: 0 0 0 2px rgba(45,226,255,.14);
+transform: translateY(-1px);
+}
+
+/* tiny helper note */
+.note{font-size:12px; color:var(--muted); line-height:1.3}
+.glowLine{
+height:1px; width:100%;
+background: linear-gradient(90deg, transparent, rgba(45,226,255,.55), transparent);
+opacity:.55;
+margin:10px 0;
 }
 </style>
 </head>
 
 <body>
-
+<!-- TOP BAR -->
 <div class="topbar">
 <div class="topbarInner">
 <div class="brand">
 <div class="brandMark">QL</div>
-<div>
-<b>Quanne Leap</b><br>
-<small>Create in the future.</small>
+<div class="brandText">
+<b>Quanne Leap</b>
+<span>Create in the future.</span>
+</div>
+</div>
+
+<div class="rightPills">
+<div class="pill"><span class="dot"></span>Platinum</div>
+<div class="pill">★ ∞</div>
+<div class="pill">
+<div class="avatar" id="avatarCircle">K</div>
+<div style="display:flex;flex-direction:column;line-height:1.05">
+<b style="font-size:12px;margin:0">KC</b>
+<span style="font-size:11px;color:var(--muted)">Admin</span>
+</div>
 </div>
 </div>
 </div>
 </div>
 
+<!-- PAGE -->
 <div class="wrap">
+<div class="titleRow">
+<div>
 <h1>Text → Image</h1>
+<p>Create an image from a prompt. Pick a style, choose size, hit generate, then pick results from the strip below.</p>
+</div>
+</div>
 
 <div class="grid">
 
-<!-- LEFT -->
+<!-- LEFT: Prompt + style picker -->
 <div class="panel">
-<div class="panelHeader"><b>Prompt</b></div>
+<div class="panelHeader"><h2>Prompt + Style</h2></div>
 <div class="panelBody">
+<label class="label">Prompt</label>
+<textarea id="prompt" class="textarea" placeholder="Describe what you want..."></textarea>
 
-<textarea placeholder="Describe what you want..."></textarea>
-
-<div style="margin-top:10px;display:flex;gap:10px">
-<button class="btn">Clear</button>
-<button class="btn">Paste</button>
+<div class="row">
+<button class="btn" id="clearBtn">Clear</button>
+<button class="btn" id="pasteBtn">Paste</button>
 </div>
 
-<!-- SPACER TO ALIGN WITH STYLE -->
-<div class="themeAlignSpacer"></div>
+<div class="glowLine"></div>
 
-<label class="label">Pick Theme (optional)</label>
-<div class="themeRow">
-<div class="tile"><img src="Kids_Story.jpeg"></div>
-<div class="tile"><img src="Biblical_Epic.jpeg"></div>
-<div class="tile"><img src="Neon_City_Heist.jpeg"></div>
-<div class="tile"><img src="Future_Ops.jpeg"></div>
+<label class="label">Pick a Style</label>
+<div id="styleGrid" class="styleGrid"></div>
+
+<div style="margin-top:10px" class="note">
+Drop your style images into <b>/public/</b> (example: <b>public/Pixar_Style.jpeg</b>) and keep the filenames exactly the same as below.
 </div>
-
 </div>
 </div>
 
-<!-- CENTER -->
+<!-- CENTER: Preview + creations strip -->
 <div class="panel">
-<div class="panelHeader"><b>Preview</b></div>
-<div class="panelBody">
+<div class="panelHeader"><h2>Preview</h2></div>
+<div class="previewWrap">
 <div class="previewStage" id="previewStage">
-No Results Available
-
-<!-- ✅ Download button added (does nothing until you set a real preview image source) -->
-<button class="downloadBtn" id="downloadBtn" type="button">Download</button>
+<div class="previewEmpty" id="previewEmpty">
+<div class="icon">🖼️</div>
+<div class="txt">No Results Available</div>
+</div>
+<img id="previewImg" class="previewImg" alt="Preview" />
 </div>
 
-<label class="label" style="margin-top:14px">Pick Style (optional)</label>
-<div class="styleGrid">
-<div class="tile"><img src="Pixar_Style.jpeg"></div>
-<div class="tile"><img src="Disney_Style.jpeg"></div>
-<div class="tile"><img src="Anime_Fantasy.jpeg"></div>
-<div class="tile"><img src="Realistic_Cinema.jpeg"></div>
-<div class="tile"><img src="Film_Narrative.jpeg"></div>
-<div class="tile"><img src="Storybook_Charm.jpeg"></div>
-<div class="tile"><img src="PixiePop_3D.jpeg"></div>
-<div class="tile"><img src="Inked_Realism.jpeg"></div>
-<div class="tile"><img src="Watercolor_Whimsy.jpeg"></div>
+<div class="creationStrip" id="creationStrip" aria-label="Creations strip">
+<!-- thumbs appear here -->
 </div>
 </div>
 </div>
 
-<!-- RIGHT -->
+<!-- RIGHT: Settings + generate -->
 <div class="panel">
-<div class="panelHeader"><b>Settings</b></div>
+<div class="panelHeader"><h2>Settings</h2></div>
 <div class="panelBody">
-<button class="btn" style="width:100%;margin-top:10px">Generate</button>
+<label class="label">Image Size</label>
+<select id="size" class="select">
+<option value="1024x1024">Square (1024×1024)</option>
+<option value="1024x1536">Portrait (1024×1536)</option>
+<option value="1536x1024">Landscape (1536×1024)</option>
+</select>
+
+<label class="label">How many images</label>
+<select id="count" class="select">
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="4" selected>4</option>
+</select>
+
+<label class="label">Quality</label>
+<select id="quality" class="select">
+<option value="standard" selected>Standard</option>
+<option value="high">High</option>
+</select>
+
+<div class="glowLine"></div>
+
+<button class="btn btnPrimary" id="generateBtn">Generate</button>
+
+<div style="margin-top:10px" class="note">
+Right now this page is UI-only. Tomorrow we’ll wire the Generate button to your backend endpoint.
+</div>
 </div>
 </div>
 
@@ -239,42 +443,155 @@ No Results Available
 </div>
 
 <script>
-// ✅ Download button logic (only addition)
-// This expects your app will eventually show the generated image in the Preview area as an <img>.
-// If there is no <img> yet, it will just alert you.
-document.getElementById("downloadBtn").addEventListener("click", async () => {
-const stage = document.getElementById("previewStage");
-const img = stage.querySelector("img"); // your future preview image should be placed here
+console.log("✅ create-image.html loaded");
 
-if (!img || !img.src) {
-alert("No preview image to download yet.");
+// ====== STYLE TILES ======
+// You said 5 of them need fixed — these 5 use the filenames you already use on the home screen.
+// Put these exact files in /public/ :
+// Pixar_Style.jpeg, Disney_Style.jpeg, Anime_Fantasy.jpeg, Realistic_Cinema.jpeg, Biblical_Style.jpeg
+const STYLES = [
+{ id:"Pixar_Style", label:"Pixar Style", img:"Pixar_Style.jpeg", seed:"3D, emotional, cinematic, soft lighting" },
+{ id:"Disney_Style", label:"Disney Style", img:"Disney_Style.jpeg", seed:"magical, bright, classic animation vibe" },
+{ id:"Anime_Fantasy", label:"Anime Fantasy", img:"Anime_Fantasy.jpeg", seed:"anime cinematic, dramatic lighting, stylized" },
+{ id:"Realistic_Cinema", label:"Realistic Cinema", img:"Realistic_Cinema.jpeg", seed:"realistic film still, shallow depth of field" },
+{ id:"Biblical_Style", label:"Biblical Style", img:"Biblical_Style.jpeg", seed:"respectful biblical tone, warm, cinematic light" },
+];
+
+const $ = (s)=>document.querySelector(s);
+const styleGrid = $("#styleGrid");
+const creationStrip = $("#creationStrip");
+const previewImg = $("#previewImg");
+const previewEmpty = $("#previewEmpty");
+
+let selectedStyle = STYLES[0]?.id || null;
+
+function setPreview(src){
+if(!src){
+previewImg.style.display = "none";
+previewEmpty.style.display = "block";
+previewImg.src = "";
 return;
 }
+previewImg.src = src;
+previewImg.style.display = "block";
+previewEmpty.style.display = "none";
+}
 
-try {
-const res = await fetch(img.src, { mode: "cors" });
-const blob = await res.blob();
-const url = URL.createObjectURL(blob);
+function getFirstThumbSrc(){
+const first = creationStrip.querySelector(".thumb img");
+return first ? first.getAttribute("src") : null;
+}
 
-const a = document.createElement("a");
-a.href = url;
-a.download = "quanneleap-image.jpg";
-document.body.appendChild(a);
-a.click();
-a.remove();
+function renderStyles(){
+styleGrid.innerHTML = "";
+STYLES.forEach(st=>{
+const tile = document.createElement("div");
+tile.className = "styleTile" + (st.id===selectedStyle ? " active" : "");
+tile.setAttribute("data-style", st.id);
 
-URL.revokeObjectURL(url);
-} catch (e) {
-// fallback
-const a = document.createElement("a");
-a.href = img.src;
-a.download = "quanneleap-image.jpg";
-document.body.appendChild(a);
-a.click();
-a.remove();
+const img = document.createElement("img");
+img.src = st.img; // looks in /public/
+img.alt = st.label;
+
+// helpful warning if a style image is missing
+img.addEventListener("error", () => {
+console.warn(`❌ Missing style image: ${st.img} (put it in /public/ exactly with that name)`);
+});
+
+const cap = document.createElement("div");
+cap.className = "caption";
+cap.textContent = st.label;
+
+tile.appendChild(img);
+tile.appendChild(cap);
+
+tile.addEventListener("click", ()=>{
+selectedStyle = st.id;
+document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"));
+tile.classList.add("active");
+
+// OPTIONAL: auto-add style seed to prompt (only if empty)
+const prompt = $("#prompt");
+if(prompt.value.trim().length === 0){
+prompt.value = st.seed;
 }
 });
-</script>
 
+styleGrid.appendChild(tile);
+});
+}
+
+// ====== Creations strip demo (UI only for now) ======
+function addCreationThumb(src){
+const box = document.createElement("div");
+box.className = "thumb";
+
+const img = document.createElement("img");
+img.src = src;
+img.alt = "Creation";
+
+// delete button (X)
+const del = document.createElement("div");
+del.className = "del";
+del.textContent = "×";
+del.title = "Delete";
+
+del.addEventListener("click", (e)=>{
+e.stopPropagation(); // don't trigger preview click
+const wasPreview = previewImg.src && previewImg.src.includes(src);
+
+box.remove();
+
+// If we deleted the one in preview, show the newest remaining (or empty)
+if (wasPreview){
+const next = getFirstThumbSrc();
+setPreview(next);
+} else {
+// If nothing left and preview is empty too, keep it clean
+if (!creationStrip.querySelector(".thumb")) setPreview(null);
+}
+});
+
+box.appendChild(img);
+box.appendChild(del);
+
+box.addEventListener("click", ()=> setPreview(src));
+
+creationStrip.prepend(box);
+setPreview(src);
+}
+
+// Buttons
+$("#clearBtn").addEventListener("click", ()=>{
+$("#prompt").value = "";
+});
+
+$("#pasteBtn").addEventListener("click", async ()=>{
+try{
+const txt = await navigator.clipboard.readText();
+if(txt) $("#prompt").value = txt;
+}catch(e){
+alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
+}
+});
+
+$("#generateBtn").addEventListener("click", ()=>{
+// UI-only placeholder (so the page feels alive)
+const st = STYLES.find(x=>x.id===selectedStyle) || STYLES[0];
+addCreationThumb(st.img);
+
+console.log("Generate clicked:", {
+prompt: $("#prompt").value,
+style: selectedStyle,
+size: $("#size").value,
+count: $("#count").value,
+quality: $("#quality").value
+});
+});
+
+// Init
+renderStyles();
+setPreview(null);
+</script>
 </body>
 </html>
