@@ -85,11 +85,6 @@ border:1px solid rgba(255,255,255,.12);
 background:rgba(0,0,0,.25);
 color:var(--text);
 padding:12px;
-outline:none;
-}
-textarea:focus{
-border-color: rgba(45,226,255,.45);
-box-shadow: 0 0 0 3px rgba(45,226,255,.12);
 }
 
 .btn{
@@ -99,16 +94,6 @@ background:rgba(255,255,255,.08);
 border:1px solid var(--line);
 color:var(--text);
 cursor:pointer;
-font-weight:700;
-}
-.btn:hover{
-border-color: rgba(45,226,255,.35);
-box-shadow: 0 0 0 3px rgba(45,226,255,.08);
-}
-.btn:disabled{
-opacity:.55;
-cursor:not-allowed;
-box-shadow:none;
 }
 
 .styleGrid, .themeRow{
@@ -117,25 +102,11 @@ grid-template-columns: repeat(3, 1fr);
 gap:10px;
 }
 
-/* ✅ ALL PICKER IMAGES SAME SIZE + CLEAN (no overlay text) */
 .tile{
 border-radius:14px;
 overflow:hidden;
 border:1px solid rgba(255,255,255,.12);
 cursor:pointer;
-background:rgba(0,0,0,.20);
-height:86px; /* SAME HEIGHT EVERYWHERE */
-position:relative;
-transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
-}
-.tile:hover{
-transform: translateY(-1px);
-border-color: rgba(45,226,255,.45); /* ✅ neon blue hover */
-box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 12px 30px rgba(0,0,0,.35);
-}
-.tile.active{
-border-color: rgba(45,226,255,.75); /* ✅ neon blue selected */
-box-shadow: 0 0 0 3px rgba(45,226,255,.14), 0 16px 40px rgba(45,226,255,.08);
 }
 .tile img{
 width:100%;
@@ -151,23 +122,36 @@ border:1px solid rgba(255,255,255,.12);
 display:grid;
 place-items:center;
 background:rgba(0,0,0,.25);
-position:relative;
-overflow:hidden;
-}
-/* (optional) If later you show a preview image */
-.previewStage img{
-position:absolute;
-inset:0;
-width:100%;
-height:100%;
-object-fit:contain;
-display:none;
+position:relative; /* added (needed for download overlay button positioning) */
+overflow:hidden; /* added */
 }
 
 /* ALIGN THEME WITH STYLE */
-.themeAlignSpacer{ height:470px; }
+.themeAlignSpacer{
+height:470px;
+}
 @media (max-width:980px){
 .themeAlignSpacer{height:0}
+}
+
+/* ✅ Download button (only addition) */
+.downloadBtn{
+position:absolute;
+right:12px;
+bottom:12px;
+padding:8px 12px;
+border-radius:999px;
+background:rgba(255,255,255,.10);
+border:1px solid rgba(255,255,255,.14);
+color:var(--text);
+cursor:pointer;
+font-weight:700;
+font-size:12px;
+backdrop-filter: blur(8px);
+}
+.downloadBtn:hover{
+border-color: rgba(45,226,255,.45);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 }
 </style>
 </head>
@@ -180,7 +164,7 @@ display:none;
 <div class="brandMark">QL</div>
 <div>
 <b>Quanne Leap</b><br>
-<small style="color:rgba(255,255,255,.65)">Create in the future.</small>
+<small>Create in the future.</small>
 </div>
 </div>
 </div>
@@ -196,22 +180,22 @@ display:none;
 <div class="panelHeader"><b>Prompt</b></div>
 <div class="panelBody">
 
-<textarea id="promptBox" placeholder="Describe what you want..."></textarea>
+<textarea placeholder="Describe what you want..."></textarea>
 
 <div style="margin-top:10px;display:flex;gap:10px">
-<button class="btn" id="clearBtn">Clear</button>
-<button class="btn" id="pasteBtn">Paste</button>
+<button class="btn">Clear</button>
+<button class="btn">Paste</button>
 </div>
 
 <!-- SPACER TO ALIGN WITH STYLE -->
 <div class="themeAlignSpacer"></div>
 
 <label class="label">Pick Theme (optional)</label>
-<div class="themeRow" id="themeRow">
-<div class="tile" data-type="theme" data-label="Kids Story" data-seed="kid-friendly adventure, warm, hopeful"><img src="Kids_Story.jpeg" alt="Kids Story"></div>
-<div class="tile" data-type="theme" data-label="Biblical Epic" data-seed="biblical epic, cinematic scale, majestic light"><img src="Biblical_Epic.jpeg" alt="Biblical Epic"></div>
-<div class="tile" data-type="theme" data-label="Neon City Heist" data-seed="neon city, cyberpunk, high contrast, crime story"><img src="Neon_City_Heist.jpeg" alt="Neon City Heist"></div>
-<div class="tile" data-type="theme" data-label="Future Ops" data-seed="futuristic tactical sci-fi action, gritty, realistic lighting"><img src="Future_Ops.jpeg" alt="Future Ops"></div>
+<div class="themeRow">
+<div class="tile"><img src="Kids_Story.jpeg"></div>
+<div class="tile"><img src="Biblical_Epic.jpeg"></div>
+<div class="tile"><img src="Neon_City_Heist.jpeg"></div>
+<div class="tile"><img src="Future_Ops.jpeg"></div>
 </div>
 
 </div>
@@ -222,21 +206,23 @@ display:none;
 <div class="panelHeader"><b>Preview</b></div>
 <div class="panelBody">
 <div class="previewStage" id="previewStage">
-<div id="previewEmpty">No Results Available</div>
-<img id="previewImg" alt="Preview">
+No Results Available
+
+<!-- ✅ Download button added (does nothing until you set a real preview image source) -->
+<button class="downloadBtn" id="downloadBtn" type="button">Download</button>
 </div>
 
 <label class="label" style="margin-top:14px">Pick Style (optional)</label>
-<div class="styleGrid" id="styleGrid">
-<div class="tile" data-type="style" data-label="Pixar Style" data-seed="Pixar-style 3D, cinematic, soft lighting"><img src="Pixar_Style.jpeg" alt="Pixar Style"></div>
-<div class="tile" data-type="style" data-label="Disney Style" data-seed="Disney-style 3D, magical, bright colors"><img src="Disney_Style.jpeg" alt="Disney Style"></div>
-<div class="tile" data-type="style" data-label="Anime Fantasy" data-seed="anime fantasy, vibrant, detailed"><img src="Anime_Fantasy.jpeg" alt="Anime Fantasy"></div>
-<div class="tile" data-type="style" data-label="Realistic Cinema" data-seed="realistic cinema, film still, natural lighting"><img src="Realistic_Cinema.jpeg" alt="Realistic Cinema"></div>
-<div class="tile" data-type="style" data-label="Film Narrative" data-seed="cinematic film narrative, shallow depth of field"><img src="Film_Narrative.jpeg" alt="Film Narrative"></div>
-<div class="tile" data-type="style" data-label="Storybook Charm" data-seed="storybook charm, soft illustration, cozy"><img src="Storybook_Charm.jpeg" alt="Storybook Charm"></div>
-<div class="tile" data-type="style" data-label="PixiePop 3D" data-seed="cute 3D characters, glossy, playful"><img src="PixiePop_3D.jpeg" alt="PixiePop 3D"></div>
-<div class="tile" data-type="style" data-label="Inked Realism" data-seed="inked realism, textured pen shading"><img src="Inked_Realism.jpeg" alt="Inked Realism"></div>
-<div class="tile" data-type="style" data-label="Watercolor Whimsy" data-seed="watercolor whimsy, gentle wash, soft edges"><img src="Watercolor_Whimsy.jpeg" alt="Watercolor Whimsy"></div>
+<div class="styleGrid">
+<div class="tile"><img src="Pixar_Style.jpeg"></div>
+<div class="tile"><img src="Disney_Style.jpeg"></div>
+<div class="tile"><img src="Anime_Fantasy.jpeg"></div>
+<div class="tile"><img src="Realistic_Cinema.jpeg"></div>
+<div class="tile"><img src="Film_Narrative.jpeg"></div>
+<div class="tile"><img src="Storybook_Charm.jpeg"></div>
+<div class="tile"><img src="PixiePop_3D.jpeg"></div>
+<div class="tile"><img src="Inked_Realism.jpeg"></div>
+<div class="tile"><img src="Watercolor_Whimsy.jpeg"></div>
 </div>
 </div>
 </div>
@@ -245,11 +231,7 @@ display:none;
 <div class="panel">
 <div class="panelHeader"><b>Settings</b></div>
 <div class="panelBody">
-<!-- ✅ You said don’t change this side (so leaving it exactly like your code) -->
 <button class="btn" style="width:100%;margin-top:10px">Generate</button>
-
-<!-- ✅ Download button added (downloads whatever is currently in previewImg) -->
-<button class="btn" id="downloadBtn" style="width:100%;margin-top:10px" disabled>Download</button>
 </div>
 </div>
 
@@ -257,136 +239,41 @@ display:none;
 </div>
 
 <script>
-// ✅ Goal:
-// 1) All picker tiles same size (CSS done)
-// 2) Neon blue hover/active (CSS done)
-// 3) Download button downloads current preview image (JS below)
-// 4) If you pick MORE THAN ONE thing (theme + style), BOTH get added to the prompt box (JS below)
+// ✅ Download button logic (only addition)
+// This expects your app will eventually show the generated image in the Preview area as an <img>.
+// If there is no <img> yet, it will just alert you.
+document.getElementById("downloadBtn").addEventListener("click", async () => {
+const stage = document.getElementById("previewStage");
+const img = stage.querySelector("img"); // your future preview image should be placed here
 
-const promptBox = document.getElementById("promptBox");
-const previewImg = document.getElementById("previewImg");
-const previewEmpty = document.getElementById("previewEmpty");
-const downloadBtn = document.getElementById("downloadBtn");
-
-const state = {
-theme: null, // {label, seed}
-style: null // {label, seed}
-};
-
-function buildPromptFromSelections(){
-// Keep whatever the user typed, but add (Theme: ...) and (Style: ...) on new lines at the bottom.
-const raw = promptBox.value || "";
-
-// Remove any old selection lines we previously appended
-const lines = raw.split("\n").filter(line => {
-return !line.startsWith("Theme: ") && !line.startsWith("Style: ");
-});
-
-if (state.theme) lines.push(`Theme: ${state.theme.seed}`);
-if (state.style) lines.push(`Style: ${state.style.seed}`);
-
-promptBox.value = lines.join("\n").trim();
+if (!img || !img.src) {
+alert("No preview image to download yet.");
+return;
 }
 
-function setActiveTile(groupEl, pickedTile){
-// Only one active per group (themes) and one active per group (styles)
-groupEl.querySelectorAll(".tile").forEach(t => t.classList.remove("active"));
-pickedTile.classList.add("active");
-}
-
-// Theme selection
-document.getElementById("themeRow").addEventListener("click", (e)=>{
-const tile = e.target.closest(".tile");
-if(!tile) return;
-
-state.theme = { label: tile.dataset.label, seed: tile.dataset.seed };
-setActiveTile(document.getElementById("themeRow"), tile);
-buildPromptFromSelections();
-});
-
-// Style selection
-document.getElementById("styleGrid").addEventListener("click", (e)=>{
-const tile = e.target.closest(".tile");
-if(!tile) return;
-
-state.style = { label: tile.dataset.label, seed: tile.dataset.seed };
-setActiveTile(document.getElementById("styleGrid"), tile);
-buildPromptFromSelections();
-});
-
-// Clear button
-document.getElementById("clearBtn").addEventListener("click", ()=>{
-promptBox.value = "";
-state.theme = null;
-state.style = null;
-document.querySelectorAll(".tile").forEach(t=>t.classList.remove("active"));
-});
-
-// Paste button
-document.getElementById("pasteBtn").addEventListener("click", async ()=>{
-try{
-const txt = await navigator.clipboard.readText();
-if(txt) promptBox.value = txt;
-// keep selections visible in prompt if user pastes
-buildPromptFromSelections();
-}catch(e){
-alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
-}
-});
-
-// ✅ Download current preview image
-// (Right now your UI doesn’t set previewImg yet; when you wire generate, set previewImg.src = resultUrl and we’re done.)
-function enableDownloadIfPossible(){
-const ok = !!(previewImg && previewImg.src && previewImg.style.display !== "none");
-downloadBtn.disabled = !ok;
-}
-
-downloadBtn.addEventListener("click", async ()=>{
-if(!previewImg.src) return;
-
-try{
-const res = await fetch(previewImg.src, { mode: "cors" });
+try {
+const res = await fetch(img.src, { mode: "cors" });
 const blob = await res.blob();
 const url = URL.createObjectURL(blob);
 
 const a = document.createElement("a");
 a.href = url;
-a.download = "quanneleap-image.jpg"; // browser will download to their system
+a.download = "quanneleap-image.jpg";
 document.body.appendChild(a);
 a.click();
 a.remove();
 
 URL.revokeObjectURL(url);
-}catch(err){
-// fallback (still tries to download)
+} catch (e) {
+// fallback
 const a = document.createElement("a");
-a.href = previewImg.src;
+a.href = img.src;
 a.download = "quanneleap-image.jpg";
 document.body.appendChild(a);
 a.click();
 a.remove();
 }
 });
-
-// Optional helper if later you show preview image
-// Call this after you set previewImg.src:
-window.setPreview = function(src){
-if(!src){
-previewImg.style.display = "none";
-previewEmpty.style.display = "block";
-previewImg.src = "";
-enableDownloadIfPossible();
-return;
-}
-previewImg.src = src;
-previewImg.style.display = "block";
-previewEmpty.style.display = "none";
-enableDownloadIfPossible();
-};
-
-// Init
-previewImg.style.display = "none";
-enableDownloadIfPossible();
 </script>
 
 </body>
