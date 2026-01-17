@@ -78,6 +78,7 @@ background: rgba(255,255,255,.06);
 border:1px solid var(--line);
 color:var(--text);
 font-size:12px;
+text-decoration:none;
 }
 .pill .dot{
 width:8px; height:8px; border-radius:50%;
@@ -193,23 +194,23 @@ border-color: rgba(45,226,255,.38);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 }
 
-/* Theme row (big cards like your screenshot) */
+/* Theme row (left panel) */
 .themeRow{
-display:grid;
-grid-template-columns: repeat(4, 1fr);
+display:flex;
 gap:10px;
-}
-@media (max-width: 980px){
-.themeRow{grid-template-columns: repeat(2, 1fr);}
+overflow:auto;
+padding-bottom:6px;
 }
 .themeCard{
-position:relative;
-border-radius:16px;
+width:120px;
+height:86px;
+border-radius:14px;
 border:1px solid rgba(255,255,255,.12);
 background: rgba(0,0,0,.20);
 overflow:hidden;
 cursor:pointer;
-min-height:126px;
+flex:0 0 auto;
+position:relative;
 transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .themeCard:hover{
@@ -226,23 +227,20 @@ width:100%; height:100%;
 object-fit:cover;
 display:block;
 }
-.themeMeta{
-position:absolute; left:10px; right:10px; bottom:10px;
-display:flex; flex-direction:column; gap:2px;
-padding:8px 10px;
-border-radius:14px;
-background: rgba(0,0,0,.50);
-border:1px solid rgba(255,255,255,.12);
-}
-.themeMeta b{font-size:12px}
-.themeMeta span{font-size:11px; color:rgba(255,255,255,.70)}
 
-/* Style grid (little images you pick from) */
+/* Style grid (NOW UNDER PREVIEW) - SMALLER + NO TEXT */
+.styleSection{
+margin-top:12px;
+}
 .styleGrid{
 display:grid;
-grid-template-columns: repeat(3, 1fr);
+grid-template-columns: repeat(5, 1fr);
 gap:10px;
 }
+@media (max-width: 980px){
+.styleGrid{grid-template-columns: repeat(3, 1fr);}
+}
+
 .styleTile{
 position:relative;
 border-radius:14px;
@@ -251,7 +249,7 @@ background: rgba(0,0,0,.20);
 overflow:hidden;
 cursor:pointer;
 transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
-min-height:86px;
+height:84px; /* smaller */
 }
 .styleTile:hover{
 transform: translateY(-1px);
@@ -268,18 +266,8 @@ object-fit:cover;
 display:block;
 filter: saturate(1.05) contrast(1.02);
 }
-.styleTile .caption{
-position:absolute; left:8px; right:8px; bottom:8px;
-font-size:11px;
-padding:6px 8px;
-border-radius:999px;
-background: rgba(0,0,0,.45);
-border:1px solid rgba(255,255,255,.12);
-color: rgba(255,255,255,.88);
-text-overflow: ellipsis;
-overflow:hidden;
-white-space: nowrap;
-}
+/* IMPORTANT: Remove any text overlay completely */
+.styleTile .caption{ display:none !important; }
 
 /* Center preview + bottom creations strip */
 .previewWrap{
@@ -332,31 +320,9 @@ background: rgba(255,255,255,.05);
 overflow:hidden;
 flex: 0 0 auto;
 cursor:pointer;
-position:relative;
 }
 .thumb:hover{border-color: rgba(45,226,255,.30)}
 .thumb img{width:100%; height:100%; object-fit:cover; display:block}
-
-/* delete X on thumb */
-.thumb .xbtn{
-position:absolute;
-top:6px; right:6px;
-width:22px; height:22px;
-border-radius:999px;
-display:grid; place-items:center;
-background: rgba(0,0,0,.55);
-border:1px solid rgba(255,255,255,.16);
-color: rgba(255,255,255,.92);
-font-weight:900;
-font-size:12px;
-line-height:1;
-cursor:pointer;
-box-shadow: 0 10px 18px rgba(0,0,0,.35);
-}
-.thumb .xbtn:hover{
-border-color: rgba(45,226,255,.35);
-box-shadow: 0 12px 22px rgba(45,226,255,.10);
-}
 
 /* tiny helper note */
 .note{font-size:12px; color:var(--muted); line-height:1.3}
@@ -382,11 +348,7 @@ margin:10px 0;
 </div>
 
 <div class="rightPills">
-<!-- Home button added -->
-<a class="pill" href="/index.html" style="text-decoration:none">
-<span class="dot"></span>Home
-</a>
-
+<a class="pill" href="index.html">🏠 Home</a>
 <div class="pill"><span class="dot"></span>Platinum</div>
 <div class="pill">★ ∞</div>
 <div class="pill">
@@ -411,7 +373,7 @@ margin:10px 0;
 
 <div class="grid">
 
-<!-- LEFT: Prompt + theme -->
+<!-- LEFT: Prompt + Theme (styles moved to center under preview) -->
 <div class="panel">
 <div class="panelHeader"><h2>Prompt + Theme</h2></div>
 <div class="panelBody">
@@ -434,9 +396,10 @@ Theme images are in <b>/public/</b> (example: <b>public/Kids_Story.jpeg</b>). Fi
 </div>
 </div>
 
-<!-- CENTER: Preview + Pick Style UNDER the preview + creations strip -->
+<!-- CENTER: Preview + (Pick Style moved HERE) + creations strip -->
 <div class="panel">
 <div class="panelHeader"><h2>Preview</h2></div>
+
 <div class="previewWrap">
 <div class="previewStage" id="previewStage">
 <div class="previewEmpty" id="previewEmpty">
@@ -446,18 +409,12 @@ Theme images are in <b>/public/</b> (example: <b>public/Kids_Story.jpeg</b>). Fi
 <img id="previewImg" class="previewImg" alt="Preview" />
 </div>
 
-<!-- Pick Style moved HERE (under preview) -->
+<!-- PICK STYLE NOW UNDER PREVIEW -->
+<div class="styleSection">
 <div class="glowLine"></div>
-<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-<label class="label" style="margin:0">Pick Style (optional)</label>
+<div class="note" style="margin-bottom:8px"><b>Pick Style (optional)</b></div>
+<div id="styleGrid" class="styleGrid"></div>
 </div>
-<div id="styleGrid" class="styleGrid" style="margin-top:8px"></div>
-
-<div style="margin-top:10px" class="note">
-Style images are in <b>/public/</b> (example: <b>public/Pixar_Style.jpeg</b>). Filenames must match exactly.
-</div>
-
-<div class="glowLine"></div>
 
 <div class="creationStrip" id="creationStrip" aria-label="Creations strip">
 <!-- thumbs appear here -->
@@ -465,7 +422,7 @@ Style images are in <b>/public/</b> (example: <b>public/Pixar_Style.jpeg</b>). F
 </div>
 </div>
 
-<!-- RIGHT: Settings + generate + download -->
+<!-- RIGHT: Settings + generate -->
 <div class="panel">
 <div class="panelHeader"><h2>Settings</h2></div>
 <div class="panelBody">
@@ -492,10 +449,6 @@ Style images are in <b>/public/</b> (example: <b>public/Pixar_Style.jpeg</b>). F
 <div class="glowLine"></div>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
-<div style="height:10px"></div>
-
-<!-- Download button added -->
-<button class="btn" id="downloadBtn" style="width:100%">Download</button>
 
 <div style="margin-top:10px" class="note">
 UI is ready. Next we wire Generate to your backend.
@@ -509,29 +462,28 @@ UI is ready. Next we wire Generate to your backend.
 <script>
 console.log("✅ create-image.html loaded");
 
-// ====== THEMES (big cards) ======
-// IMPORTANT: These file names must exist in /public/
-// Example: public/Kids_Story.jpeg
+// ====== THEMES (top row: Kids Story, Biblical Epic, Neon City Heist, Future Ops) ======
+// IMPORTANT: these must exist in /public/ with EXACT filenames
 const THEMES = [
-{ id:"Kids_Story", label:"Kids Story", sub:"Kid-friendly adventure", img:"Kids_Story.jpeg", seed:"kid-friendly, warm, hopeful" },
-{ id:"Biblical_Epic", label:"Biblical Epic", sub:"Faith + cinematic scale", img:"Biblical_Epic.jpeg", seed:"cinematic biblical epic, majestic light" },
-{ id:"Neon_City_Heist", label:"Neon City Heist", sub:"Neon crime story (original)", img:"Neon_City_Heist.jpeg", seed:"neon city, cyberpunk, high contrast" },
-{ id:"Future_Ops", label:"Future Ops", sub:"Tactical sci-fi action", img:"Future_Ops.jpeg", seed:"futuristic tactical, clean sci-fi" },
+{ id:"Kids_Story", label:"Kids Story", img:"Kids_Story.jpeg", seed:"kid-friendly, warm, hopeful" },
+{ id:"Biblical_Epic", label:"Biblical Epic", img:"Biblical_Epic.jpeg", seed:"cinematic biblical epic, majestic light" },
+{ id:"Neon_City_Heist", label:"Neon City Heist", img:"Neon_City_Heist.jpeg", seed:"neon city, cyberpunk, high contrast" },
+{ id:"Future_Ops", label:"Future Ops", img:"Future_Ops.jpeg", seed:"futuristic tactical, clean sci-fi" },
 ];
 
-// ====== STYLES (little tiles) ======
-// IMPORTANT: These file names must exist in /public/
-// Example: public/Pixar_Style.jpeg
+// ====== STYLES (moved under Preview) ======
+// IMPORTANT: these must exist in /public/ with EXACT filenames
 const STYLES = [
-{ id:"Pixar_Style", label:"Pixar Style", img:"Pixar_Style.jpeg", seed:"Pixar-inspired 3D, soft lighting, expressive faces" },
-{ id:"Disney_Style", label:"Disney Style", img:"Disney_Style.jpeg", seed:"Disney-inspired 3D, bright colors, magical glow" },
-{ id:"Anime_Fantasy", label:"Anime Fantasy", img:"Anime_Fantasy.jpeg", seed:"anime fantasy, vibrant, detailed eyes, cinematic" },
-{ id:"Realistic_Cinema", label:"Realistic Cinema", img:"Realistic_Cinema.jpeg", seed:"realistic cinematic photo, natural lighting, film grain" },
-{ id:"Film_Narrative", label:"Film Narrative", img:"Film_Narrative.jpeg", seed:"cinematic film still, story-driven composition" },
-{ id:"Storybook_Charm", label:"Storybook Charm", img:"Storybook_Charm.jpeg", seed:"storybook illustration, soft pastel, charming" },
-{ id:"PixiePop_3D", label:"PixiePop 3D", img:"PixiePop_3D.jpeg", seed:"cute 3D character, glossy, playful" },
+{ id:"Pixar_Style", label:"Pixar Style", img:"Pixar_Style.jpeg", seed:"pixar-style, 3D, cinematic, soft light" },
+{ id:"Disney_Style", label:"Disney Style", img:"Disney_Style.jpeg", seed:"disney-style, magical, bright, smooth" },
+{ id:"Anime_Fantasy", label:"Anime Fantasy", img:"Anime_Fantasy.jpeg", seed:"anime fantasy, vibrant, dramatic lighting" },
+{ id:"Realistic_Cinema", label:"Realistic Cinema", img:"Realistic_Cinema.jpeg", seed:"realistic cinema, shallow depth of field" },
+{ id:"Biblical_Style", label:"Biblical Style", img:"Biblical_Style.jpeg", seed:"biblical illustration, warm tones, ancient setting" },
+{ id:"Film_Narrative", label:"Film Narrative", img:"Film_Narrative.jpeg", seed:"cinematic film still, natural lighting" },
+{ id:"Storybook_Charm", label:"Storybook Charm", img:"Storybook_Charm.jpeg", seed:"storybook illustration, soft pastel" },
+{ id:"PixiePop_3D", label:"PixiePop 3D", img:"PixiePop_3D.jpeg", seed:"cute 3D characters, glossy, playful" },
 { id:"Inked_Realism", label:"Inked Realism", img:"Inked_Realism.jpeg", seed:"inked realism, textured pen shading" },
-{ id:"Watercolor_Whimsy", label:"Watercolor Whimsy", img:"Watercolor_Whimsy.jpeg", seed:"watercolor wash, gentle edges, soft bloom" },
+{ id:"Watercolor_Whimsy", label:"Watercolor Whimsy", img:"Watercolor_Whimsy.jpeg", seed:"watercolor wash, gentle edges" },
 ];
 
 const $ = (s)=>document.querySelector(s);
@@ -549,11 +501,9 @@ if(!src){
 previewImg.style.display = "none";
 previewEmpty.style.display = "block";
 previewImg.src = "";
-previewImg.dataset.src = "";
 return;
 }
 previewImg.src = src;
-previewImg.dataset.src = src;
 previewImg.style.display = "block";
 previewEmpty.style.display = "none";
 }
@@ -566,24 +516,17 @@ card.className = "themeCard" + (th.id===selectedTheme ? " active" : "");
 card.setAttribute("data-theme", th.id);
 
 const img = document.createElement("img");
-img.src = th.img; // /public/
+img.src = th.img;
 img.alt = th.label;
 
-const meta = document.createElement("div");
-meta.className = "themeMeta";
-const b = document.createElement("b"); b.textContent = th.label;
-const s = document.createElement("span"); s.textContent = th.sub;
-meta.appendChild(b); meta.appendChild(s);
-
 card.appendChild(img);
-card.appendChild(meta);
 
 card.addEventListener("click", ()=>{
 selectedTheme = th.id;
 document.querySelectorAll(".themeCard").forEach(x=>x.classList.remove("active"));
 card.classList.add("active");
 
-// OPTIONAL: if prompt empty, drop in theme seed
+// OPTIONAL auto-fill prompt if empty
 const prompt = $("#prompt");
 if(prompt.value.trim().length === 0){
 prompt.value = th.seed;
@@ -602,22 +545,18 @@ tile.className = "styleTile" + (st.id===selectedStyle ? " active" : "");
 tile.setAttribute("data-style", st.id);
 
 const img = document.createElement("img");
-img.src = st.img; // /public/
+img.src = st.img;
 img.alt = st.label;
 
-const cap = document.createElement("div");
-cap.className = "caption";
-cap.textContent = st.label;
-
+// NOTE: no caption added at all (so no words overlay)
 tile.appendChild(img);
-tile.appendChild(cap);
 
 tile.addEventListener("click", ()=>{
 selectedStyle = st.id;
 document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"));
 tile.classList.add("active");
 
-// OPTIONAL: if prompt empty, drop in style seed
+// OPTIONAL auto-fill prompt if empty
 const prompt = $("#prompt");
 if(prompt.value.trim().length === 0){
 prompt.value = st.seed;
@@ -628,38 +567,15 @@ styleGrid.appendChild(tile);
 });
 }
 
-// ====== Creations strip (UI only for now) ======
+// ====== Creations strip demo (UI only for now) ======
 function addCreationThumb(src){
 const box = document.createElement("div");
 box.className = "thumb";
-
 const img = document.createElement("img");
 img.src = src;
 img.alt = "Creation";
-
-// delete X button
-const x = document.createElement("button");
-x.className = "xbtn";
-x.type = "button";
-x.textContent = "×";
-
-x.addEventListener("click", (e)=>{
-e.stopPropagation();
-const wasCurrent = (previewImg.dataset.src === src);
-box.remove();
-
-if(wasCurrent){
-const first = creationStrip.querySelector(".thumb img");
-if(first) setPreview(first.src);
-else setPreview(null);
-}
-});
-
 box.appendChild(img);
-box.appendChild(x);
-
 box.addEventListener("click", ()=> setPreview(src));
-
 creationStrip.prepend(box);
 setPreview(src);
 }
@@ -679,10 +595,9 @@ alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
 });
 
 $("#generateBtn").addEventListener("click", ()=>{
-// UI-only placeholder (so the page feels alive)
-// Uses the THEME image as a fake “result” until we wire the API.
-const th = THEMES.find(x=>x.id===selectedTheme) || THEMES[0];
-addCreationThumb(th.img);
+// UI-only placeholder: use the selected STYLE image as fake “result”
+const st = STYLES.find(x=>x.id===selectedStyle) || STYLES[0];
+addCreationThumb(st.img);
 
 console.log("Generate clicked:", {
 prompt: $("#prompt").value,
@@ -694,39 +609,10 @@ quality: $("#quality").value
 });
 });
 
-// Download current preview image to the user's device
-$("#downloadBtn").addEventListener("click", async ()=>{
-const src = previewImg.dataset.src || previewImg.src;
-if(!src){
-alert("Nothing to download yet. Generate or select an image first.");
-return;
-}
-
-const fileName = (src.split("/").pop() || "quanne-leap-image.jpeg");
-
-try{
-// Works reliably across browsers: fetch -> blob -> objectURL -> <a download>
-const res = await fetch(src, { cache: "no-store" });
-const blob = await res.blob();
-const url = URL.createObjectURL(blob);
-
-const a = document.createElement("a");
-a.href = url;
-a.download = fileName;
-document.body.appendChild(a);
-a.click();
-a.remove();
-
-URL.revokeObjectURL(url);
-}catch(err){
-// fallback: open in new tab if fetch is blocked by CORS (shouldn't be for same origin)
-window.open(src, "_blank");
-}
-});
-
 // Init
 renderThemes();
 renderStyles();
 setPreview(null);
 </script>
 </body>
+</html>
