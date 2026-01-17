@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Quanne Leap — Text → Image</title>
 
+<!-- Self-contained neon theme (matches your homepage vibe) -->
 <style>
 :root{
 --bg0:#070a12;
@@ -90,23 +91,6 @@ background: rgba(255,255,255,.08);
 border:1px solid var(--line);
 font-weight:700;
 }
-.homeBtn{
-text-decoration:none;
-display:inline-flex;
-align-items:center;
-gap:8px;
-padding:9px 12px;
-border-radius:999px;
-background: linear-gradient(90deg, rgba(45,226,255,.18), rgba(66,165,255,.10));
-border:1px solid rgba(45,226,255,.32);
-color:var(--text);
-font-weight:800;
-font-size:12px;
-}
-.homeBtn:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 16px 45px rgba(45,226,255,.12);
-}
 
 /* Page layout */
 .wrap{max-width:1200px; margin:0 auto; padding:18px 16px 28px;}
@@ -128,6 +112,7 @@ grid-template-columns: 330px 1fr 280px;
 gap:14px;
 align-items:start;
 }
+
 @media (max-width: 980px){
 .grid{grid-template-columns:1fr; }
 }
@@ -142,10 +127,6 @@ overflow:hidden;
 .panelHeader{
 padding:14px 14px 10px;
 border-bottom:1px solid rgba(255,255,255,.08);
-display:flex;
-align-items:center;
-justify-content:space-between;
-gap:10px;
 }
 .panelHeader h2{
 margin:0;
@@ -179,7 +160,7 @@ border:none;
 cursor:pointer;
 border-radius:999px;
 padding:10px 14px;
-font-weight:800;
+font-weight:700;
 font-size:13px;
 color:var(--text);
 background: rgba(255,255,255,.08);
@@ -212,49 +193,7 @@ border-color: rgba(45,226,255,.38);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 }
 
-/* THEMES (big cards like your homepage) */
-.themeGrid{
-display:grid;
-grid-template-columns: repeat(2, 1fr);
-gap:10px;
-}
-.themeCard{
-position:relative;
-border-radius:16px;
-border:1px solid rgba(255,255,255,.12);
-background: rgba(0,0,0,.20);
-overflow:hidden;
-cursor:pointer;
-min-height:120px;
-transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
-}
-.themeCard:hover{
-transform: translateY(-1px);
-border-color: rgba(45,226,255,.28);
-box-shadow: 0 14px 40px rgba(0,0,0,.35);
-}
-.themeCard.active{
-border-color: rgba(45,226,255,.60);
-box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
-}
-.themeCard img{
-width:100%; height:100%;
-object-fit:cover;
-display:block;
-filter: saturate(1.05) contrast(1.02);
-}
-.themeCard .meta{
-position:absolute; left:10px; right:10px; bottom:10px;
-display:flex; flex-direction:column; gap:4px;
-background: rgba(0,0,0,.45);
-border:1px solid rgba(255,255,255,.12);
-border-radius:14px;
-padding:8px 10px;
-}
-.themeCard .meta b{font-size:12px}
-.themeCard .meta span{font-size:11px; color:rgba(255,255,255,.72)}
-
-/* STYLE GRID (little images you pick from) */
+/* Style grid (little images you pick from) */
 .styleGrid{
 display:grid;
 grid-template-columns: repeat(3, 1fr);
@@ -298,21 +237,6 @@ overflow:hidden;
 white-space: nowrap;
 }
 
-/* When an image is missing, show a nice fallback tile */
-.imgFallback{
-height:100%;
-display:grid;
-place-items:center;
-padding:10px;
-text-align:center;
-color: rgba(255,255,255,.78);
-background:
-radial-gradient(220px 120px at 50% 20%, rgba(45,226,255,.14), transparent 70%),
-rgba(0,0,0,.18);
-}
-.imgFallback b{font-size:12px}
-.imgFallback span{font-size:11px; color:rgba(255,255,255,.60)}
-
 /* Center preview + bottom creations strip */
 .previewWrap{
 padding:14px;
@@ -337,7 +261,7 @@ user-select:none;
 font-size:34px;
 filter: drop-shadow(0 12px 22px rgba(0,0,0,.55));
 }
-.previewEmpty .txt{margin-top:10px; font-weight:800}
+.previewEmpty .txt{margin-top:10px; font-weight:700}
 .previewImg{
 position:absolute; inset:0;
 width:100%; height:100%;
@@ -356,8 +280,6 @@ display:flex;
 gap:10px;
 overflow:auto;
 }
-
-/* Thumb + delete X */
 .thumb{
 width:92px; height:64px;
 border-radius:12px;
@@ -366,30 +288,11 @@ background: rgba(255,255,255,.05);
 overflow:hidden;
 flex: 0 0 auto;
 cursor:pointer;
-position:relative;
 }
 .thumb:hover{border-color: rgba(45,226,255,.30)}
 .thumb img{width:100%; height:100%; object-fit:cover; display:block}
-.thumb .xBtn{
-position:absolute;
-top:6px; right:6px;
-width:22px; height:22px;
-border-radius:999px;
-border:1px solid rgba(255,255,255,.18);
-background: rgba(0,0,0,.55);
-color: rgba(255,255,255,.92);
-font-weight:900;
-display:grid;
-place-items:center;
-cursor:pointer;
-line-height:1;
-user-select:none;
-}
-.thumb .xBtn:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10);
-}
 
+/* tiny helper note */
 .note{font-size:12px; color:var(--muted); line-height:1.3}
 .glowLine{
 height:1px; width:100%;
@@ -413,7 +316,6 @@ margin:10px 0;
 </div>
 
 <div class="rightPills">
-<a class="homeBtn" href="index.html">⌂ Home</a>
 <div class="pill"><span class="dot"></span>Platinum</div>
 <div class="pill">★ ∞</div>
 <div class="pill">
@@ -432,15 +334,15 @@ margin:10px 0;
 <div class="titleRow">
 <div>
 <h1>Text → Image</h1>
-<p>Create an image from a prompt. Pick a theme + style (optional), choose size, hit generate, then manage results below.</p>
+<p>Create an image from a prompt. Pick a style, choose size, hit generate, then pick results from the strip below.</p>
 </div>
 </div>
 
 <div class="grid">
 
-<!-- LEFT: Prompt + theme + style picker -->
+<!-- LEFT: Prompt + style picker -->
 <div class="panel">
-<div class="panelHeader"><h2>Prompt + Theme + Style</h2></div>
+<div class="panelHeader"><h2>Prompt + Style</h2></div>
 <div class="panelBody">
 <label class="label">Prompt</label>
 <textarea id="prompt" class="textarea" placeholder="Describe what you want..."></textarea>
@@ -450,24 +352,13 @@ margin:10px 0;
 <button class="btn" id="pasteBtn">Paste</button>
 </div>
 
-<div class="glowLine"></div>
-
-<label class="label">Pick Theme (optional)</label>
-<div id="themeGrid" class="themeGrid"></div>
-
-<div class="glowLine"></div>
-
-<label class="label">Pick Style (optional)</label>
-<div id="styleGrid" class="styleGrid"></div>
-
 <div style="margin-top:10px" class="note">
-Put images in <b>/public/</b> exactly like: <b>public/Kids_Story.jpeg</b><br/>
-Then the code must reference them like: <b>Kids_Story.jpeg</b>
+Drop your style images into <b>/public/</b> (example: <b>public/Kids_Story.jpeg</b>) and keep the filenames exactly the same as below.
 </div>
 </div>
 </div>
 
-<!-- CENTER: Preview + creations strip -->
+<!-- CENTER: Preview + creations strip + styles BELOW preview -->
 <div class="panel">
 <div class="panelHeader"><h2>Preview</h2></div>
 <div class="previewWrap">
@@ -481,6 +372,13 @@ Then the code must reference them like: <b>Kids_Story.jpeg</b>
 
 <div class="creationStrip" id="creationStrip" aria-label="Creations strip">
 <!-- thumbs appear here -->
+</div>
+
+<!-- ✅ MOVED: Pick a Style is now UNDER the Preview screen -->
+<div style="margin-top:14px">
+<div class="glowLine"></div>
+<label class="label">Pick a Style</label>
+<div id="styleGrid" class="styleGrid"></div>
 </div>
 </div>
 </div>
@@ -513,8 +411,13 @@ Then the code must reference them like: <b>Kids_Story.jpeg</b>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
 
+<!-- ✅ ADDED: Download button -->
+<button class="btn" id="downloadBtn" style="margin-top:10px">
+Download Image
+</button>
+
 <div style="margin-top:10px" class="note">
-UI is ready. Next we wire Generate to your backend.
+Right now this page is UI-only. Tomorrow we’ll wire the Generate button to your backend endpoint.
 </div>
 </div>
 </div>
@@ -525,52 +428,30 @@ UI is ready. Next we wire Generate to your backend.
 <script>
 console.log("✅ create-image.html loaded");
 
-// ========= IMPORTANT =========
-// ALL images must exist as: /public/FILENAME.jpeg
-// And here you reference them ONLY as: "FILENAME.jpeg"
-//
-// If an image is missing or the filename doesn't match EXACTLY,
-// the tile will show a fallback (so your page never looks broken).
-
-// THEMES (top section)
-const THEMES = [
-{ id:"Kids_Story", title:"Kids Story", sub:"Kid-friendly adventure", img:"Kids_Story.jpeg", seed:"kid-friendly, warm, hopeful" },
-{ id:"Biblical_Epic", title:"Biblical Epic", sub:"Faith + cinematic scale", img:"Biblical_Epic.jpeg", seed:"cinematic biblical epic, majestic light" },
-{ id:"Neon_City_Heist", title:"Neon City Heist", sub:"Neon crime story (original)", img:"Neon_City_Heist.jpeg", seed:"neon city, cyberpunk, high contrast" },
-{ id:"Future_Ops", title:"Future Ops", sub:"Tactical sci-fi action", img:"Future_Ops.jpeg", seed:"futuristic tactical, clean sci-fi" },
-];
-
-// STYLES (little tiles)
-// NOTE: Your screenshot shows you have some that are missing. Those 5 will be fixed by either:
-// (1) renaming the file in /public to match EXACTLY what is here, OR
-// (2) changing the "img" string here to match EXACTLY what is on your server.
+// ====== STYLE TILES (use your existing public/*.jpeg files) ======
+// IMPORTANT: These file names must exist in /public/
+// Example: public/Kids_Story.jpeg
 const STYLES = [
-{ id:"Pixar_Style", label:"Pixar Style", img:"Pixar_Style.jpeg", seed:"Pixar-inspired 3D, warm lighting, cinematic" },
-{ id:"Disney_Style", label:"Disney Style", img:"Disney_Style.jpeg", seed:"Disney-like 3D, magical, soft glow, clean faces" },
-{ id:"Anime_Fantasy", label:"Anime Fantasy", img:"Anime_Fantasy.jpeg", seed:"anime fantasy, vibrant, detailed eyes, soft bloom" },
-{ id:"Realistic_Cinema", label:"Realistic Cinema", img:"Realistic_Cinema.jpeg", seed:"realistic cinematic photo, shallow depth of field" },
-{ id:"Biblical_Epic", label:"Biblical Epic", img:"Biblical_Epic.jpeg", seed:"biblical illustration, reverent, cinematic light" },
-
-// Your original list (keep if you have these files)
+{ id:"Kids_Story", label:"Kids Story", img:"Kids_Story.jpeg", seed:"kid-friendly, warm, hopeful" },
+{ id:"Biblical_Epic", label:"Biblical Epic", img:"Biblical_Epic.jpeg", seed:"cinematic biblical epic, majestic light" },
+{ id:"Neon_City_Heist", label:"Neon City Heist", img:"Neon_City_Heist.jpeg", seed:"neon city, cyberpunk, high contrast" },
+{ id:"Future_Ops", label:"Future Ops", img:"Future_Ops.jpeg", seed:"futuristic tactical, clean sci-fi" },
 { id:"Film_Narrative", label:"Film Narrative", img:"Film_Narrative.jpeg", seed:"cinematic film still, natural lighting" },
 { id:"Storybook_Charm", label:"Storybook Charm", img:"Storybook_Charm.jpeg", seed:"storybook illustration, soft pastel" },
 { id:"PixiePop_3D", label:"PixiePop 3D", img:"PixiePop_3D.jpeg", seed:"3D cute character, glossy, playful" },
 { id:"Inked_Realism", label:"Inked Realism", img:"Inked_Realism.jpeg", seed:"inked realism, textured pen shading" },
-{ id:"Watercolor_Whimsy", label:"Watercolor Whimsy", img:"Watercolor_Whimsy.jpeg", seed:"watercolor wash, gentle edges" },
+{ id:"Watercolor_Whimsy",label:"Watercolor Whimsy", img:"Watercolor_Whimsy.jpeg",seed:"watercolor wash, gentle edges" },
 ];
 
 const $ = (s)=>document.querySelector(s);
-
-const themeGrid = $("#themeGrid");
 const styleGrid = $("#styleGrid");
 const creationStrip = $("#creationStrip");
 const previewImg = $("#previewImg");
 const previewEmpty = $("#previewEmpty");
+const downloadBtn = $("#downloadBtn");
 
-let selectedTheme = THEMES[0]?.id || null;
 let selectedStyle = STYLES[0]?.id || null;
 
-// ------- Preview helpers -------
 function setPreview(src){
 if(!src){
 previewImg.style.display = "none";
@@ -583,62 +464,6 @@ previewImg.style.display = "block";
 previewEmpty.style.display = "none";
 }
 
-// ------- Safe image helper (never shows broken image icon) -------
-function makeSafeImg(src, label){
-const img = document.createElement("img");
-img.src = src;
-img.alt = label;
-
-img.onerror = () => {
-// Replace with fallback block
-const parent = img.parentElement;
-if(!parent) return;
-parent.innerHTML = "";
-const fb = document.createElement("div");
-fb.className = "imgFallback";
-fb.innerHTML = `<div><b>${label}</b><br/><span>Missing image</span></div>`;
-parent.appendChild(fb);
-};
-
-return img;
-}
-
-// ------- Render Themes -------
-function renderThemes(){
-themeGrid.innerHTML = "";
-THEMES.forEach(th=>{
-const card = document.createElement("div");
-card.className = "themeCard" + (th.id===selectedTheme ? " active" : "");
-card.setAttribute("data-theme", th.id);
-
-const imgWrap = document.createElement("div");
-imgWrap.style.height = "100%";
-imgWrap.appendChild(makeSafeImg(th.img, th.title));
-
-const meta = document.createElement("div");
-meta.className = "meta";
-meta.innerHTML = `<b>${th.title}</b><span>${th.sub}</span>`;
-
-card.appendChild(imgWrap);
-card.appendChild(meta);
-
-card.addEventListener("click", ()=>{
-selectedTheme = th.id;
-document.querySelectorAll(".themeCard").forEach(x=>x.classList.remove("active"));
-card.classList.add("active");
-
-// OPTIONAL: seed prompt if empty
-const prompt = $("#prompt");
-if(prompt.value.trim().length === 0){
-prompt.value = th.seed;
-}
-});
-
-themeGrid.appendChild(card);
-});
-}
-
-// ------- Render Styles -------
 function renderStyles(){
 styleGrid.innerHTML = "";
 STYLES.forEach(st=>{
@@ -646,23 +471,24 @@ const tile = document.createElement("div");
 tile.className = "styleTile" + (st.id===selectedStyle ? " active" : "");
 tile.setAttribute("data-style", st.id);
 
-const imgWrap = document.createElement("div");
-imgWrap.style.height = "100%";
-imgWrap.appendChild(makeSafeImg(st.img, st.label));
+const img = document.createElement("img");
+img.src = st.img; // looks in /public/ automatically
+img.alt = st.label;
 
 const cap = document.createElement("div");
 cap.className = "caption";
 cap.textContent = st.label;
 
-tile.appendChild(imgWrap);
+tile.appendChild(img);
 tile.appendChild(cap);
 
 tile.addEventListener("click", ()=>{
 selectedStyle = st.id;
+// highlight selection
 document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"));
 tile.classList.add("active");
 
-// OPTIONAL: seed prompt if empty
+// OPTIONAL: auto-add style seed to prompt (comment out if you don’t want this)
 const prompt = $("#prompt");
 if(prompt.value.trim().length === 0){
 prompt.value = st.seed;
@@ -673,49 +499,24 @@ styleGrid.appendChild(tile);
 });
 }
 
-// ------- Creations strip with DELETE X -------
+// ====== Creations strip demo (UI only for now) ======
+// Tomorrow we will replace this with real generated results from your server.
 function addCreationThumb(src){
 const box = document.createElement("div");
 box.className = "thumb";
-box.setAttribute("data-src", src);
-
 const img = document.createElement("img");
 img.src = src;
 img.alt = "Creation";
-
-const x = document.createElement("div");
-x.className = "xBtn";
-x.textContent = "×";
-
-// click thumb -> preview
-box.addEventListener("click", ()=> setPreview(src));
-
-// click X -> delete thumb (stop click bubbling)
-x.addEventListener("click", (e)=>{
-e.stopPropagation();
-
-const wasCurrent = (previewImg.style.display !== "none" && previewImg.src.includes(src));
-box.remove();
-
-if(wasCurrent){
-const next = creationStrip.querySelector(".thumb");
-if(next){
-setPreview(next.getAttribute("data-src"));
-}else{
-setPreview(null);
-}
-}
-});
-
 box.appendChild(img);
-box.appendChild(x);
-
+box.addEventListener("click", ()=> setPreview(src));
 creationStrip.prepend(box);
 setPreview(src);
 }
 
-// ------- Buttons -------
-$("#clearBtn").addEventListener("click", ()=>{ $("#prompt").value = ""; });
+// Buttons
+$("#clearBtn").addEventListener("click", ()=>{
+$("#prompt").value = "";
+});
 
 $("#pasteBtn").addEventListener("click", async ()=>{
 try{
@@ -727,19 +528,12 @@ alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
 });
 
 $("#generateBtn").addEventListener("click", ()=>{
-// UI-only placeholder:
-// until we wire the backend, we “pretend” by dropping the selected theme image into results.
-const theme = THEMES.find(x=>x.id===selectedTheme) || THEMES[0];
-const style = STYLES.find(x=>x.id===selectedStyle) || STYLES[0];
-
-// pick style image first, if missing then theme, so it feels like “style matters”
-const fakeResult = (style?.img || theme?.img);
-
-addCreationThumb(fakeResult);
-
+// UI-only placeholder (so the page feels alive)
+// Uses the style image as a fake “result” until we wire the API tomorrow.
+const st = STYLES.find(x=>x.id===selectedStyle) || STYLES[0];
+addCreationThumb(st.img);
 console.log("Generate clicked:", {
 prompt: $("#prompt").value,
-theme: selectedTheme,
 style: selectedStyle,
 size: $("#size").value,
 count: $("#count").value,
@@ -747,11 +541,23 @@ quality: $("#quality").value
 });
 });
 
-// ------- Init -------
-renderThemes();
+// ✅ Download currently previewed image
+downloadBtn.addEventListener("click", () => {
+if (!previewImg.src) {
+alert("No image to download yet.");
+return;
+}
+const link = document.createElement("a");
+link.href = previewImg.src;
+link.download = "quanne-leap-image.jpg";
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+});
+
+// Init
 renderStyles();
 setPreview(null);
 </script>
 </body>
 </html>
-
