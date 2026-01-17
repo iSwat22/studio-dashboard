@@ -198,6 +198,19 @@ border-color: rgba(45,226,255,.55);
 box-shadow: 0 18px 55px rgba(45,226,255,.18);
 }
 
+/* download button styling (matches your UI) */
+.btnSecondary{
+width:100%;
+padding:12px 14px;
+margin-top:10px;
+background: rgba(255,255,255,.08);
+border:1px solid rgba(45,226,255,.22);
+}
+.btnSecondary:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 16px 45px rgba(45,226,255,.12);
+}
+
 .select{
 width:100%;
 border-radius:14px;
@@ -230,12 +243,12 @@ transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .themeCard:hover{
 transform: translateY(-1px);
-border-color: rgba(45,226,255,.28);
-box-shadow: 0 14px 40px rgba(0,0,0,.35);
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 14px 40px rgba(0,0,0,.35);
 }
 .themeCard.active{
-border-color: rgba(45,226,255,.60);
-box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
+border-color: rgba(45,226,255,.70);
+box-shadow: 0 0 0 3px rgba(45,226,255,.14), 0 16px 50px rgba(45,226,255,.12);
 }
 .themeCard img{
 width:100%; height:100%;
@@ -272,12 +285,12 @@ min-height:86px;
 }
 .styleTile:hover{
 transform: translateY(-1px);
-border-color: rgba(45,226,255,.28);
-box-shadow: 0 14px 40px rgba(0,0,0,.35);
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 14px 40px rgba(0,0,0,.35);
 }
 .styleTile.active{
-border-color: rgba(45,226,255,.60);
-box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
+border-color: rgba(45,226,255,.70);
+box-shadow: 0 0 0 3px rgba(45,226,255,.14), 0 16px 50px rgba(45,226,255,.12);
 }
 .styleTile img{
 width:100%; height:100%;
@@ -368,7 +381,7 @@ flex: 0 0 auto;
 cursor:pointer;
 position:relative;
 }
-.thumb:hover{border-color: rgba(45,226,255,.30)}
+.thumb:hover{border-color: rgba(45,226,255,.55)}
 .thumb img{width:100%; height:100%; object-fit:cover; display:block}
 .thumb .xBtn{
 position:absolute;
@@ -460,10 +473,6 @@ margin:10px 0;
 <label class="label">Pick Style (optional)</label>
 <div id="styleGrid" class="styleGrid"></div>
 
-<div style="margin-top:10px" class="note">
-Put images in <b>/public/</b> exactly like: <b>public/Kids_Story.jpeg</b><br/>
-Then the code must reference them like: <b>Kids_Story.jpeg</b>
-</div>
 </div>
 </div>
 
@@ -512,6 +521,7 @@ Then the code must reference them like: <b>Kids_Story.jpeg</b>
 <div class="glowLine"></div>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
+<button class="btn btnSecondary" id="downloadBtn" disabled>Download</button>
 
 <div style="margin-top:10px" class="note">
 UI is ready. Next we wire Generate to your backend.
@@ -528,9 +538,6 @@ console.log("✅ create-image.html loaded");
 // ========= IMPORTANT =========
 // ALL images must exist as: /public/FILENAME.jpeg
 // And here you reference them ONLY as: "FILENAME.jpeg"
-//
-// If an image is missing or the filename doesn't match EXACTLY,
-// the tile will show a fallback (so your page never looks broken).
 
 // THEMES (top section)
 const THEMES = [
@@ -540,18 +547,12 @@ const THEMES = [
 { id:"Future_Ops", title:"Future Ops", sub:"Tactical sci-fi action", img:"Future_Ops.jpeg", seed:"futuristic tactical, clean sci-fi" },
 ];
 
-// STYLES (little tiles)
-// NOTE: Your screenshot shows you have some that are missing. Those 5 will be fixed by either:
-// (1) renaming the file in /public to match EXACTLY what is here, OR
-// (2) changing the "img" string here to match EXACTLY what is on your server.
 const STYLES = [
 { id:"Pixar_Style", label:"Pixar Style", img:"Pixar_Style.jpeg", seed:"Pixar-inspired 3D, warm lighting, cinematic" },
 { id:"Disney_Style", label:"Disney Style", img:"Disney_Style.jpeg", seed:"Disney-like 3D, magical, soft glow, clean faces" },
 { id:"Anime_Fantasy", label:"Anime Fantasy", img:"Anime_Fantasy.jpeg", seed:"anime fantasy, vibrant, detailed eyes, soft bloom" },
 { id:"Realistic_Cinema", label:"Realistic Cinema", img:"Realistic_Cinema.jpeg", seed:"realistic cinematic photo, shallow depth of field" },
 { id:"Biblical_Style", label:"Biblical Style", img:"Biblical_Style.jpeg", seed:"biblical illustration, reverent, cinematic light" },
-
-// Your original list (keep if you have these files)
 { id:"Film_Narrative", label:"Film Narrative", img:"Film_Narrative.jpeg", seed:"cinematic film still, natural lighting" },
 { id:"Storybook_Charm", label:"Storybook Charm", img:"Storybook_Charm.jpeg", seed:"storybook illustration, soft pastel" },
 { id:"PixiePop_3D", label:"PixiePop 3D", img:"PixiePop_3D.jpeg", seed:"3D cute character, glossy, playful" },
@@ -566,9 +567,13 @@ const styleGrid = $("#styleGrid");
 const creationStrip = $("#creationStrip");
 const previewImg = $("#previewImg");
 const previewEmpty = $("#previewEmpty");
+const downloadBtn = $("#downloadBtn");
 
-let selectedTheme = THEMES[0]?.id || null;
-let selectedStyle = STYLES[0]?.id || null;
+let selectedTheme = null;
+let selectedStyle = null;
+
+// track current "generated" preview image (for download)
+let currentResultSrc = "";
 
 // ------- Preview helpers -------
 function setPreview(src){
@@ -576,21 +581,45 @@ if(!src){
 previewImg.style.display = "none";
 previewEmpty.style.display = "block";
 previewImg.src = "";
+currentResultSrc = "";
+downloadBtn.disabled = true;
 return;
 }
 previewImg.src = src;
 previewImg.style.display = "block";
 previewEmpty.style.display = "none";
+currentResultSrc = src;
+downloadBtn.disabled = false;
 }
 
-// ------- Safe image helper (never shows broken image icon) -------
+// ------- Prompt helper (keeps BOTH theme + style in prompt) -------
+function updatePromptFromSelections(){
+const prompt = $("#prompt");
+const base = prompt.value || "";
+
+const theme = THEMES.find(t => t.id === selectedTheme);
+const style = STYLES.find(s => s.id === selectedStyle);
+
+const themeLine = theme ? `Theme: ${theme.title}` : "";
+const styleLine = style ? `Style: ${style.label}` : "";
+
+let lines = base.split("\n");
+
+lines = lines.filter(l => !l.startsWith("Theme: ") && !l.startsWith("Style: "));
+
+if(themeLine) lines.unshift(themeLine);
+if(styleLine) lines.unshift(styleLine);
+
+prompt.value = lines.join("\n").trim();
+}
+
+// ------- Safe image helper -------
 function makeSafeImg(src, label){
 const img = document.createElement("img");
 img.src = src;
 img.alt = label;
 
 img.onerror = () => {
-// Replace with fallback block
 const parent = img.parentElement;
 if(!parent) return;
 parent.innerHTML = "";
@@ -626,12 +655,7 @@ card.addEventListener("click", ()=>{
 selectedTheme = th.id;
 document.querySelectorAll(".themeCard").forEach(x=>x.classList.remove("active"));
 card.classList.add("active");
-
-// OPTIONAL: seed prompt if empty
-const prompt = $("#prompt");
-if(prompt.value.trim().length === 0){
-prompt.value = th.seed;
-}
+updatePromptFromSelections();
 });
 
 themeGrid.appendChild(card);
@@ -661,12 +685,7 @@ tile.addEventListener("click", ()=>{
 selectedStyle = st.id;
 document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"));
 tile.classList.add("active");
-
-// OPTIONAL: seed prompt if empty
-const prompt = $("#prompt");
-if(prompt.value.trim().length === 0){
-prompt.value = st.seed;
-}
+updatePromptFromSelections();
 });
 
 styleGrid.appendChild(tile);
@@ -687,13 +706,10 @@ const x = document.createElement("div");
 x.className = "xBtn";
 x.textContent = "×";
 
-// click thumb -> preview
 box.addEventListener("click", ()=> setPreview(src));
 
-// click X -> delete thumb (stop click bubbling)
 x.addEventListener("click", (e)=>{
 e.stopPropagation();
-
 const wasCurrent = (previewImg.style.display !== "none" && previewImg.src.includes(src));
 box.remove();
 
@@ -727,14 +743,10 @@ alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
 });
 
 $("#generateBtn").addEventListener("click", ()=>{
-// UI-only placeholder:
-// until we wire the backend, we “pretend” by dropping the selected theme image into results.
 const theme = THEMES.find(x=>x.id===selectedTheme) || THEMES[0];
 const style = STYLES.find(x=>x.id===selectedStyle) || STYLES[0];
 
-// pick style image first, if missing then theme, so it feels like “style matters”
 const fakeResult = (style?.img || theme?.img);
-
 addCreationThumb(fakeResult);
 
 console.log("Generate clicked:", {
@@ -747,10 +759,36 @@ quality: $("#quality").value
 });
 });
 
+// ------- DOWNLOAD BUTTON (downloads whatever is currently previewed) -------
+downloadBtn.addEventListener("click", async ()=>{
+if(!currentResultSrc) return;
+
+try{
+const res = await fetch(currentResultSrc, { cache: "no-store" });
+const blob = await res.blob();
+const url = URL.createObjectURL(blob);
+
+const a = document.createElement("a");
+a.href = url;
+
+const cleanName = (currentResultSrc.split("/").pop() || "image").replace(/\?.*$/, "");
+a.download = cleanName || "image.jpeg";
+
+document.body.appendChild(a);
+a.click();
+a.remove();
+
+URL.revokeObjectURL(url);
+}catch(err){
+alert("Download failed. Try right-click the image and Save As.");
+console.error(err);
+}
+});
+
 // ------- Init -------
 renderThemes();
 renderStyles();
 setPreview(null);
 </script>
 </body>
-</html
+</html>
