@@ -56,150 +56,81 @@ function makeDataUrl(mimeType, base64) {
 return `data:${mimeType || "image/png"};base64,${base64}`;
 }
 
-function downloadDataUrl(dataUrl, filename) {
-const a = document.createElement("a");
-a.href = dataUrl;
-a.download = filename || "quannaleap-image.png";
-document.body.appendChild(a);
-a.click();
-a.remove();
-}
-
 /* =========================
-Text → Image page (supports OLD + NEW create-image.html)
+CREATE-IMAGE.HTML (NEW PAGE)
+Wires to: /api/text-to-image
+Sends: { prompt, size, count, quality }
 Expected backend JSON:
 { ok:true, mimeType:"image/png", base64:"...." }
 ========================= */
-function setupTextToImagePage() {
-// Required on both pages
+function setupCreateImagePage() {
+// This new page does NOT have body data-mode, so detect by required IDs
 const promptEl = $("prompt");
 const generateBtn = $("generateBtn");
+const previewImg = $("previewImg");
+const previewEmpty = $("previewEmpty");
+const downloadBtn = $("downloadBtn");
 
-// OLD page ids:
-const oldImg = $("resultImg");
-const oldEmpty = $("emptyState");
+// settings dropdowns (exist on create-image.html)
+const sizeEl = $("size");
+const countEl = $("count");
+const qualityEl = $("quality");
 
-// NEW create-image.html ids:
-const newImg = $("previewImg");
-const newEmpty = $("previewEmpty");
-const creationStrip = $("creationStrip"); // optional but your new page has it
-const downloadBtn = $("downloadBtn"); // could be <a> (old) or <button> (new)
+// if not on create-image.html, skip
+if (!promptEl || !generateBtn || !previewImg || !downloadBtn) return;
 
-// If not the text-to-image page, skip
-if (!promptEl || !generateBtn || (!oldImg && !newImg)) return;
-
-// Prevent double-wiring if scripts reload
-if (window.__ql_text_to_image_wired) return;
-window.__ql_text_to_image_wired = true;
-
-const resultImg = newImg || oldImg;
-const emptyState = newEmpty || oldEmpty;
-
-let currentDataUrl = "";
+console.log("✅ setupCreateImagePage() active");
 
 function showImageUI(dataUrl) {
-currentDataUrl = dataUrl;
+previewImg.src = dataUrl;
+previewImg.style.display = "block";
+if (previewEmpty) previewEmpty.style.display = "none";
 
-resultImg.src = dataUrl;
-show(resultImg);
-if (emptyState) hide(emptyState);
-
-// Enable & wire download
-if (downloadBtn) {
-// NEW: button
-if (downloadBtn.tagName === "BUTTON") {
+// Enable download button (it's a <button> on your new page)
 downloadBtn.disabled = false;
-}
-// OLD: anchor
-if (downloadBtn.tagName === "A") {
-downloadBtn.href = dataUrl;
-downloadBtn.download = "quannaleap-image.png";
-downloadBtn.style.display = "inline-flex";
-}
-}
 }
 
 function clearImageUI() {
-currentDataUrl = "";
-resultImg.src = "";
-hide(resultImg);
-if (emptyState) show(emptyState);
+previewImg.src = "";
+previewImg.style.display = "none";
+if (previewEmpty) previewEmpty.style.display = "block";
 
-if (downloadBtn) {
-if (downloadBtn.tagName === "BUTTON") {
 downloadBtn.disabled = true;
-}
-if (downloadBtn.tagName === "A") {
-downloadBtn.href = "#";
-downloadBtn.style.display = "none";
-}
-}
-
 localStorage.removeItem("ql_last_image_dataurl");
 }
 
-// If NEW page: add a thumb to the strip when we generate
-function addThumbToStrip(dataUrl) {
-if (!creationStrip) return;
-
-const box = document.createElement("div");
-box.className = "thumb";
-box.setAttribute("data-src", dataUrl);
-
-const img = document.createElement("img");
-img.src = dataUrl;
-img.alt = "Creation";
-
-const x = document.createElement("div");
-x.className = "xBtn";
-x.textContent = "×";
-
-box.addEventListener("click", () => {
-showImageUI(dataUrl);
-});
-
-x.addEventListener("click", (e) => {
-e.stopPropagation();
-box.remove();
-
-// If this was the current preview, show the next one or empty state
-if (currentDataUrl === dataUrl) {
-const next = creationStrip.querySelector(".thumb");
-if (next) {
-showImageUI(next.getAttribute("data-src"));
-} else {
-clearImageUI();
-}
-}
-});
-
-box.appendChild(img);
-box.appendChild(x);
-creationStrip.prepend(box);
-}
-
-// Restore last image on refresh
+// restore last image on refresh
 const saved = localStorage.getItem("ql_last_image_dataurl");
-if (saved) {
-showImageUI(saved);
-// If new page has strip, optionally restore one thumb
-if (creationStrip && !creationStrip.querySelector(".thumb")) {
-addThumbToStrip(saved);
-}
-} else {
-// Ensure correct initial state on new page
-if (newImg) hide(newImg);
-}
+if (saved) showImageUI(saved);
 
-// Download handler:
-if (downloadBtn) {
-if (downloadBtn.tagName === "BUTTON") {
+// Download current preview image (button)
 downloadBtn.addEventListener("click", () => {
-if (!currentDataUrl) return;
-downloadDataUrl(currentDataUrl, "quannaleap-image.png");
+const dataUrl = previewImg.src;
+if (!dataUrl) return;
+
+const a = document.createElement("a");
+a.href = dataUrl;
+a.download = "quannaleap-image.png";
+document.body.appendChild(a);
+a.click();
+a.remove();
 });
+
+// If your new page has a Clear button, keep it working (optional)
+const clearBtn = $("clearBtn");
+if (clearBtn) clearBtn.addEventListener("click", () => (promptEl.value = ""));
+
+// If your new page has a Paste button, keep it working (optional)
+const pasteBtn = $("pasteBtn");
+if (pasteBtn) {
+pasteBtn.addEventListener("click", async () => {
+try {
+const txt = await navigator.clipboard.readText();
+if (txt) promptEl.value = txt;
+} catch (e) {
+alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
 }
-// Anchor version already handled by href/download in showImageUI
+});
 }
 
 generateBtn.addEventListener("click", async () => {
@@ -209,15 +140,20 @@ alert("Please enter a prompt first.");
 return;
 }
 
+// Read settings (safe defaults)
+const size = sizeEl ? sizeEl.value : "1024x1024";
+const count = countEl ? Number(countEl.value) : 1;
+const quality = qualityEl ? qualityEl.value : "standard";
+
 generateBtn.disabled = true;
-const originalText = generateBtn.textContent;
+const oldText = generateBtn.textContent;
 generateBtn.textContent = "Generating...";
 
 try {
 const res = await fetch("/api/text-to-image", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt }),
+body: JSON.stringify({ prompt, size, count, quality }),
 });
 
 const data = await res.json().catch(() => ({}));
@@ -234,24 +170,112 @@ const dataUrl = makeDataUrl(data.mimeType, data.base64);
 
 localStorage.setItem("ql_last_image_dataurl", dataUrl);
 showImageUI(dataUrl);
-
-// NEW page: drop into strip too
-addThumbToStrip(dataUrl);
 } catch (err) {
 console.error(err);
 alert("Generate failed. Check Render logs / Console.");
 } finally {
 generateBtn.disabled = false;
-generateBtn.textContent = originalText || "Generate";
+generateBtn.textContent = oldText || "Generate";
 }
 });
 
-// Optional: if your new page has Clear button wired in HTML inline, leave it.
-// If you also want app.js to support it without breaking anything:
-const clearBtn = $("clearBtn");
-if (clearBtn) {
-clearBtn.addEventListener("click", () => {
-promptEl.value = "";
+// Optional: if you later add a delete button on create-image.html
+const deleteBtn = $("deleteBtn");
+if (deleteBtn) deleteBtn.addEventListener("click", clearImageUI);
+}
+
+/* =========================
+Text → Image page (OLD PAGE)
+(Leaving it here, but you said you're deleting it soon)
+========================= */
+function setupTextToImagePage() {
+const mode = document.body.dataset.mode;
+if (mode !== "text-to-image") return;
+
+const promptEl = $("prompt");
+const generateBtn = $("generateBtn");
+
+const resultImg = $("resultImg");
+const emptyState = $("emptyState");
+
+const downloadBtn = $("downloadBtn");
+const deleteBtn = $("deleteBtn");
+const makeVideoBtn = $("makeVideoBtn");
+
+if (!promptEl || !generateBtn || !resultImg) return;
+
+function showImageUI(dataUrl) {
+resultImg.src = dataUrl;
+show(resultImg);
+if (emptyState) hide(emptyState);
+
+if (downloadBtn) {
+downloadBtn.href = dataUrl;
+downloadBtn.download = "quannaleap-image.png";
+downloadBtn.style.display = "inline-flex";
+}
+if (deleteBtn) deleteBtn.style.display = "inline-flex";
+if (makeVideoBtn) makeVideoBtn.style.display = "inline-flex";
+}
+
+function clearImageUI() {
+resultImg.src = "";
+hide(resultImg);
+if (emptyState) show(emptyState);
+
+if (downloadBtn) {
+downloadBtn.href = "#";
+downloadBtn.style.display = "none";
+}
+if (deleteBtn) deleteBtn.style.display = "none";
+if (makeVideoBtn) makeVideoBtn.style.display = "none";
+
+localStorage.removeItem("ql_last_image_dataurl");
+}
+
+const saved = localStorage.getItem("ql_last_image_dataurl");
+if (saved) showImageUI(saved);
+
+generateBtn.addEventListener("click", async () => {
+const prompt = (promptEl.value || "").trim();
+if (!prompt) return alert("Please enter a prompt first.");
+
+generateBtn.disabled = true;
+generateBtn.textContent = "Generating...";
+
+try {
+const res = await fetch("/api/text-to-image", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ prompt }),
+});
+
+const data = await res.json().catch(() => ({}));
+if (!res.ok || !data.ok) throw new Error(data.error || `API error: ${res.status}`);
+if (!data.base64) throw new Error("No base64 image returned from API.");
+
+const dataUrl = makeDataUrl(data.mimeType, data.base64);
+
+localStorage.setItem("ql_last_image_dataurl", dataUrl);
+showImageUI(dataUrl);
+} catch (err) {
+console.error(err);
+alert("Generate failed. Check Render logs / Console.");
+} finally {
+generateBtn.disabled = false;
+generateBtn.textContent = "Generate";
+}
+});
+
+if (deleteBtn) deleteBtn.addEventListener("click", clearImageUI);
+
+if (makeVideoBtn) {
+makeVideoBtn.addEventListener("click", () => {
+const dataUrl = resultImg.src;
+if (!dataUrl) return;
+
+localStorage.setItem("ql_image_for_video", dataUrl);
+window.location.href = "./image-to-video.html";
 });
 }
 }
@@ -409,7 +433,7 @@ if (deleteBtn) deleteBtn.style.display = "inline-flex";
 }
 
 /* =========================
-Text → Video page
+Text → Video page (adds duration support)
 ========================= */
 function setupTextToVideoPage() {
 const mode = document.body.dataset.mode;
@@ -424,7 +448,7 @@ const emptyState = $("emptyState");
 const downloadBtn = $("downloadBtn");
 const deleteBtn = $("deleteBtn");
 
-const durationEl = $("t2vDuration"); // optional
+const durationEl = $("t2vDuration");
 
 if (!promptEl || !generateBtn || !resultVideo) return;
 
@@ -601,7 +625,8 @@ BOOT (single DOMContentLoaded)
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
 tryLoadHoverVideos();
-setupTextToImagePage();
+setupCreateImagePage(); // ✅ NEW PAGE WIRED
+setupTextToImagePage(); // old page (safe to keep)
 setupImageToVideoPage();
 setupTextToVideoPage();
 setupTextToVoicePage();
