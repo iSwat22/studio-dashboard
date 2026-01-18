@@ -56,8 +56,20 @@ function makeDataUrl(mimeType, base64) {
 return `data:${mimeType || "image/png"};base64,${base64}`;
 }
 
+function triggerDownloadFromDataUrl(dataUrl, filename) {
+const a = document.createElement("a");
+a.href = dataUrl;
+a.download = filename || "quannaleap-image.png";
+document.body.appendChild(a);
+a.click();
+a.remove();
+}
+
 /* =========================
 Text → Image page (base64 backend support)
+Supports BOTH:
+- old page: resultImg + emptyState + downloadBtn (anchor)
+- new create-image.html: previewImg + previewEmpty + downloadBtn (button)
 Expected backend JSON:
 { ok:true, mimeType:"image/png", base64:"...." }
 ========================= */
@@ -65,8 +77,17 @@ function setupTextToImagePage() {
 const promptEl = $("prompt");
 const generateBtn = $("generateBtn");
 
-const resultImg = $("resultImg");
-const emptyState = $("emptyState");
+// OLD page ids
+const resultImgOld = $("resultImg");
+const emptyOld = $("emptyState");
+
+// NEW create-image ids
+const resultImgNew = $("previewImg");
+const emptyNew = $("previewEmpty");
+
+// pick whichever exists
+const resultImg = resultImgOld || resultImgNew;
+const emptyState = emptyOld || emptyNew;
 
 const downloadBtn = $("downloadBtn");
 const deleteBtn = $("deleteBtn");
@@ -75,16 +96,46 @@ const makeVideoBtn = $("makeVideoBtn");
 // If this page doesn't have these elements, skip
 if (!promptEl || !generateBtn || !resultImg) return;
 
+// Optional settings on create-image.html
+const sizeEl = $("size");
+const countEl = $("count");
+const qualityEl = $("quality");
+
+// Track current image for downloads (especially when downloadBtn is a <button>)
+let currentImageDataUrl = "";
+
+function setDownloadReady(dataUrl) {
+currentImageDataUrl = dataUrl || "";
+
+if (!downloadBtn) return;
+
+// If it's an <a>, keep your original behavior
+if (downloadBtn.tagName && downloadBtn.tagName.toLowerCase() === "a") {
+downloadBtn.href = dataUrl;
+downloadBtn.download = "quannaleap-image.png";
+downloadBtn.style.display = "inline-flex";
+return;
+}
+
+// If it's a <button>, enable it and bind click once
+downloadBtn.disabled = !dataUrl;
+
+if (!downloadBtn.dataset.bound) {
+downloadBtn.dataset.bound = "1";
+downloadBtn.addEventListener("click", () => {
+if (!currentImageDataUrl) return;
+triggerDownloadFromDataUrl(currentImageDataUrl, "quannaleap-image.png");
+});
+}
+}
+
 function showImageUI(dataUrl) {
 resultImg.src = dataUrl;
 show(resultImg);
 if (emptyState) hide(emptyState);
 
-if (downloadBtn) {
-downloadBtn.href = dataUrl;
-downloadBtn.download = "quannaleap-image.png";
-downloadBtn.style.display = "inline-flex";
-}
+setDownloadReady(dataUrl);
+
 if (deleteBtn) deleteBtn.style.display = "inline-flex";
 if (makeVideoBtn) makeVideoBtn.style.display = "inline-flex";
 }
@@ -94,10 +145,18 @@ resultImg.src = "";
 hide(resultImg);
 if (emptyState) show(emptyState);
 
+currentImageDataUrl = "";
+
 if (downloadBtn) {
+// anchor vs button
+if (downloadBtn.tagName && downloadBtn.tagName.toLowerCase() === "a") {
 downloadBtn.href = "#";
 downloadBtn.style.display = "none";
+} else {
+downloadBtn.disabled = true;
 }
+}
+
 if (deleteBtn) deleteBtn.style.display = "none";
 if (makeVideoBtn) makeVideoBtn.style.display = "none";
 
@@ -107,6 +166,12 @@ localStorage.removeItem("ql_last_image_dataurl");
 // Restore last image on refresh
 const saved = localStorage.getItem("ql_last_image_dataurl");
 if (saved) showImageUI(saved);
+else {
+// Ensure download button starts disabled on new page
+if (downloadBtn && (!downloadBtn.tagName || downloadBtn.tagName.toLowerCase() !== "a")) {
+downloadBtn.disabled = true;
+}
+}
 
 generateBtn.addEventListener("click", async () => {
 const prompt = (promptEl.value || "").trim();
@@ -116,13 +181,22 @@ return;
 }
 
 generateBtn.disabled = true;
+const originalText = generateBtn.textContent;
 generateBtn.textContent = "Generating...";
 
 try {
+// Include optional settings if present (backend can ignore if not used)
+const payload = {
+prompt,
+...(sizeEl ? { size: sizeEl.value } : {}),
+...(countEl ? { count: Number(countEl.value) } : {}),
+...(qualityEl ? { quality: qualityEl.value } : {}),
+};
+
 const res = await fetch("/api/text-to-image", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ prompt }),
+body: JSON.stringify(payload),
 });
 
 const data = await res.json().catch(() => ({}));
@@ -144,7 +218,7 @@ console.error(err);
 alert("Generate failed. Check Render logs / Console.");
 } finally {
 generateBtn.disabled = false;
-generateBtn.textContent = "Generate";
+generateBtn.textContent = originalText || "Generate";
 }
 });
 
@@ -514,3 +588,4 @@ setupImageToVideoPage();
 setupTextToVideoPage();
 setupTextToVoicePage();
 });
+
