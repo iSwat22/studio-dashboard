@@ -77,12 +77,6 @@ background: rgba(255,255,255,.06);
 border:1px solid var(--line);
 color:var(--text);
 font-size:12px;
-transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
-}
-.pill:hover{
-transform: translateY(-1px);
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 16px 45px rgba(45,226,255,.12);
 }
 .pill .dot{
 width:8px; height:8px; border-radius:50%;
@@ -108,10 +102,8 @@ border:1px solid rgba(45,226,255,.32);
 color:var(--text);
 font-weight:800;
 font-size:12px;
-transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .homeBtn:hover{
-transform: translateY(-1px);
 border-color: rgba(45,226,255,.55);
 box-shadow: 0 16px 45px rgba(45,226,255,.12);
 }
@@ -192,14 +184,8 @@ font-size:13px;
 color:var(--text);
 background: rgba(255,255,255,.08);
 border:1px solid rgba(255,255,255,.14);
-transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
 }
-.btn:hover{
-transform: translateY(-1px);
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 16px 45px rgba(45,226,255,.12);
-background: rgba(255,255,255,.10);
-}
+.btn:hover{background: rgba(255,255,255,.10)}
 .btnPrimary{
 width:100%;
 padding:12px 14px;
@@ -212,19 +198,6 @@ border-color: rgba(45,226,255,.55);
 box-shadow: 0 18px 55px rgba(45,226,255,.18);
 }
 
-/* Download button matches Generate */
-.btnSecondary{
-width:100%;
-padding:12px 14px;
-margin-top:10px;
-background: rgba(255,255,255,.08);
-border:1px solid rgba(45,226,255,.26);
-}
-.btnSecondary:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 18px 55px rgba(45,226,255,.12);
-}
-
 .select{
 width:100%;
 border-radius:14px;
@@ -233,14 +206,13 @@ background: rgba(0,0,0,.22);
 color:var(--text);
 padding:11px 12px;
 outline:none;
-transition: border-color .12s ease, box-shadow .12s ease;
 }
 .select:focus{
 border-color: rgba(45,226,255,.38);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 }
 
-/* THEMES */
+/* THEMES (big cards like your homepage) */
 .themeGrid{
 display:grid;
 grid-template-columns: repeat(2, 1fr);
@@ -253,29 +225,36 @@ border:1px solid rgba(255,255,255,.12);
 background: rgba(0,0,0,.20);
 overflow:hidden;
 cursor:pointer;
-height: 138px; /* FIX overlap */
+min-height:120px;
 transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .themeCard:hover{
 transform: translateY(-1px);
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 16px 45px rgba(45,226,255,.12);
+border-color: rgba(45,226,255,.28);
+box-shadow: 0 14px 40px rgba(0,0,0,.35);
 }
 .themeCard.active{
 border-color: rgba(45,226,255,.60);
 box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
 }
 .themeCard img{
-width:100%;
-height:100%;
+width:100%; height:100%;
 object-fit:cover;
 display:block;
 filter: saturate(1.05) contrast(1.02);
 }
-/* REMOVE overlay text on theme images */
-.themeCard .meta{ display:none !important; }
+.themeCard .meta{
+position:absolute; left:10px; right:10px; bottom:10px;
+display:flex; flex-direction:column; gap:4px;
+background: rgba(0,0,0,.45);
+border:1px solid rgba(255,255,255,.12);
+border-radius:14px;
+padding:8px 10px;
+}
+.themeCard .meta b{font-size:12px}
+.themeCard .meta span{font-size:11px; color:rgba(255,255,255,.72)}
 
-/* STYLE GRID */
+/* STYLE GRID (little images you pick from) */
 .styleGrid{
 display:grid;
 grid-template-columns: repeat(3, 1fr);
@@ -289,28 +268,40 @@ background: rgba(0,0,0,.20);
 overflow:hidden;
 cursor:pointer;
 transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
-height: 92px; /* consistent */
+min-height:86px;
 }
 .styleTile:hover{
 transform: translateY(-1px);
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 16px 45px rgba(45,226,255,.12);
+border-color: rgba(45,226,255,.28);
+box-shadow: 0 14px 40px rgba(0,0,0,.35);
 }
 .styleTile.active{
 border-color: rgba(45,226,255,.60);
 box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
 }
 .styleTile img{
-width:100%;
-height:100%;
+width:100%; height:100%;
 object-fit:cover;
 display:block;
 filter: saturate(1.05) contrast(1.02);
 }
-/* REMOVE overlay text on style images */
-.styleTile .caption{ display:none !important; }
 
-/* When an image is missing */
+/* ✅ ONLY CHANGE FOR READABILITY: make the style label ALWAYS visible */
+.styleTile .caption{
+position:absolute; left:8px; right:8px; bottom:8px;
+font-size:11px;
+padding:6px 10px;
+border-radius:999px;
+background: rgba(0,0,0,.70);
+border:1px solid rgba(45,226,255,.25);
+color: rgba(255,255,255,.92);
+font-weight:800;
+text-overflow: ellipsis;
+overflow:hidden;
+white-space: nowrap;
+}
+
+/* When an image is missing, show a nice fallback tile */
 .imgFallback{
 height:100%;
 display:grid;
@@ -379,13 +370,8 @@ overflow:hidden;
 flex: 0 0 auto;
 cursor:pointer;
 position:relative;
-transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
-.thumb:hover{
-transform: translateY(-1px);
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 16px 45px rgba(45,226,255,.12);
-}
+.thumb:hover{border-color: rgba(45,226,255,.30)}
 .thumb img{width:100%; height:100%; object-fit:cover; display:block}
 .thumb .xBtn{
 position:absolute;
@@ -401,10 +387,8 @@ place-items:center;
 cursor:pointer;
 line-height:1;
 user-select:none;
-transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .thumb .xBtn:hover{
-transform: translateY(-1px);
 border-color: rgba(45,226,255,.55);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 }
@@ -457,9 +441,9 @@ margin:10px 0;
 
 <div class="grid">
 
-<!-- LEFT: Prompt + theme + style picker -->
+<!-- LEFT: Prompt + THEMES ONLY -->
 <div class="panel">
-<div class="panelHeader"><h2>Prompt + Theme + Style</h2></div>
+<div class="panelHeader"><h2>Prompt + Theme</h2></div>
 <div class="panelBody">
 <label class="label">Prompt</label>
 <textarea id="prompt" class="textarea" placeholder="Describe what you want..."></textarea>
@@ -474,11 +458,6 @@ margin:10px 0;
 <label class="label">Pick Theme (optional)</label>
 <div id="themeGrid" class="themeGrid"></div>
 
-<div class="glowLine"></div>
-
-<label class="label">Pick Style (optional)</label>
-<div id="styleGrid" class="styleGrid"></div>
-
 <div style="margin-top:10px" class="note">
 Put images in <b>/public/</b> exactly like: <b>public/Kids_Story.jpeg</b><br/>
 Then the code must reference them like: <b>Kids_Story.jpeg</b>
@@ -486,7 +465,7 @@ Then the code must reference them like: <b>Kids_Story.jpeg</b>
 </div>
 </div>
 
-<!-- CENTER: Preview + creations strip -->
+<!-- CENTER: Preview + STYLE UNDER PREVIEW -->
 <div class="panel">
 <div class="panelHeader"><h2>Preview</h2></div>
 <div class="previewWrap">
@@ -498,13 +477,17 @@ Then the code must reference them like: <b>Kids_Story.jpeg</b>
 <img id="previewImg" class="previewImg" alt="Preview" />
 </div>
 
+<!-- ✅ MOVED HERE: Pick Style (optional) -->
+<label class="label" style="margin-top:14px">Pick Style (optional)</label>
+<div id="styleGrid" class="styleGrid"></div>
+
 <div class="creationStrip" id="creationStrip" aria-label="Creations strip">
 <!-- thumbs appear here -->
 </div>
 </div>
 </div>
 
-<!-- RIGHT: Settings + generate + download -->
+<!-- RIGHT: Settings + generate -->
 <div class="panel">
 <div class="panelHeader"><h2>Settings</h2></div>
 <div class="panelBody">
@@ -531,10 +514,9 @@ Then the code must reference them like: <b>Kids_Story.jpeg</b>
 <div class="glowLine"></div>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
-<button class="btn btnSecondary" id="downloadBtn" disabled>Download</button>
 
 <div style="margin-top:10px" class="note">
-Click The Generate Button To Your Image.
+Click The Generate Button Get Your Image.
 </div>
 </div>
 </div>
@@ -545,7 +527,7 @@ Click The Generate Button To Your Image.
 <script>
 console.log("✅ create-image.html loaded");
 
-// THEMES
+// THEMES (ALL 4 stay on LEFT)
 const THEMES = [
 { id:"Kids_Story", title:"Kids Story", sub:"Kid-friendly adventure", img:"Kids_Story.jpeg", seed:"kid-friendly, warm, hopeful" },
 { id:"Biblical_Epic", title:"Biblical Epic", sub:"Faith + cinematic scale", img:"Biblical_Epic.jpeg", seed:"cinematic biblical epic, majestic light" },
@@ -553,7 +535,6 @@ const THEMES = [
 { id:"Future_Ops", title:"Future Ops", sub:"Tactical sci-fi action", img:"Future_Ops.jpeg", seed:"futuristic tactical, clean sci-fi" },
 ];
 
-// STYLES
 const STYLES = [
 { id:"Pixar_Style", label:"Pixar Style", img:"Pixar_Style.jpeg", seed:"Pixar-inspired 3D, warm lighting, cinematic" },
 { id:"Disney_Style", label:"Disney Style", img:"Disney_Style.jpeg", seed:"Disney-like 3D, magical, soft glow, clean faces" },
@@ -574,49 +555,22 @@ const styleGrid = $("#styleGrid");
 const creationStrip = $("#creationStrip");
 const previewImg = $("#previewImg");
 const previewEmpty = $("#previewEmpty");
-const downloadBtn = $("#downloadBtn");
 
-let selectedThemes = [];
-let selectedStyles = [];
+let selectedTheme = THEMES[0]?.id || null;
+let selectedStyle = STYLES[0]?.id || null;
 
-function syncPromptSelections(){
-const prompt = $("#prompt");
-const raw = prompt.value || "";
-const base = raw.split("\n\n--- Selections ---")[0].trim();
-
-const themeSeeds = THEMES.filter(t => selectedThemes.includes(t.id)).map(t => t.seed);
-const styleSeeds = STYLES.filter(s => selectedStyles.includes(s.id)).map(s => s.seed);
-const combined = [...themeSeeds, ...styleSeeds].filter(Boolean);
-
-if(combined.length === 0){
-prompt.value = base;
-return;
-}
-
-prompt.value =
-(base ? base : "") +
-"\n\n--- Selections ---\n" +
-combined.join(", ");
-}
-
-// ------- Preview helpers -------
 function setPreview(src){
 if(!src){
 previewImg.style.display = "none";
 previewEmpty.style.display = "block";
 previewImg.src = "";
-downloadBtn.disabled = true;
-downloadBtn.dataset.src = "";
 return;
 }
 previewImg.src = src;
 previewImg.style.display = "block";
 previewEmpty.style.display = "none";
-downloadBtn.disabled = false;
-downloadBtn.dataset.src = src;
 }
 
-// ------- Safe image helper -------
 function makeSafeImg(src, label){
 const img = document.createElement("img");
 img.src = src;
@@ -635,19 +589,17 @@ parent.appendChild(fb);
 return img;
 }
 
-// ------- Render Themes (multi-select) -------
 function renderThemes(){
 themeGrid.innerHTML = "";
 THEMES.forEach(th=>{
 const card = document.createElement("div");
-card.className = "themeCard" + (selectedThemes.includes(th.id) ? " active" : "");
+card.className = "themeCard" + (th.id===selectedTheme ? " active" : "");
 card.setAttribute("data-theme", th.id);
 
 const imgWrap = document.createElement("div");
 imgWrap.style.height = "100%";
 imgWrap.appendChild(makeSafeImg(th.img, th.title));
 
-// meta exists but hidden via CSS (no overlay text)
 const meta = document.createElement("div");
 meta.className = "meta";
 meta.innerHTML = `<b>${th.title}</b><span>${th.sub}</span>`;
@@ -656,34 +608,31 @@ card.appendChild(imgWrap);
 card.appendChild(meta);
 
 card.addEventListener("click", ()=>{
-const idx = selectedThemes.indexOf(th.id);
-if(idx >= 0){
-selectedThemes.splice(idx, 1);
-card.classList.remove("active");
-}else{
-selectedThemes.push(th.id);
+selectedTheme = th.id;
+document.querySelectorAll(".themeCard").forEach(x=>x.classList.remove("active"));
 card.classList.add("active");
+
+const prompt = $("#prompt");
+if(prompt.value.trim().length === 0){
+prompt.value = th.seed;
 }
-syncPromptSelections();
 });
 
 themeGrid.appendChild(card);
 });
 }
 
-// ------- Render Styles (multi-select) -------
 function renderStyles(){
 styleGrid.innerHTML = "";
 STYLES.forEach(st=>{
 const tile = document.createElement("div");
-tile.className = "styleTile" + (selectedStyles.includes(st.id) ? " active" : "");
+tile.className = "styleTile" + (st.id===selectedStyle ? " active" : "");
 tile.setAttribute("data-style", st.id);
 
 const imgWrap = document.createElement("div");
 imgWrap.style.height = "100%";
 imgWrap.appendChild(makeSafeImg(st.img, st.label));
 
-// caption exists but hidden via CSS (no overlay text)
 const cap = document.createElement("div");
 cap.className = "caption";
 cap.textContent = st.label;
@@ -692,22 +641,20 @@ tile.appendChild(imgWrap);
 tile.appendChild(cap);
 
 tile.addEventListener("click", ()=>{
-const idx = selectedStyles.indexOf(st.id);
-if(idx >= 0){
-selectedStyles.splice(idx, 1);
-tile.classList.remove("active");
-}else{
-selectedStyles.push(st.id);
+selectedStyle = st.id;
+document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"));
 tile.classList.add("active");
+
+const prompt = $("#prompt");
+if(prompt.value.trim().length === 0){
+prompt.value = st.seed;
 }
-syncPromptSelections();
 });
 
 styleGrid.appendChild(tile);
 });
 }
 
-// ------- Creations strip with DELETE X -------
 function addCreationThumb(src){
 const box = document.createElement("div");
 box.className = "thumb";
@@ -746,7 +693,6 @@ creationStrip.prepend(box);
 setPreview(src);
 }
 
-// ------- Buttons -------
 $("#clearBtn").addEventListener("click", ()=>{ $("#prompt").value = ""; });
 
 $("#pasteBtn").addEventListener("click", async ()=>{
@@ -758,43 +704,23 @@ alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
 }
 });
 
-// Generate placeholder
 $("#generateBtn").addEventListener("click", ()=>{
-const lastStyle = STYLES.find(x=>x.id===selectedStyles[selectedStyles.length-1]);
-const lastTheme = THEMES.find(x=>x.id===selectedThemes[selectedThemes.length-1]);
-const fakeResult = (lastStyle?.img || lastTheme?.img || STYLES[0]?.img || THEMES[0]?.img);
+const theme = THEMES.find(x=>x.id===selectedTheme) || THEMES[0];
+const style = STYLES.find(x=>x.id===selectedStyle) || STYLES[0];
+const fakeResult = (style?.img || theme?.img);
 
 addCreationThumb(fakeResult);
 
 console.log("Generate clicked:", {
 prompt: $("#prompt").value,
-themes: selectedThemes,
-styles: selectedStyles,
+theme: selectedTheme,
+style: selectedStyle,
 size: $("#size").value,
 count: $("#count").value,
 quality: $("#quality").value
 });
 });
 
-// Download current preview
-downloadBtn.addEventListener("click", async ()=>{
-const src = downloadBtn.dataset.src;
-if(!src) return;
-
-try{
-// If this is same-origin/public, this will download the file
-const a = document.createElement("a");
-a.href = src;
-a.download = src.split("/").pop() || "image.jpg";
-document.body.appendChild(a);
-a.click();
-a.remove();
-}catch(e){
-alert("Download failed. Try right-click the preview image and Save Image As.");
-}
-});
-
-// ------- Init -------
 renderThemes();
 renderStyles();
 setPreview(null);
