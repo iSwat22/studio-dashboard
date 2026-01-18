@@ -6,7 +6,6 @@
 <title>Quanne Leap — Text → Image</title>
 
 <style>
-/* (YOUR CSS IS UNCHANGED — I DID NOT TOUCH IT) */
 :root{
 --bg0:#070a12;
 --bg1:#0a1024;
@@ -232,7 +231,7 @@ border-color: rgba(45,226,255,.38);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 }
 
-/* THEMES (no text overlay) */
+/* THEMES */
 .themeGrid{
 display:grid;
 grid-template-columns: repeat(2, 1fr);
@@ -264,7 +263,7 @@ background: rgba(0,0,0,.18);
 display:block;
 }
 
-/* STYLE GRID (no overlay captions) */
+/* STYLE GRID */
 .styleGrid{
 display:grid;
 grid-template-columns: repeat(3, 1fr);
@@ -311,7 +310,7 @@ rgba(0,0,0,.18);
 .imgFallback b{font-size:12px}
 .imgFallback span{font-size:11px; color:rgba(255,255,255,.60)}
 
-/* Center preview + bottom creations strip */
+/* Preview */
 .previewWrap{
 padding:14px;
 background: radial-gradient(600px 220px at 50% 18%, rgba(45,226,255,.12), transparent 62%);
@@ -344,14 +343,7 @@ display:none;
 background: rgba(0,0,0,.14);
 }
 
-/* Download button row (hidden on center) */
-.previewActions{
-display:flex;
-gap:10px;
-margin-top:12px;
-flex-wrap:wrap;
-}
-
+/* Strip */
 .creationStrip{
 margin-top:12px;
 border-radius: var(--radius);
@@ -413,7 +405,7 @@ margin:10px 0;
 </style>
 </head>
 
-<body>
+<body data-mode="text-to-image">
 <!-- TOP BAR -->
 <div class="topbar">
 <div class="topbarInner">
@@ -451,7 +443,7 @@ margin:10px 0;
 
 <div class="grid">
 
-<!-- LEFT: Prompt + THEMES ONLY -->
+<!-- LEFT -->
 <div class="panel">
 <div class="panelHeader"><h2>Prompt + Theme</h2></div>
 <div class="panelBody">
@@ -474,10 +466,12 @@ Images must exist in <b>/public/</b> like <b>public/Kids_Story.jpeg</b>
 </div>
 </div>
 
-<!-- CENTER: Preview + STYLE UNDER PREVIEW -->
+<!-- CENTER -->
 <div class="panel">
 <div class="panelHeader"><h2>Preview</h2></div>
 <div class="previewWrap">
+
+<!-- BIG PREVIEW -->
 <div class="previewStage" id="previewStage">
 <div class="previewEmpty" id="previewEmpty">
 <div class="icon">🖼️</div>
@@ -486,17 +480,15 @@ Images must exist in <b>/public/</b> like <b>public/Kids_Story.jpeg</b>
 <img id="previewImg" class="previewImg" alt="Preview" />
 </div>
 
-<!-- Download button hidden in center -->
-<div class="previewActions" style="display:none"></div>
+<!-- ✅ RECENT STRIP stays here -->
+<div class="creationStrip" id="creationStrip" aria-label="Recent creations">
+<!-- thumbs appear here -->
+</div>
 
-<label class="label" style="margin-top:14px">Pick Style (optional)</label>
-<div id="styleGrid" class="styleGrid"></div>
-
-<div class="creationStrip" id="creationStrip" aria-label="Creations strip"></div>
 </div>
 </div>
 
-<!-- RIGHT: Settings + generate -->
+<!-- RIGHT -->
 <div class="panel">
 <div class="panelHeader"><h2>Settings</h2></div>
 <div class="panelBody">
@@ -524,22 +516,27 @@ Images must exist in <b>/public/</b> like <b>public/Kids_Story.jpeg</b>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
 
-<!-- ✅ Download button under Generate -->
 <button class="btn" id="downloadBtn" style="width:100%;margin-top:10px" disabled>Download</button>
 
 <div style="margin-top:10px" class="note">
-Click the generate button get your image and download.
+Click generate to create your image, then download.
 </div>
-</div>
-</div>
+
+<div class="glowLine"></div>
+
+<!-- ✅ Style section is now INSIDE Settings (clean) -->
+<label class="label">Pick Style (optional)</label>
+<div id="styleGrid" class="styleGrid"></div>
 
 </div>
 </div>
 
+</div>
+</div>
+
+<!-- UI SCRIPT stays -->
 <script>
-console.log("✅ create-image.html UI script loaded");
-
-/* UI-only logic: themes/styles click -> append to prompt (kept) */
+console.log("✅ create-image.html loaded");
 
 const THEMES = [
 { id:"Kids_Story", img:"Kids_Story.jpeg" },
@@ -553,7 +550,7 @@ const STYLES = [
 { id:"Disney_Style", img:"Disney_Style.jpeg" },
 { id:"Anime_Fantasy", img:"Anime_Fantasy.jpeg" },
 { id:"Realistic_Cinema", img:"Realistic_Cinema.jpeg" },
-{ id:"Biblical_Style", img:"Biblical_Style.jpeg" },
+{ id:"Biblical_Epic", img:"Biblical_Epic.jpeg" },
 { id:"Film_Narrative", img:"Film_Narrative.jpeg" },
 { id:"Storybook_Charm", img:"Storybook_Charm.jpeg" },
 { id:"PixiePop_3D", img:"PixiePop_3D.jpeg" },
@@ -565,8 +562,15 @@ const qs = (s)=>document.querySelector(s);
 
 const themeGrid = qs("#themeGrid");
 const styleGrid = qs("#styleGrid");
+const creationStrip = qs("#creationStrip");
+const previewImg = qs("#previewImg");
+const previewEmpty = qs("#previewEmpty");
+const downloadBtn = qs("#downloadBtn");
 const promptEl = qs("#prompt");
 
+let currentPreviewSrc = "";
+
+/* Append theme/style to prompt */
 function appendToPrompt(token){
 const t = (token || "").replace(/_/g, " ").trim();
 if(!t) return;
@@ -582,6 +586,21 @@ const exists = parts.some(p => p.toLowerCase() === t.toLowerCase());
 if(exists) return;
 
 promptEl.value = cur + ", " + t;
+}
+
+function setPreview(src){
+currentPreviewSrc = src || "";
+if(!src){
+previewImg.style.display = "none";
+previewEmpty.style.display = "block";
+previewImg.src = "";
+downloadBtn.disabled = true;
+return;
+}
+previewImg.src = src;
+previewImg.style.display = "block";
+previewEmpty.style.display = "none";
+downloadBtn.disabled = false;
 }
 
 function makeSafeImg(src){
@@ -612,7 +631,6 @@ document.querySelectorAll(".themeCard").forEach(x=>x.classList.remove("active"))
 card.classList.add("active");
 appendToPrompt(th.id);
 });
-
 themeGrid.appendChild(card);
 });
 }
@@ -629,12 +647,44 @@ document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"))
 tile.classList.add("active");
 appendToPrompt(st.id);
 });
-
 styleGrid.appendChild(tile);
 });
 }
 
-// Basic buttons (kept)
+function addCreationThumb(src){
+const box = document.createElement("div");
+box.className = "thumb";
+box.setAttribute("data-src", src);
+
+const img = document.createElement("img");
+img.src = src;
+img.alt = "Creation";
+
+const x = document.createElement("div");
+x.className = "xBtn";
+x.textContent = "×";
+
+box.addEventListener("click", ()=> setPreview(src));
+x.addEventListener("click", (e)=>{ e.stopPropagation(); box.remove(); });
+
+box.appendChild(img);
+box.appendChild(x);
+
+creationStrip.prepend(box);
+}
+
+/* Download current preview image */
+downloadBtn.addEventListener("click", ()=>{
+if(!currentPreviewSrc) return;
+const a = document.createElement("a");
+a.href = currentPreviewSrc;
+a.download = "quanneleap_image.png";
+document.body.appendChild(a);
+a.click();
+a.remove();
+});
+
+/* Basic buttons */
 qs("#clearBtn").addEventListener("click", ()=>{ qs("#prompt").value = ""; });
 
 qs("#pasteBtn").addEventListener("click", async ()=>{
@@ -646,15 +696,12 @@ alert("Clipboard paste blocked. Just paste manually.");
 }
 });
 
-// IMPORTANT: No generate click handler here anymore.
-// app.js owns the backend generate.
-
 renderThemes();
 renderStyles();
+setPreview(null);
 </script>
 
-<!-- ✅ This is the ONLY wiring that connects Generate/Preview/Download to backend -->
+<!-- ✅ THIS connects Generate to backend + sets previewImg correctly -->
 <script src="./app.js"></script>
 </body>
 </html>
-
