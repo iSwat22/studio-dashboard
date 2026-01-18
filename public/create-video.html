@@ -1,1 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quanne Leap — Text → Video</title>
 
+<style>
+:root{
+--bg0:#070a12;
+--bg1:#0a1024;
+--card:rgba(255,255,255,.06);
+--card2:rgba(255,255,255,.08);
+--line:rgba(255,255,255,.12);
+--text:rgba(255,255,255,.92);
+--muted:rgba(255,255,255,.62);
+--blue:#2de2ff;
+--blue2:#42a5ff;
+--shadow: 0 20px 60px rgba(0,0,0,.55);
+--radius:18px;
+--radius2:14px;
+--font: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+margin:0;
+font-family:var(--font);
+color:var(--text);
+background:
+radial-gradient(900px 420px at 52% 18%, rgba(45,226,255,.18), transparent 60%),
+radial-gradient(900px 420px at 20% 0%, rgba(66,165,255,.14), transparent 62%),
+linear-gradient(180deg, var(--bg0), var(--bg1));
+overflow-x:hidden;
+}
+
+/* Top bar */
+.topbar{
+position:sticky; top:0; z-index:10;
+backdrop-filter: blur(10px);
+background: rgba(10,16,36,.55);
+border-bottom:1px solid var(--line);
+}
+.topbarInner{
+max-width:1200px;
+margin:0 auto;
+padding:14px 16px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:12px;
+}
+.brand{
+display:flex; align-items:center; gap:10px;
+user-select:none;
+}
+.brandMark{
+width:34px; height:34px; border-radius:10px;
+display:grid; place-items:center;
+background: linear-gradient(180deg, rgba(45,226,255,.22), rgba(255,255,255,.06));
+border:1px solid rgba(45,226,255,.25);
+box-shadow: 0 10px 30px rgba(45,226,255,.12);
+font-weight:800;
+letter-spacing:.5px;
+}
+.brandText{display:flex; flex-direction:column; line-height:1.05}
+.brandText b{font-size:14px}
+.brandText span{font-size:12px; color:var(--muted)}
+
+.rightPills{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
+
+/* Pills hover glow */
+.pill{
+display:inline-flex; align-items:center; gap:8px;
+padding:8px 10px;
+border-radius:999px;
+background: rgba(255,255,255,.06);
+border:1px solid var(--line);
+color:var(--text);
+font-size:12px;
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease, background .12s ease;
+}
+.pill:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 16px 45px rgba(45,226,255,.08);
+transform: translateY(-1px);
+}
+.pill .dot{
+width:8px; height:8px; border-radius:50%;
+background: var(--blue);
+box-shadow: 0 0 20px rgba(45,226,255,.65);
+}
+.avatar{
+width:30px; height:30px; border-radius:10px;
+display:grid; place-items:center;
+background: rgba(255,255,255,.08);
+border:1px solid var(--line);
+font-weight:700;
+}
+.homeBtn{
+text-decoration:none;
+display:inline-flex;
+align-items:center;
+gap:8px;
+padding:9px 12px;
+border-radius:999px;
+background: linear-gradient(90deg, rgba(45,226,255,.18), rgba(66,165,255,.10));
+border:1px solid rgba(45,226,255,.32);
+color:var(--text);
+font-weight:800;
+font-size:12px;
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
+}
+.homeBtn:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 16px 45px rgba(45,226,255,.12);
+transform: translateY(-1px);
+}
+
+/* Page layout */
+.wrap{max-width:1200px; margin:0 auto; padding:18px 16px 28px;}
+.titleRow{
+margin:14px 0 16px;
+display:flex; align-items:flex-end; justify-content:space-between; gap:14px;
+}
+.titleRow h1{
+margin:0;
+font-size:34px;
+letter-spacing:-.5px;
+text-shadow: 0 0 30px rgba(45,226,255,.12);
+}
+.titleRow p{margin:6px 0 0; color:var(--muted); max-width:720px}
+
+.grid{
+display:grid;
+grid-template-columns: 380px 1fr 280px;
+gap:14px;
+align-items:start;
+}
+@media (max-width: 980px){
+.grid{grid-template-columns:1fr; }
+}
+
+.panel{
+background: var(--card);
+border:1px solid var(--line);
+border-radius: var(--radius);
+box-shadow: var(--shadow);
+overflow:hidden;
+}
+.panelHeader{
+padding:14px 14px 10px;
+border-bottom:1px solid rgba(255,255,255,.08);
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:10px;
+}
+.panelHeader h2{
+margin:0;
+font-size:14px;
+letter-spacing:.2px;
+color:rgba(255,255,255,.86);
+}
+.panelBody{padding:14px}
+
+.label{display:block; font-size:12px; color:var(--muted); margin:10px 0 8px}
+
+.textarea{
+width:100%;
+min-height:180px;
+resize:vertical;
+border-radius:14px;
+border:1px solid rgba(255,255,255,.12);
+background: rgba(0,0,0,.22);
+color:var(--text);
+padding:12px 12px;
+outline:none;
+box-shadow: inset 0 0 0 1px rgba(45,226,255,.0);
+}
+.textarea:focus{
+border-color: rgba(45,226,255,.38);
+box-shadow: inset 0 0 0 1px rgba(45,226,255,.22), 0 0 0 3px rgba(45,226,255,.10);
+}
+
+.row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+
+/* Buttons + hover glow */
+.btn{
+border:none;
+cursor:pointer;
+border-radius:999px;
+padding:10px 14px;
+font-weight:800;
+font-size:13px;
+color:var(--text);
+background: rgba(255,255,255,.08);
+border:1px solid rgba(255,255,255,.14);
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease, background .12s ease;
+}
+.btn:hover{
+background: rgba(255,255,255,.10);
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 16px 45px rgba(45,226,255,.08);
+transform: translateY(-1px);
+}
+.btnPrimary{
+width:100%;
+padding:12px 14px;
+background: linear-gradient(90deg, rgba(45,226,255,.20), rgba(66,165,255,.14));
+border:1px solid rgba(45,226,255,.32);
+box-shadow: 0 18px 45px rgba(45,226,255,.12);
+}
+.btnPrimary:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 18px 55px rgba(45,226,255,.18);
+transform: translateY(-1px);
+}
+.btn[disabled]{
+opacity:.55;
+cursor:not-allowed;
+}
+.btn[disabled]:hover{
+transform:none;
+box-shadow:none;
+border-color: rgba(255,255,255,.14);
+}
+
+.select{
+width:100%;
+border-radius:14px;
+border:1px solid rgba(255,255,255,.12);
+background: rgba(0,0,0,.22);
+color:var(--text);
+padding:11px 12px;
+outline:none;
+}
+.select:focus{
+border-color: rgba(45,226,255,.38);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10);
+}
+
+.glowLine{
+height:1px; width:100%;
+background: linear-gradient(90deg, transparent, rgba(45,226,255,.55), transparent);
+opacity:.55;
+margin:10px 0;
+}
+
+.note{font-size:12px; color:var(--muted); line-height:1.3}
+
+/* Preview */
+.previewWrap{
+padding:14px;
+background: radial-gradient(600px 220px at 50% 18%, rgba(45,226,255,.12), transparent 62%);
+}
+.previewStage{
+border-radius: var(--radius);
+border:1px solid rgba(255,255,255,.12);
+background: rgba(0,0,0,.22);
+height:420px;
+display:grid;
+place-items:center;
+overflow:hidden;
+position:relative;
+}
+.previewEmpty{
+text-align:center;
+color: rgba(255,255,255,.68);
+user-select:none;
+}
+.previewEmpty .icon{
+font-size:34px;
+filter: drop-shadow(0 12px 22px rgba(0,0,0,.55));
+}
+.previewEmpty .txt{margin-top:10px; font-weight:800}
+
+.previewVideo{
+position:absolute; inset:0;
+width:100%; height:100%;
+display:none;
+background: rgba(0,0,0,.14);
+object-fit:contain;
+}
+
+/* Clips strip (future “select clips to stitch”) */
+.clipStrip{
+margin-top:12px;
+border-radius: var(--radius);
+border:1px solid rgba(255,255,255,.12);
+background: rgba(0,0,0,.18);
+padding:10px;
+display:flex;
+gap:10px;
+overflow:auto;
+}
+
+.clip{
+width:140px; height:86px;
+border-radius:12px;
+border:1px solid rgba(255,255,255,.12);
+background: rgba(255,255,255,.05);
+overflow:hidden;
+flex: 0 0 auto;
+cursor:pointer;
+position:relative;
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
+}
+.clip:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10);
+transform: translateY(-1px);
+}
+.clip.active{
+border-color: rgba(45,226,255,.70);
+box-shadow: 0 0 0 3px rgba(45,226,255,.14), 0 18px 55px rgba(45,226,255,.10);
+}
+.clip video{
+width:100%; height:100%;
+object-fit:cover;
+display:block;
+background: rgba(0,0,0,.20);
+}
+.clip .tag{
+position:absolute;
+left:8px; bottom:8px;
+font-size:11px;
+padding:6px 10px;
+border-radius:999px;
+background: rgba(0,0,0,.60);
+border:1px solid rgba(45,226,255,.25);
+color: rgba(255,255,255,.92);
+font-weight:800;
+}
+.clip .xBtn{
+position:absolute;
+top:6px; right:6px;
+width:22px; height:22px;
+border-radius:999px;
+border:1px solid rgba(255,255,255,.18);
+background: rgba(0,0,0,.55);
+color: rgba(255,255,255,.92);
+font-weight:900;
+display:grid;
+place-items:center;
+cursor:pointer;
+line-height:1;
+user-select:none;
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
+}
+.clip .xBtn:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10);
+transform: translateY(-1px);
+}
+</style>
+</head>
+
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+<div class="topbarInner">
+<div class="brand">
+<div class="brandMark">QL</div>
+<div class="brandText">
+<b>Quanne Leap</b>
+<span>Create in the future.</span>
+</div>
+</div>
+
+<div class="rightPills">
+<a class="homeBtn" href="index.html">⌂ Home</a>
+<div class="pill"><span class="dot"></span>Platinum</div>
+<div class="pill">★ ∞</div>
+<div class="pill">
+<div class="avatar">K</div>
+<div style="display:flex;flex-direction:column;line-height:1.05">
+<b style="font-size:12px;margin:0">KC</b>
+<span style="font-size:11px;color:var(--muted)">Admin</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- PAGE -->
+<div class="wrap">
+<div class="titleRow">
+<div>
+<h1>Text → Video</h1>
+<p>Generate short clips from a prompt. Later we can stitch selected clips into one animation video.</p>
+</div>
+</div>
+
+<div class="grid">
+
+<!-- LEFT: Prompt -->
+<div class="panel">
+<div class="panelHeader"><h2>Prompt</h2></div>
+<div class="panelBody">
+<label class="label">Prompt</label>
+<textarea id="prompt" class="textarea" placeholder="Describe the scene you want..."></textarea>
+
+<div class="row">
+<button class="btn" id="clearBtn">Clear</button>
+<button class="btn" id="pasteBtn">Paste</button>
+</div>
+
+<div class="glowLine"></div>
+
+<div class="note">
+This page is UI-ready. Next step is wiring the Generate button to your backend endpoint.
+</div>
+</div>
+</div>
+
+<!-- CENTER: Preview + clips strip -->
+<div class="panel">
+<div class="panelHeader"><h2>Preview</h2></div>
+
+<div class="previewWrap">
+<div class="previewStage">
+<div class="previewEmpty" id="emptyState">
+<div class="icon">🎬</div>
+<div class="txt">Your generated video will appear here.</div>
+</div>
+
+<video id="resultVideo" class="previewVideo" controls playsinline></video>
+</div>
+
+<label class="label" style="margin-top:14px">Clips</label>
+<div id="clipStrip" class="clipStrip" aria-label="Clips strip">
+<!-- clips show here -->
+</div>
+
+<div class="note" style="margin-top:10px">
+Idea: generate multiple clips → select the best ones → stitch into one animation video.
+</div>
+</div>
+</div>
+
+<!-- RIGHT: Settings + generate/download -->
+<div class="panel">
+<div class="panelHeader"><h2>Settings</h2></div>
+<div class="panelBody">
+
+<label class="label">Duration (UI only for now)</label>
+<select id="duration" class="select">
+<option value="4">4 seconds</option>
+<option value="6">6 seconds</option>
+<option value="8" selected>8 seconds</option>
+</select>
+
+<label class="label">Quality (UI only for now)</label>
+<select id="quality" class="select">
+<option value="standard" selected>Standard</option>
+<option value="high">High</option>
+</select>
+
+<div class="glowLine"></div>
+
+<button class="btn btnPrimary" id="generateBtn">Generate</button>
+<button class="btn" id="downloadBtn" style="width:100%;margin-top:10px" disabled>Download</button>
+
+<div style="margin-top:10px" class="note">
+Generate a clip → it will show in Preview and also appear in Clips.
+</div>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+console.log("✅ create-video.html loaded");
+
+const $ = (s)=>document.querySelector(s);
+
+const promptEl = $("#prompt");
+const resultVideo = $("#resultVideo");
+const emptyState = $("#emptyState");
+const generateBtn = $("#generateBtn");
+const downloadBtn = $("#downloadBtn");
+const clipStrip = $("#clipStrip");
+
+let currentVideoSrc = "";
+
+function showVideo(src){
+currentVideoSrc = src || "";
+if(!src){
+resultVideo.pause?.();
+resultVideo.removeAttribute("src");
+resultVideo.load?.();
+resultVideo.style.display = "none";
+emptyState.style.display = "block";
+downloadBtn.disabled = true;
+return;
+}
+
+resultVideo.src = src;
+resultVideo.style.display = "block";
+emptyState.style.display = "none";
+downloadBtn.disabled = false;
+}
+
+function addClip(src, labelText){
+const clip = document.createElement("div");
+clip.className = "clip";
+clip.setAttribute("data-src", src);
+
+const v = document.createElement("video");
+v.src = src;
+v.muted = true;
+v.playsInline = true;
+
+const tag = document.createElement("div");
+tag.className = "tag";
+tag.textContent = labelText || "Clip";
+
+const x = document.createElement("div");
+x.className = "xBtn";
+x.textContent = "×";
+
+clip.addEventListener("click", ()=>{
+document.querySelectorAll(".clip").forEach(c=>c.classList.remove("active"));
+clip.classList.add("active");
+showVideo(src);
+});
+
+x.addEventListener("click", (e)=>{
+e.stopPropagation();
+const wasActive = clip.classList.contains("active");
+clip.remove();
+
+if(wasActive){
+const next = clipStrip.querySelector(".clip");
+if(next){
+next.classList.add("active");
+showVideo(next.getAttribute("data-src"));
+}else{
+showVideo(null);
+}
+}
+});
+
+clip.appendChild(v);
+clip.appendChild(tag);
+clip.appendChild(x);
+
+clipStrip.prepend(clip);
+
+// auto-select newest
+document.querySelectorAll(".clip").forEach(c=>c.classList.remove("active"));
+clip.classList.add("active");
+showVideo(src);
+}
+
+// Buttons
+$("#clearBtn").addEventListener("click", ()=>{ promptEl.value = ""; });
+
+$("#pasteBtn").addEventListener("click", async ()=>{
+try{
+const txt = await navigator.clipboard.readText();
+if(txt) promptEl.value = txt;
+}catch(e){
+alert("Clipboard paste blocked. Just paste manually.");
+}
+});
+
+/*
+Generate (UI-only placeholder):
+When we wire backend, this will be replaced with:
+fetch("/api/text-to-video", { ... })
+and then showVideo(data.videoUrl || dataUrlFromBase64), addClip(...)
+*/
+generateBtn.addEventListener("click", ()=>{
+const prompt = (promptEl.value || "").trim();
+if(!prompt){
+alert("Please enter a prompt first.");
+return;
+}
+
+// Placeholder: No backend yet, so we create a “pending” clip tile with no real src.
+// To keep layout clean: we just alert for now.
+alert("UI is ready. Next step: wire Generate to your /api/text-to-video backend.");
+});
+
+// Download current video
+downloadBtn.addEventListener("click", ()=>{
+if(!currentVideoSrc) return;
+
+const a = document.createElement("a");
+a.href = currentVideoSrc;
+a.download = (currentVideoSrc.split("/").pop() || "quanneleap-video.mp4");
+document.body.appendChild(a);
+a.click();
+a.remove();
+});
+
+// Init
+showVideo(null);
+</script>
+
+</body>
+</html>
