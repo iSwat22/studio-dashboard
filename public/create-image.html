@@ -412,7 +412,7 @@ margin:10px 0;
 </style>
 </head>
 
-<body>
+<body data-mode="text-to-image">
 <!-- TOP BAR -->
 <div class="topbar">
 <div class="topbarInner">
@@ -485,14 +485,14 @@ Images must exist in <b>/public/</b> like <b>public/Kids_Story.jpeg</b>
 <img id="previewImg" class="previewImg" alt="Preview" />
 </div>
 
-<!-- Download button (will be moved to Settings; keep container empty to avoid layout changes) -->
+<!-- Download button (moved to Settings) -->
 <div class="previewActions" style="display:none"></div>
 
 <label class="label" style="margin-top:14px">Pick Style (optional)</label>
 <div id="styleGrid" class="styleGrid"></div>
 
 <div class="creationStrip" id="creationStrip" aria-label="Creations strip">
-<!-- thumbs appear here -->
+<!-- (Optional strip; kept for your layout) -->
 </div>
 </div>
 </div>
@@ -525,11 +525,11 @@ Images must exist in <b>/public/</b> like <b>public/Kids_Story.jpeg</b>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
 
-<!-- ✅ Download button moved under Generate -->
+<!-- Download button under Generate -->
 <button class="btn" id="downloadBtn" style="width:100%;margin-top:10px" disabled>Download</button>
 
 <div style="margin-top:10px" class="note">
-Click the generate button get your image and download.
+Click generate to get your image, then download.
 </div>
 </div>
 </div>
@@ -537,8 +537,9 @@ Click the generate button get your image and download.
 </div>
 </div>
 
+<!-- ONLY UI logic here (theme/style appends into prompt). Generate + Preview + Download is handled by app.js -->
 <script>
-console.log("✅ create-image.html loaded");
+console.log("✅ create-image.html UI loaded");
 
 const THEMES = [
 { id:"Kids_Story", img:"Kids_Story.jpeg" },
@@ -552,7 +553,7 @@ const STYLES = [
 { id:"Disney_Style", img:"Disney_Style.jpeg" },
 { id:"Anime_Fantasy", img:"Anime_Fantasy.jpeg" },
 { id:"Realistic_Cinema", img:"Realistic_Cinema.jpeg" },
-{ id:"Biblical_Epic", img:"Biblical_Style.jpeg" },
+{ id:"Biblical_Epic", img:"Biblical_Epic.jpeg" },
 { id:"Film_Narrative", img:"Film_Narrative.jpeg" },
 { id:"Storybook_Charm", img:"Storybook_Charm.jpeg" },
 { id:"PixiePop_3D", img:"PixiePop_3D.jpeg" },
@@ -560,19 +561,11 @@ const STYLES = [
 { id:"Watercolor_Whimsy", img:"Watercolor_Whimsy.jpeg" },
 ];
 
-const $ = (s)=>document.querySelector(s);
+const qs = (s)=>document.querySelector(s);
+const themeGrid = qs("#themeGrid");
+const styleGrid = qs("#styleGrid");
+const promptEl = qs("#prompt");
 
-const themeGrid = $("#themeGrid");
-const styleGrid = $("#styleGrid");
-const creationStrip = $("#creationStrip");
-const previewImg = $("#previewImg");
-const previewEmpty = $("#previewEmpty");
-const downloadBtn = $("#downloadBtn");
-const promptEl = $("#prompt");
-
-let currentPreviewSrc = "";
-
-/* ✅ Append theme/style to prompt (always shows in prompt box) */
 function appendToPrompt(token){
 const t = (token || "").replace(/_/g, " ").trim();
 if(!t) return;
@@ -583,7 +576,6 @@ promptEl.value = t;
 return;
 }
 
-/* Prevent duplicates (case-insensitive) */
 const parts = cur.split(",").map(x=>x.trim()).filter(Boolean);
 const exists = parts.some(p => p.toLowerCase() === t.toLowerCase());
 if(exists) return;
@@ -591,23 +583,6 @@ if(exists) return;
 promptEl.value = cur + ", " + t;
 }
 
-// Preview helpers
-function setPreview(src){
-currentPreviewSrc = src || "";
-if(!src){
-previewImg.style.display = "none";
-previewEmpty.style.display = "block";
-previewImg.src = "";
-downloadBtn.disabled = true;
-return;
-}
-previewImg.src = src;
-previewImg.style.display = "block";
-previewEmpty.style.display = "none";
-downloadBtn.disabled = false;
-}
-
-// Safe image helper
 function makeSafeImg(src){
 const img = document.createElement("img");
 img.src = src;
@@ -634,10 +609,9 @@ card.appendChild(makeSafeImg(th.img));
 card.addEventListener("click", ()=>{
 document.querySelectorAll(".themeCard").forEach(x=>x.classList.remove("active"));
 card.classList.add("active");
-
-/* ✅ add theme to prompt */
 appendToPrompt(th.id);
 });
+
 themeGrid.appendChild(card);
 });
 }
@@ -652,74 +626,30 @@ tile.appendChild(makeSafeImg(st.img));
 tile.addEventListener("click", ()=>{
 document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"));
 tile.classList.add("active");
-
-/* ✅ add style to prompt */
 appendToPrompt(st.id);
 });
+
 styleGrid.appendChild(tile);
 });
 }
 
-// Creations strip demo (still UI-only)
-function addCreationThumb(src){
-const box = document.createElement("div");
-box.className = "thumb";
-box.setAttribute("data-src", src);
+// Basic buttons (kept exactly)
+qs("#clearBtn").addEventListener("click", ()=>{ qs("#prompt").value = ""; });
 
-const img = document.createElement("img");
-img.src = src;
-img.alt = "Creation";
-
-const x = document.createElement("div");
-x.className = "xBtn";
-x.textContent = "×";
-
-box.addEventListener("click", ()=> setPreview(src));
-x.addEventListener("click", (e)=>{ e.stopPropagation(); box.remove(); });
-
-box.appendChild(img);
-box.appendChild(x);
-
-creationStrip.prepend(box);
-setPreview(src);
-}
-
-// Download current preview image
-downloadBtn.addEventListener("click", ()=>{
-if(!currentPreviewSrc) return;
-
-const a = document.createElement("a");
-a.href = currentPreviewSrc;
-a.download = currentPreviewSrc.split("/").pop() || "quanneleap_image.jpeg";
-document.body.appendChild(a);
-a.click();
-a.remove();
-});
-
-// Basic buttons (kept)
-$("#clearBtn").addEventListener("click", ()=>{ $("#prompt").value = ""; });
-
-$("#pasteBtn").addEventListener("click", async ()=>{
+qs("#pasteBtn").addEventListener("click", async ()=>{
 try{
 const txt = await navigator.clipboard.readText();
-if(txt) $("#prompt").value = txt;
+if(txt) qs("#prompt").value = txt;
 }catch(e){
 alert("Clipboard paste blocked. Just paste manually.");
 }
 });
 
-$("#generateBtn").addEventListener("click", ()=>{
-// UI-only: use the active style image as a fake “result”
-const activeStyle = document.querySelector(".styleTile.active img");
-const src = activeStyle ? activeStyle.getAttribute("src") : (STYLES[0]?.img || "");
-if(src) addCreationThumb(src);
-});
-
-// Init
 renderThemes();
 renderStyles();
-setPreview(null);
 </script>
+
+<!-- This is the ONLY wiring that connects Generate/Preview/Download to the backend -->
+<script src="./app.js"></script>
 </body>
 </html>
-
