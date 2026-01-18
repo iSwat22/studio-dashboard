@@ -195,8 +195,8 @@ if (mode !== "text-to-image") return;
 const promptEl = $("prompt");
 const generateBtn = $("generateBtn");
 
-const resultImg = $("resultImg");
-const emptyState = $("emptyState");
+const resultImg = $("previewImg");
+const emptyState = $("previewEmpty");
 
 const downloadBtn = $("downloadBtn");
 const deleteBtn = $("deleteBtn");
