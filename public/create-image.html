@@ -51,7 +51,10 @@ align-items:center;
 justify-content:space-between;
 gap:12px;
 }
-.brand{display:flex; align-items:center; gap:10px; user-select:none;}
+.brand{
+display:flex; align-items:center; gap:10px;
+user-select:none;
+}
 .brandMark{
 width:34px; height:34px; border-radius:10px;
 display:grid; place-items:center;
@@ -74,7 +77,12 @@ background: rgba(255,255,255,.06);
 border:1px solid var(--line);
 color:var(--text);
 font-size:12px;
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
+transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
+}
+.pill:hover{
+transform: translateY(-1px);
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 16px 45px rgba(45,226,255,.12);
 }
 .pill .dot{
 width:8px; height:8px; border-radius:50%;
@@ -100,7 +108,12 @@ border:1px solid rgba(45,226,255,.32);
 color:var(--text);
 font-weight:800;
 font-size:12px;
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
+transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
+}
+.homeBtn:hover{
+transform: translateY(-1px);
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 16px 45px rgba(45,226,255,.12);
 }
 
 /* Page layout */
@@ -179,9 +192,14 @@ font-size:13px;
 color:var(--text);
 background: rgba(255,255,255,.08);
 border:1px solid rgba(255,255,255,.14);
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease, background .12s ease;
+transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
 }
-.btn:hover{background: rgba(255,255,255,.10)}
+.btn:hover{
+transform: translateY(-1px);
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 16px 45px rgba(45,226,255,.12);
+background: rgba(255,255,255,.10);
+}
 .btnPrimary{
 width:100%;
 padding:12px 14px;
@@ -194,17 +212,18 @@ border-color: rgba(45,226,255,.55);
 box-shadow: 0 18px 55px rgba(45,226,255,.18);
 }
 
-/* Neon hover for ALL clickable things */
-.btn:hover,
-.pill:hover,
-.homeBtn:hover{
-border-color: rgba(45,226,255,.55) !important;
-box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 16px 45px rgba(45,226,255,.12);
-transform: translateY(-1px);
+/* Download button matches Generate */
+.btnSecondary{
+width:100%;
+padding:12px 14px;
+margin-top:10px;
+background: rgba(255,255,255,.08);
+border:1px solid rgba(45,226,255,.26);
 }
-.pill:active,
-.btn:active,
-.homeBtn:active{ transform: translateY(0px); }
+.btnSecondary:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 18px 55px rgba(45,226,255,.12);
+}
 
 .select{
 width:100%;
@@ -214,6 +233,7 @@ background: rgba(0,0,0,.22);
 color:var(--text);
 padding:11px 12px;
 outline:none;
+transition: border-color .12s ease, box-shadow .12s ease;
 }
 .select:focus{
 border-color: rgba(45,226,255,.38);
@@ -233,36 +253,29 @@ border:1px solid rgba(255,255,255,.12);
 background: rgba(0,0,0,.20);
 overflow:hidden;
 cursor:pointer;
-min-height:120px;
+height: 138px; /* FIX overlap */
 transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .themeCard:hover{
 transform: translateY(-1px);
 border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 14px 40px rgba(0,0,0,.35);
+box-shadow: 0 16px 45px rgba(45,226,255,.12);
 }
 .themeCard.active{
 border-color: rgba(45,226,255,.60);
 box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
 }
 .themeCard img{
-width:100%; height:100%;
+width:100%;
+height:100%;
 object-fit:cover;
 display:block;
 filter: saturate(1.05) contrast(1.02);
 }
-.themeCard .meta{
-position:absolute; left:10px; right:10px; bottom:10px;
-display:flex; flex-direction:column; gap:4px;
-background: rgba(0,0,0,.45);
-border:1px solid rgba(255,255,255,.12);
-border-radius:14px;
-padding:8px 10px;
-}
-.themeCard .meta b{font-size:12px}
-.themeCard .meta span{font-size:11px; color:rgba(255,255,255,.72)}
+/* REMOVE overlay text on theme images */
+.themeCard .meta{ display:none !important; }
 
-/* STYLE GRID tiles */
+/* STYLE GRID */
 .styleGrid{
 display:grid;
 grid-template-columns: repeat(3, 1fr);
@@ -276,41 +289,28 @@ background: rgba(0,0,0,.20);
 overflow:hidden;
 cursor:pointer;
 transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
-/* Force ALL style tiles to be EXACTLY the same size */
-aspect-ratio: 1 / 1;
+height: 92px; /* consistent */
 }
 .styleTile:hover{
 transform: translateY(-1px);
 border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 14px 40px rgba(0,0,0,.35);
+box-shadow: 0 16px 45px rgba(45,226,255,.12);
 }
 .styleTile.active{
 border-color: rgba(45,226,255,.60);
 box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
 }
 .styleTile img{
-width:100%; height:100%;
+width:100%;
+height:100%;
 object-fit:cover;
 display:block;
 filter: saturate(1.05) contrast(1.02);
 }
-.styleTile .caption{
-position:absolute; left:8px; right:8px; bottom:8px;
-font-size:11px;
-padding:6px 8px;
-border-radius:999px;
-background: rgba(0,0,0,.45);
-border:1px solid rgba(255,255,255,.12);
-color: rgba(255,255,255,.88);
-text-overflow: ellipsis;
-overflow:hidden;
-white-space: nowrap;
-}
+/* REMOVE overlay text on style images */
+.styleTile .caption{ display:none !important; }
 
-/* Theme tiles consistent too */
-.themeCard{ aspect-ratio: 16 / 10; }
-
-/* missing image fallback */
+/* When an image is missing */
 .imgFallback{
 height:100%;
 display:grid;
@@ -325,7 +325,7 @@ rgba(0,0,0,.18);
 .imgFallback b{font-size:12px}
 .imgFallback span{font-size:11px; color:rgba(255,255,255,.60)}
 
-/* Preview */
+/* Center preview + bottom creations strip */
 .previewWrap{
 padding:14px;
 background: radial-gradient(600px 220px at 50% 18%, rgba(45,226,255,.12), transparent 62%);
@@ -345,7 +345,10 @@ text-align:center;
 color: rgba(255,255,255,.68);
 user-select:none;
 }
-.previewEmpty .icon{font-size:34px; filter: drop-shadow(0 12px 22px rgba(0,0,0,.55));}
+.previewEmpty .icon{
+font-size:34px;
+filter: drop-shadow(0 12px 22px rgba(0,0,0,.55));
+}
 .previewEmpty .txt{margin-top:10px; font-weight:800}
 .previewImg{
 position:absolute; inset:0;
@@ -365,6 +368,8 @@ display:flex;
 gap:10px;
 overflow:auto;
 }
+
+/* Thumb + delete X */
 .thumb{
 width:92px; height:64px;
 border-radius:12px;
@@ -374,12 +379,12 @@ overflow:hidden;
 flex: 0 0 auto;
 cursor:pointer;
 position:relative;
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
+transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .thumb:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 transform: translateY(-1px);
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 16px 45px rgba(45,226,255,.12);
 }
 .thumb img{width:100%; height:100%; object-fit:cover; display:block}
 .thumb .xBtn{
@@ -396,8 +401,10 @@ place-items:center;
 cursor:pointer;
 line-height:1;
 user-select:none;
+transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .thumb .xBtn:hover{
+transform: translateY(-1px);
 border-color: rgba(45,226,255,.55);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 }
@@ -408,14 +415,6 @@ height:1px; width:100%;
 background: linear-gradient(90deg, transparent, rgba(45,226,255,.55), transparent);
 opacity:.55;
 margin:10px 0;
-}
-
-/* Download disabled look */
-.btn[disabled]{
-opacity:.45;
-cursor:not-allowed;
-transform:none !important;
-box-shadow:none !important;
 }
 </style>
 </head>
@@ -458,9 +457,9 @@ box-shadow:none !important;
 
 <div class="grid">
 
-<!-- LEFT: Prompt + theme + TOP 3 styles -->
+<!-- LEFT: Prompt + theme + style picker -->
 <div class="panel">
-<div class="panelHeader"><h2>Prompt + Theme</h2></div>
+<div class="panelHeader"><h2>Prompt + Theme + Style</h2></div>
 <div class="panelBody">
 <label class="label">Prompt</label>
 <textarea id="prompt" class="textarea" placeholder="Describe what you want..."></textarea>
@@ -478,12 +477,16 @@ box-shadow:none !important;
 <div class="glowLine"></div>
 
 <label class="label">Pick Style (optional)</label>
-<!-- ONLY the top 3 here -->
-<div id="styleGridTop" class="styleGrid"></div>
+<div id="styleGrid" class="styleGrid"></div>
+
+<div style="margin-top:10px" class="note">
+Put images in <b>/public/</b> exactly like: <b>public/Kids_Story.jpeg</b><br/>
+Then the code must reference them like: <b>Kids_Story.jpeg</b>
+</div>
 </div>
 </div>
 
-<!-- CENTER: Preview + UNDER-PREVIEW styles (rest) + creations strip -->
+<!-- CENTER: Preview + creations strip -->
 <div class="panel">
 <div class="panelHeader"><h2>Preview</h2></div>
 <div class="previewWrap">
@@ -495,11 +498,9 @@ box-shadow:none !important;
 <img id="previewImg" class="previewImg" alt="Preview" />
 </div>
 
-<label class="label" style="margin-top:14px">Pick Style (optional)</label>
-<!-- The other 6 styles go here -->
-<div id="styleGridBottom" class="styleGrid"></div>
-
-<div class="creationStrip" id="creationStrip" aria-label="Creations strip"></div>
+<div class="creationStrip" id="creationStrip" aria-label="Creations strip">
+<!-- thumbs appear here -->
+</div>
 </div>
 </div>
 
@@ -530,10 +531,10 @@ box-shadow:none !important;
 <div class="glowLine"></div>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
-<button class="btn" id="downloadBtn" style="width:100%;margin-top:10px" disabled>Download</button>
+<button class="btn btnSecondary" id="downloadBtn" disabled>Download</button>
 
 <div style="margin-top:10px" class="note">
-UI is ready. Next we wire Generate to your backend.
+Click The Generate Button To Your Image.
 </div>
 </div>
 </div>
@@ -552,13 +553,13 @@ const THEMES = [
 { id:"Future_Ops", title:"Future Ops", sub:"Tactical sci-fi action", img:"Future_Ops.jpeg", seed:"futuristic tactical, clean sci-fi" },
 ];
 
-// STYLES (keep your list)
+// STYLES
 const STYLES = [
 { id:"Pixar_Style", label:"Pixar Style", img:"Pixar_Style.jpeg", seed:"Pixar-inspired 3D, warm lighting, cinematic" },
 { id:"Disney_Style", label:"Disney Style", img:"Disney_Style.jpeg", seed:"Disney-like 3D, magical, soft glow, clean faces" },
 { id:"Anime_Fantasy", label:"Anime Fantasy", img:"Anime_Fantasy.jpeg", seed:"anime fantasy, vibrant, detailed eyes, soft bloom" },
-
 { id:"Realistic_Cinema", label:"Realistic Cinema", img:"Realistic_Cinema.jpeg", seed:"realistic cinematic photo, shallow depth of field" },
+{ id:"Biblical_Epic", label:"Biblical Epic", img:"Biblical_Epic.jpeg", seed:"biblical illustration, reverent, cinematic light" },
 { id:"Film_Narrative", label:"Film Narrative", img:"Film_Narrative.jpeg", seed:"cinematic film still, natural lighting" },
 { id:"Storybook_Charm", label:"Storybook Charm", img:"Storybook_Charm.jpeg", seed:"storybook illustration, soft pastel" },
 { id:"PixiePop_3D", label:"PixiePop 3D", img:"PixiePop_3D.jpeg", seed:"3D cute character, glossy, playful" },
@@ -569,15 +570,34 @@ const STYLES = [
 const $ = (s)=>document.querySelector(s);
 
 const themeGrid = $("#themeGrid");
-const styleGridTop = $("#styleGridTop");
-const styleGridBottom = $("#styleGridBottom");
+const styleGrid = $("#styleGrid");
 const creationStrip = $("#creationStrip");
 const previewImg = $("#previewImg");
 const previewEmpty = $("#previewEmpty");
 const downloadBtn = $("#downloadBtn");
 
-let selectedTheme = THEMES[0]?.id || null;
-let selectedStyle = STYLES[0]?.id || null;
+let selectedThemes = [];
+let selectedStyles = [];
+
+function syncPromptSelections(){
+const prompt = $("#prompt");
+const raw = prompt.value || "";
+const base = raw.split("\n\n--- Selections ---")[0].trim();
+
+const themeSeeds = THEMES.filter(t => selectedThemes.includes(t.id)).map(t => t.seed);
+const styleSeeds = STYLES.filter(s => selectedStyles.includes(s.id)).map(s => s.seed);
+const combined = [...themeSeeds, ...styleSeeds].filter(Boolean);
+
+if(combined.length === 0){
+prompt.value = base;
+return;
+}
+
+prompt.value =
+(base ? base : "") +
+"\n\n--- Selections ---\n" +
+combined.join(", ");
+}
 
 // ------- Preview helpers -------
 function setPreview(src){
@@ -601,6 +621,7 @@ function makeSafeImg(src, label){
 const img = document.createElement("img");
 img.src = src;
 img.alt = label;
+
 img.onerror = () => {
 const parent = img.parentElement;
 if(!parent) return;
@@ -610,21 +631,23 @@ fb.className = "imgFallback";
 fb.innerHTML = `<div><b>${label}</b><br/><span>Missing image</span></div>`;
 parent.appendChild(fb);
 };
+
 return img;
 }
 
-// ------- Render Themes -------
+// ------- Render Themes (multi-select) -------
 function renderThemes(){
 themeGrid.innerHTML = "";
 THEMES.forEach(th=>{
 const card = document.createElement("div");
-card.className = "themeCard" + (th.id===selectedTheme ? " active" : "");
+card.className = "themeCard" + (selectedThemes.includes(th.id) ? " active" : "");
 card.setAttribute("data-theme", th.id);
 
 const imgWrap = document.createElement("div");
 imgWrap.style.height = "100%";
 imgWrap.appendChild(makeSafeImg(th.img, th.title));
 
+// meta exists but hidden via CSS (no overlay text)
 const meta = document.createElement("div");
 meta.className = "meta";
 meta.innerHTML = `<b>${th.title}</b><span>${th.sub}</span>`;
@@ -633,38 +656,34 @@ card.appendChild(imgWrap);
 card.appendChild(meta);
 
 card.addEventListener("click", ()=>{
-selectedTheme = th.id;
-document.querySelectorAll(".themeCard").forEach(x=>x.classList.remove("active"));
+const idx = selectedThemes.indexOf(th.id);
+if(idx >= 0){
+selectedThemes.splice(idx, 1);
+card.classList.remove("active");
+}else{
+selectedThemes.push(th.id);
 card.classList.add("active");
-
-const prompt = $("#prompt");
-if(prompt.value.trim().length === 0){
-prompt.value = th.seed;
 }
+syncPromptSelections();
 });
 
 themeGrid.appendChild(card);
 });
 }
 
-// ------- Render Styles (split 3 top / 6 bottom) -------
+// ------- Render Styles (multi-select) -------
 function renderStyles(){
-styleGridTop.innerHTML = "";
-styleGridBottom.innerHTML = "";
-
-const top3 = STYLES.slice(0,3);
-const bottom6 = STYLES.slice(3);
-
-const renderTo = (list, mount)=>{
-list.forEach(st=>{
+styleGrid.innerHTML = "";
+STYLES.forEach(st=>{
 const tile = document.createElement("div");
-tile.className = "styleTile" + (st.id===selectedStyle ? " active" : "");
+tile.className = "styleTile" + (selectedStyles.includes(st.id) ? " active" : "");
 tile.setAttribute("data-style", st.id);
 
 const imgWrap = document.createElement("div");
 imgWrap.style.height = "100%";
 imgWrap.appendChild(makeSafeImg(st.img, st.label));
 
+// caption exists but hidden via CSS (no overlay text)
 const cap = document.createElement("div");
 cap.className = "caption";
 cap.textContent = st.label;
@@ -673,22 +692,19 @@ tile.appendChild(imgWrap);
 tile.appendChild(cap);
 
 tile.addEventListener("click", ()=>{
-selectedStyle = st.id;
-document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"));
+const idx = selectedStyles.indexOf(st.id);
+if(idx >= 0){
+selectedStyles.splice(idx, 1);
+tile.classList.remove("active");
+}else{
+selectedStyles.push(st.id);
 tile.classList.add("active");
-
-const prompt = $("#prompt");
-if(prompt.value.trim().length === 0){
-prompt.value = st.seed;
 }
+syncPromptSelections();
 });
 
-mount.appendChild(tile);
+styleGrid.appendChild(tile);
 });
-};
-
-renderTo(top3, styleGridTop);
-renderTo(bottom6, styleGridBottom);
 }
 
 // ------- Creations strip with DELETE X -------
@@ -709,8 +725,10 @@ box.addEventListener("click", ()=> setPreview(src));
 
 x.addEventListener("click", (e)=>{
 e.stopPropagation();
+
 const wasCurrent = (previewImg.style.display !== "none" && previewImg.src.includes(src));
 box.remove();
+
 if(wasCurrent){
 const next = creationStrip.querySelector(".thumb");
 if(next){
@@ -740,35 +758,40 @@ alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
 }
 });
 
+// Generate placeholder
 $("#generateBtn").addEventListener("click", ()=>{
-// UI-only placeholder:
-const theme = THEMES.find(x=>x.id===selectedTheme) || THEMES[0];
-const style = STYLES.find(x=>x.id===selectedStyle) || STYLES[0];
+const lastStyle = STYLES.find(x=>x.id===selectedStyles[selectedStyles.length-1]);
+const lastTheme = THEMES.find(x=>x.id===selectedThemes[selectedThemes.length-1]);
+const fakeResult = (lastStyle?.img || lastTheme?.img || STYLES[0]?.img || THEMES[0]?.img);
 
-const fakeResult = (style?.img || theme?.img);
 addCreationThumb(fakeResult);
 
 console.log("Generate clicked:", {
 prompt: $("#prompt").value,
-theme: selectedTheme,
-style: selectedStyle,
+themes: selectedThemes,
+styles: selectedStyles,
 size: $("#size").value,
 count: $("#count").value,
 quality: $("#quality").value
 });
 });
 
-// Download current preview image
-downloadBtn.addEventListener("click", ()=>{
-const src = downloadBtn.dataset.src || previewImg.src;
+// Download current preview
+downloadBtn.addEventListener("click", async ()=>{
+const src = downloadBtn.dataset.src;
 if(!src) return;
 
+try{
+// If this is same-origin/public, this will download the file
 const a = document.createElement("a");
 a.href = src;
-a.download = "quanneleap-image.jpg";
+a.download = src.split("/").pop() || "image.jpg";
 document.body.appendChild(a);
 a.click();
 a.remove();
+}catch(e){
+alert("Download failed. Try right-click the preview image and Save Image As.");
+}
 });
 
 // ------- Init -------
