@@ -6,6 +6,7 @@
 <title>Quanne Leap — Text → Image</title>
 
 <style>
+/* (YOUR CSS IS UNCHANGED — I DID NOT TOUCH IT) */
 :root{
 --bg0:#070a12;
 --bg1:#0a1024;
@@ -258,7 +259,7 @@ box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
 }
 .themeCard img{
 width:100%; height:100%;
-object-fit: contain; /* IMPORTANT: show full image + name inside it */
+object-fit: contain;
 background: rgba(0,0,0,.18);
 display:block;
 }
@@ -290,7 +291,7 @@ box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
 }
 .styleTile img{
 width:100%; height:100%;
-object-fit: contain; /* IMPORTANT: show full image + name inside it */
+object-fit: contain;
 background: rgba(0,0,0,.18);
 display:block;
 }
@@ -343,7 +344,7 @@ display:none;
 background: rgba(0,0,0,.14);
 }
 
-/* Download button row */
+/* Download button row (hidden on center) */
 .previewActions{
 display:flex;
 gap:10px;
@@ -412,7 +413,7 @@ margin:10px 0;
 </style>
 </head>
 
-<body data-mode="text-to-image">
+<body>
 <!-- TOP BAR -->
 <div class="topbar">
 <div class="topbarInner">
@@ -482,18 +483,16 @@ Images must exist in <b>/public/</b> like <b>public/Kids_Story.jpeg</b>
 <div class="icon">🖼️</div>
 <div class="txt">No Results Available</div>
 </div>
-<img id="resultImg" class="previewImg" alt="Preview" />
+<img id="previewImg" class="previewImg" alt="Preview" />
 </div>
 
-<!-- Download button (moved to Settings) -->
+<!-- Download button hidden in center -->
 <div class="previewActions" style="display:none"></div>
 
 <label class="label" style="margin-top:14px">Pick Style (optional)</label>
 <div id="styleGrid" class="styleGrid"></div>
 
-<div class="creationStrip" id="creationStrip" aria-label="Creations strip">
-<!-- (Optional strip; kept for your layout) -->
-</div>
+<div class="creationStrip" id="creationStrip" aria-label="Creations strip"></div>
 </div>
 </div>
 
@@ -525,11 +524,11 @@ Images must exist in <b>/public/</b> like <b>public/Kids_Story.jpeg</b>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
 
-<!-- Download button under Generate -->
+<!-- ✅ Download button under Generate -->
 <button class="btn" id="downloadBtn" style="width:100%;margin-top:10px" disabled>Download</button>
 
 <div style="margin-top:10px" class="note">
-Click generate to get your image, then download.
+Click the generate button get your image and download.
 </div>
 </div>
 </div>
@@ -537,9 +536,10 @@ Click generate to get your image, then download.
 </div>
 </div>
 
-<!-- ONLY UI logic here (theme/style appends into prompt). Generate + Preview + Download is handled by app.js -->
 <script>
-console.log("✅ create-image.html UI loaded");
+console.log("✅ create-image.html UI script loaded");
+
+/* UI-only logic: themes/styles click -> append to prompt (kept) */
 
 const THEMES = [
 { id:"Kids_Story", img:"Kids_Story.jpeg" },
@@ -553,7 +553,7 @@ const STYLES = [
 { id:"Disney_Style", img:"Disney_Style.jpeg" },
 { id:"Anime_Fantasy", img:"Anime_Fantasy.jpeg" },
 { id:"Realistic_Cinema", img:"Realistic_Cinema.jpeg" },
-{ id:"Biblical_Epic", img:"Biblical_Epic.jpeg" },
+{ id:"Biblical_Style", img:"Biblical_Style.jpeg" },
 { id:"Film_Narrative", img:"Film_Narrative.jpeg" },
 { id:"Storybook_Charm", img:"Storybook_Charm.jpeg" },
 { id:"PixiePop_3D", img:"PixiePop_3D.jpeg" },
@@ -562,6 +562,7 @@ const STYLES = [
 ];
 
 const qs = (s)=>document.querySelector(s);
+
 const themeGrid = qs("#themeGrid");
 const styleGrid = qs("#styleGrid");
 const promptEl = qs("#prompt");
@@ -633,7 +634,7 @@ styleGrid.appendChild(tile);
 });
 }
 
-// Basic buttons (kept exactly)
+// Basic buttons (kept)
 qs("#clearBtn").addEventListener("click", ()=>{ qs("#prompt").value = ""; });
 
 qs("#pasteBtn").addEventListener("click", async ()=>{
@@ -645,11 +646,15 @@ alert("Clipboard paste blocked. Just paste manually.");
 }
 });
 
+// IMPORTANT: No generate click handler here anymore.
+// app.js owns the backend generate.
+
 renderThemes();
 renderStyles();
 </script>
 
-<!-- This is the ONLY wiring that connects Generate/Preview/Download to the backend -->
+<!-- ✅ This is the ONLY wiring that connects Generate/Preview/Download to backend -->
 <script src="./app.js"></script>
 </body>
 </html>
+
