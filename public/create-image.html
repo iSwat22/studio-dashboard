@@ -51,10 +51,7 @@ align-items:center;
 justify-content:space-between;
 gap:12px;
 }
-.brand{
-display:flex; align-items:center; gap:10px;
-user-select:none;
-}
+.brand{display:flex; align-items:center; gap:10px; user-select:none;}
 .brandMark{
 width:34px; height:34px; border-radius:10px;
 display:grid; place-items:center;
@@ -77,6 +74,7 @@ background: rgba(255,255,255,.06);
 border:1px solid var(--line);
 color:var(--text);
 font-size:12px;
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
 }
 .pill .dot{
 width:8px; height:8px; border-radius:50%;
@@ -102,10 +100,7 @@ border:1px solid rgba(45,226,255,.32);
 color:var(--text);
 font-weight:800;
 font-size:12px;
-}
-.homeBtn:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 16px 45px rgba(45,226,255,.12);
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
 }
 
 /* Page layout */
@@ -184,6 +179,7 @@ font-size:13px;
 color:var(--text);
 background: rgba(255,255,255,.08);
 border:1px solid rgba(255,255,255,.14);
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease, background .12s ease;
 }
 .btn:hover{background: rgba(255,255,255,.10)}
 .btnPrimary{
@@ -198,18 +194,17 @@ border-color: rgba(45,226,255,.55);
 box-shadow: 0 18px 55px rgba(45,226,255,.18);
 }
 
-/* download button styling (matches your UI) */
-.btnSecondary{
-width:100%;
-padding:12px 14px;
-margin-top:10px;
-background: rgba(255,255,255,.08);
-border:1px solid rgba(45,226,255,.22);
+/* Neon hover for ALL clickable things */
+.btn:hover,
+.pill:hover,
+.homeBtn:hover{
+border-color: rgba(45,226,255,.55) !important;
+box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 16px 45px rgba(45,226,255,.12);
+transform: translateY(-1px);
 }
-.btnSecondary:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 16px 45px rgba(45,226,255,.12);
-}
+.pill:active,
+.btn:active,
+.homeBtn:active{ transform: translateY(0px); }
 
 .select{
 width:100%;
@@ -225,7 +220,7 @@ border-color: rgba(45,226,255,.38);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10);
 }
 
-/* THEMES (big cards like your homepage) */
+/* THEMES */
 .themeGrid{
 display:grid;
 grid-template-columns: repeat(2, 1fr);
@@ -247,8 +242,8 @@ border-color: rgba(45,226,255,.55);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 14px 40px rgba(0,0,0,.35);
 }
 .themeCard.active{
-border-color: rgba(45,226,255,.70);
-box-shadow: 0 0 0 3px rgba(45,226,255,.14), 0 16px 50px rgba(45,226,255,.12);
+border-color: rgba(45,226,255,.60);
+box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
 }
 .themeCard img{
 width:100%; height:100%;
@@ -267,7 +262,7 @@ padding:8px 10px;
 .themeCard .meta b{font-size:12px}
 .themeCard .meta span{font-size:11px; color:rgba(255,255,255,.72)}
 
-/* STYLE GRID (little images you pick from) */
+/* STYLE GRID tiles */
 .styleGrid{
 display:grid;
 grid-template-columns: repeat(3, 1fr);
@@ -281,7 +276,8 @@ background: rgba(0,0,0,.20);
 overflow:hidden;
 cursor:pointer;
 transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease;
-min-height:86px;
+/* Force ALL style tiles to be EXACTLY the same size */
+aspect-ratio: 1 / 1;
 }
 .styleTile:hover{
 transform: translateY(-1px);
@@ -289,8 +285,8 @@ border-color: rgba(45,226,255,.55);
 box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 14px 40px rgba(0,0,0,.35);
 }
 .styleTile.active{
-border-color: rgba(45,226,255,.70);
-box-shadow: 0 0 0 3px rgba(45,226,255,.14), 0 16px 50px rgba(45,226,255,.12);
+border-color: rgba(45,226,255,.60);
+box-shadow: 0 0 0 3px rgba(45,226,255,.12), 0 16px 50px rgba(45,226,255,.10);
 }
 .styleTile img{
 width:100%; height:100%;
@@ -311,7 +307,10 @@ overflow:hidden;
 white-space: nowrap;
 }
 
-/* When an image is missing, show a nice fallback tile */
+/* Theme tiles consistent too */
+.themeCard{ aspect-ratio: 16 / 10; }
+
+/* missing image fallback */
 .imgFallback{
 height:100%;
 display:grid;
@@ -326,7 +325,7 @@ rgba(0,0,0,.18);
 .imgFallback b{font-size:12px}
 .imgFallback span{font-size:11px; color:rgba(255,255,255,.60)}
 
-/* Center preview + bottom creations strip */
+/* Preview */
 .previewWrap{
 padding:14px;
 background: radial-gradient(600px 220px at 50% 18%, rgba(45,226,255,.12), transparent 62%);
@@ -346,10 +345,7 @@ text-align:center;
 color: rgba(255,255,255,.68);
 user-select:none;
 }
-.previewEmpty .icon{
-font-size:34px;
-filter: drop-shadow(0 12px 22px rgba(0,0,0,.55));
-}
+.previewEmpty .icon{font-size:34px; filter: drop-shadow(0 12px 22px rgba(0,0,0,.55));}
 .previewEmpty .txt{margin-top:10px; font-weight:800}
 .previewImg{
 position:absolute; inset:0;
@@ -369,8 +365,6 @@ display:flex;
 gap:10px;
 overflow:auto;
 }
-
-/* Thumb + delete X */
 .thumb{
 width:92px; height:64px;
 border-radius:12px;
@@ -380,8 +374,13 @@ overflow:hidden;
 flex: 0 0 auto;
 cursor:pointer;
 position:relative;
+transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
 }
-.thumb:hover{border-color: rgba(45,226,255,.55)}
+.thumb:hover{
+border-color: rgba(45,226,255,.55);
+box-shadow: 0 0 0 3px rgba(45,226,255,.10);
+transform: translateY(-1px);
+}
 .thumb img{width:100%; height:100%; object-fit:cover; display:block}
 .thumb .xBtn{
 position:absolute;
@@ -409,6 +408,14 @@ height:1px; width:100%;
 background: linear-gradient(90deg, transparent, rgba(45,226,255,.55), transparent);
 opacity:.55;
 margin:10px 0;
+}
+
+/* Download disabled look */
+.btn[disabled]{
+opacity:.45;
+cursor:not-allowed;
+transform:none !important;
+box-shadow:none !important;
 }
 </style>
 </head>
@@ -451,9 +458,9 @@ margin:10px 0;
 
 <div class="grid">
 
-<!-- LEFT: Prompt + theme + style picker -->
+<!-- LEFT: Prompt + theme + TOP 3 styles -->
 <div class="panel">
-<div class="panelHeader"><h2>Prompt + Theme + Style</h2></div>
+<div class="panelHeader"><h2>Prompt + Theme</h2></div>
 <div class="panelBody">
 <label class="label">Prompt</label>
 <textarea id="prompt" class="textarea" placeholder="Describe what you want..."></textarea>
@@ -471,12 +478,12 @@ margin:10px 0;
 <div class="glowLine"></div>
 
 <label class="label">Pick Style (optional)</label>
-<div id="styleGrid" class="styleGrid"></div>
-
+<!-- ONLY the top 3 here -->
+<div id="styleGridTop" class="styleGrid"></div>
 </div>
 </div>
 
-<!-- CENTER: Preview + creations strip -->
+<!-- CENTER: Preview + UNDER-PREVIEW styles (rest) + creations strip -->
 <div class="panel">
 <div class="panelHeader"><h2>Preview</h2></div>
 <div class="previewWrap">
@@ -488,13 +495,15 @@ margin:10px 0;
 <img id="previewImg" class="previewImg" alt="Preview" />
 </div>
 
-<div class="creationStrip" id="creationStrip" aria-label="Creations strip">
-<!-- thumbs appear here -->
-</div>
+<label class="label" style="margin-top:14px">Pick Style (optional)</label>
+<!-- The other 6 styles go here -->
+<div id="styleGridBottom" class="styleGrid"></div>
+
+<div class="creationStrip" id="creationStrip" aria-label="Creations strip"></div>
 </div>
 </div>
 
-<!-- RIGHT: Settings + generate -->
+<!-- RIGHT: Settings + generate + download -->
 <div class="panel">
 <div class="panelHeader"><h2>Settings</h2></div>
 <div class="panelBody">
@@ -521,7 +530,7 @@ margin:10px 0;
 <div class="glowLine"></div>
 
 <button class="btn btnPrimary" id="generateBtn">Generate</button>
-<button class="btn btnSecondary" id="downloadBtn" disabled>Download</button>
+<button class="btn" id="downloadBtn" style="width:100%;margin-top:10px" disabled>Download</button>
 
 <div style="margin-top:10px" class="note">
 UI is ready. Next we wire Generate to your backend.
@@ -535,11 +544,7 @@ UI is ready. Next we wire Generate to your backend.
 <script>
 console.log("✅ create-image.html loaded");
 
-// ========= IMPORTANT =========
-// ALL images must exist as: /public/FILENAME.jpeg
-// And here you reference them ONLY as: "FILENAME.jpeg"
-
-// THEMES (top section)
+// THEMES
 const THEMES = [
 { id:"Kids_Story", title:"Kids Story", sub:"Kid-friendly adventure", img:"Kids_Story.jpeg", seed:"kid-friendly, warm, hopeful" },
 { id:"Biblical_Epic", title:"Biblical Epic", sub:"Faith + cinematic scale", img:"Biblical_Epic.jpeg", seed:"cinematic biblical epic, majestic light" },
@@ -547,12 +552,13 @@ const THEMES = [
 { id:"Future_Ops", title:"Future Ops", sub:"Tactical sci-fi action", img:"Future_Ops.jpeg", seed:"futuristic tactical, clean sci-fi" },
 ];
 
+// STYLES (keep your list)
 const STYLES = [
 { id:"Pixar_Style", label:"Pixar Style", img:"Pixar_Style.jpeg", seed:"Pixar-inspired 3D, warm lighting, cinematic" },
 { id:"Disney_Style", label:"Disney Style", img:"Disney_Style.jpeg", seed:"Disney-like 3D, magical, soft glow, clean faces" },
 { id:"Anime_Fantasy", label:"Anime Fantasy", img:"Anime_Fantasy.jpeg", seed:"anime fantasy, vibrant, detailed eyes, soft bloom" },
+
 { id:"Realistic_Cinema", label:"Realistic Cinema", img:"Realistic_Cinema.jpeg", seed:"realistic cinematic photo, shallow depth of field" },
-{ id:"Biblical_Style", label:"Biblical Style", img:"Biblical_Style.jpeg", seed:"biblical illustration, reverent, cinematic light" },
 { id:"Film_Narrative", label:"Film Narrative", img:"Film_Narrative.jpeg", seed:"cinematic film still, natural lighting" },
 { id:"Storybook_Charm", label:"Storybook Charm", img:"Storybook_Charm.jpeg", seed:"storybook illustration, soft pastel" },
 { id:"PixiePop_3D", label:"PixiePop 3D", img:"PixiePop_3D.jpeg", seed:"3D cute character, glossy, playful" },
@@ -563,17 +569,15 @@ const STYLES = [
 const $ = (s)=>document.querySelector(s);
 
 const themeGrid = $("#themeGrid");
-const styleGrid = $("#styleGrid");
+const styleGridTop = $("#styleGridTop");
+const styleGridBottom = $("#styleGridBottom");
 const creationStrip = $("#creationStrip");
 const previewImg = $("#previewImg");
 const previewEmpty = $("#previewEmpty");
 const downloadBtn = $("#downloadBtn");
 
-let selectedTheme = null;
-let selectedStyle = null;
-
-// track current "generated" preview image (for download)
-let currentResultSrc = "";
+let selectedTheme = THEMES[0]?.id || null;
+let selectedStyle = STYLES[0]?.id || null;
 
 // ------- Preview helpers -------
 function setPreview(src){
@@ -581,36 +585,15 @@ if(!src){
 previewImg.style.display = "none";
 previewEmpty.style.display = "block";
 previewImg.src = "";
-currentResultSrc = "";
 downloadBtn.disabled = true;
+downloadBtn.dataset.src = "";
 return;
 }
 previewImg.src = src;
 previewImg.style.display = "block";
 previewEmpty.style.display = "none";
-currentResultSrc = src;
 downloadBtn.disabled = false;
-}
-
-// ------- Prompt helper (keeps BOTH theme + style in prompt) -------
-function updatePromptFromSelections(){
-const prompt = $("#prompt");
-const base = prompt.value || "";
-
-const theme = THEMES.find(t => t.id === selectedTheme);
-const style = STYLES.find(s => s.id === selectedStyle);
-
-const themeLine = theme ? `Theme: ${theme.title}` : "";
-const styleLine = style ? `Style: ${style.label}` : "";
-
-let lines = base.split("\n");
-
-lines = lines.filter(l => !l.startsWith("Theme: ") && !l.startsWith("Style: "));
-
-if(themeLine) lines.unshift(themeLine);
-if(styleLine) lines.unshift(styleLine);
-
-prompt.value = lines.join("\n").trim();
+downloadBtn.dataset.src = src;
 }
 
 // ------- Safe image helper -------
@@ -618,7 +601,6 @@ function makeSafeImg(src, label){
 const img = document.createElement("img");
 img.src = src;
 img.alt = label;
-
 img.onerror = () => {
 const parent = img.parentElement;
 if(!parent) return;
@@ -628,7 +610,6 @@ fb.className = "imgFallback";
 fb.innerHTML = `<div><b>${label}</b><br/><span>Missing image</span></div>`;
 parent.appendChild(fb);
 };
-
 return img;
 }
 
@@ -655,17 +636,27 @@ card.addEventListener("click", ()=>{
 selectedTheme = th.id;
 document.querySelectorAll(".themeCard").forEach(x=>x.classList.remove("active"));
 card.classList.add("active");
-updatePromptFromSelections();
+
+const prompt = $("#prompt");
+if(prompt.value.trim().length === 0){
+prompt.value = th.seed;
+}
 });
 
 themeGrid.appendChild(card);
 });
 }
 
-// ------- Render Styles -------
+// ------- Render Styles (split 3 top / 6 bottom) -------
 function renderStyles(){
-styleGrid.innerHTML = "";
-STYLES.forEach(st=>{
+styleGridTop.innerHTML = "";
+styleGridBottom.innerHTML = "";
+
+const top3 = STYLES.slice(0,3);
+const bottom6 = STYLES.slice(3);
+
+const renderTo = (list, mount)=>{
+list.forEach(st=>{
 const tile = document.createElement("div");
 tile.className = "styleTile" + (st.id===selectedStyle ? " active" : "");
 tile.setAttribute("data-style", st.id);
@@ -685,11 +676,19 @@ tile.addEventListener("click", ()=>{
 selectedStyle = st.id;
 document.querySelectorAll(".styleTile").forEach(x=>x.classList.remove("active"));
 tile.classList.add("active");
-updatePromptFromSelections();
+
+const prompt = $("#prompt");
+if(prompt.value.trim().length === 0){
+prompt.value = st.seed;
+}
 });
 
-styleGrid.appendChild(tile);
+mount.appendChild(tile);
 });
+};
+
+renderTo(top3, styleGridTop);
+renderTo(bottom6, styleGridBottom);
 }
 
 // ------- Creations strip with DELETE X -------
@@ -712,7 +711,6 @@ x.addEventListener("click", (e)=>{
 e.stopPropagation();
 const wasCurrent = (previewImg.style.display !== "none" && previewImg.src.includes(src));
 box.remove();
-
 if(wasCurrent){
 const next = creationStrip.querySelector(".thumb");
 if(next){
@@ -743,6 +741,7 @@ alert("Clipboard paste blocked. Just Ctrl+V into the prompt box.");
 });
 
 $("#generateBtn").addEventListener("click", ()=>{
+// UI-only placeholder:
 const theme = THEMES.find(x=>x.id===selectedTheme) || THEMES[0];
 const style = STYLES.find(x=>x.id===selectedStyle) || STYLES[0];
 
@@ -759,30 +758,17 @@ quality: $("#quality").value
 });
 });
 
-// ------- DOWNLOAD BUTTON (downloads whatever is currently previewed) -------
-downloadBtn.addEventListener("click", async ()=>{
-if(!currentResultSrc) return;
-
-try{
-const res = await fetch(currentResultSrc, { cache: "no-store" });
-const blob = await res.blob();
-const url = URL.createObjectURL(blob);
+// Download current preview image
+downloadBtn.addEventListener("click", ()=>{
+const src = downloadBtn.dataset.src || previewImg.src;
+if(!src) return;
 
 const a = document.createElement("a");
-a.href = url;
-
-const cleanName = (currentResultSrc.split("/").pop() || "image").replace(/\?.*$/, "");
-a.download = cleanName || "image.jpeg";
-
+a.href = src;
+a.download = "quanneleap-image.jpg";
 document.body.appendChild(a);
 a.click();
 a.remove();
-
-URL.revokeObjectURL(url);
-}catch(err){
-alert("Download failed. Try right-click the image and Save As.");
-console.error(err);
-}
 });
 
 // ------- Init -------
