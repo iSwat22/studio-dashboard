@@ -5,36 +5,24 @@
 <title>Text → Video • QuanneLeap.AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="stylesheet" href="./style.css" />
-<link rel="stylesheet" href="./create-video.css" />
 </head>
 
 <body class="bg-stars" data-mode="text-to-video">
 
-<!-- TOPBAR -->
+<!-- TOPBAR (MATCHES YOUR OTHER PAGES: logo + nav left, pills right. NO bell/profile) -->
 <header class="topbar">
 <div class="topbar-left">
 <a class="brand" href="./index.html" title="Home">
-<img class="brand-logo" src="./logo.png?v=2" alt="QuanneLeap.AI logo" />
+<img class="brand-logo" src="./logo.png?v=2" alt="QuannaLeap.AI logo" />
 </a>
 
-<!-- REMOVED: old topnav links under the logo -->
-<!--
+<!-- keep the same nav structure, but only show a Home button in the header -->
 <nav class="topnav">
 <a href="./index.html">🏠 Home</a>
-<a href="./assets.html">📁 Assets</a>
-<a href="./characters.html">🧍 Characters</a>
 </nav>
--->
 </div>
 
 <div class="topbar-right">
-
-<!-- NEW: Home button by Platinum -->
-<a class="pill" href="./index.html" title="Home">
-<span class="dot dot-blue"></span>
-<span>Home</span>
-</a>
-
 <div class="pill">
 <span class="dot dot-blue"></span>
 <span>Platinum</span>
@@ -44,13 +32,6 @@
 <span class="star">★</span>
 <span id="creditCount">∞</span>
 </div>
-
-
-
-<button class="profile-btn" type="button" title="Profile">
-<span class="profile-initials">KC</span>
-<span class="profile-role">Admin</span>
-</button>
 </div>
 </header>
 
@@ -62,7 +43,7 @@
 <!-- HERO -->
 <section class="hero hero-video">
 <h1>Text → Video</h1>
-<p>Generate short video clips from prompts.</p>
+<p>Generate video clips from prompts.</p>
 </section>
 
 <!-- CREATE PANEL (3-column layout) -->
@@ -98,7 +79,7 @@ Tip: Keep it short and clear. You can refine after the first clip.
 </div>
 
 <div id="themeGrid" class="card-grid">
-<!-- Theme cards (UI only) -->
+<!-- Theme cards -->
 <button class="pick-card is-selected" type="button" data-theme="kids-story" title="Kids Story">
 <div class="thumb">
 <img src="./public/Kids_Story.jpeg" alt="Kids Story" onerror="this.style.display='none';" />
@@ -206,16 +187,21 @@ After generating clips, select the ones you want, then click <b>Next</b>.
 </div>
 
 <div class="settings-shell">
+<!-- ✅ UPDATED: Platform names -->
 <label class="field-label" for="aspect">Aspect Ratio</label>
 <select id="aspect" class="select">
-<option value="portrait" selected>Portrait (9:16) — Shorts</option>
-<option value="landscape">Landscape (16:9)</option>
-<option value="square">Square (1024×1024)</option>
+<option value="16:9" selected>YouTube (16:9)</option>
+<option value="9:16">TikTok / IG Reels / YT Shorts / FB Shorts (9:16)</option>
+<option value="1:1">Instagram Post (1:1)</option>
 </select>
 
+<!-- ✅ UPDATED: 8 seconds → 30 minutes -->
 <label class="field-label" for="duration">Clip Length</label>
 <select id="duration" class="select">
-<option value="60" selected>1 minute</option>
+<option value="8" selected>8 seconds</option>
+<option value="15">15 seconds</option>
+<option value="30">30 seconds</option>
+<option value="60">1 minute</option>
 <option value="120">2 minutes</option>
 <option value="180">3 minutes</option>
 <option value="300">5 minutes</option>
