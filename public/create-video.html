@@ -5,7 +5,7 @@
 <title>Text → Video • QuannaLeap.AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="stylesheet" href="./style.css" />
-  <link rel="stylesheet" href=" ./create-video.css"/>
+<link rel="stylesheet" href="./create-video.css" />
 </head>
 
 <body class="bg-stars" data-mode="text-to-video">
@@ -17,14 +17,24 @@
 <img class="brand-logo" src="./logo.png?v=2" alt="QuannaLeap.AI logo" />
 </a>
 
+<!-- REMOVED: old topnav links under the logo -->
+<!--
 <nav class="topnav">
 <a href="./index.html">🏠 Home</a>
 <a href="./assets.html">📁 Assets</a>
 <a href="./characters.html">🧍 Characters</a>
 </nav>
+-->
 </div>
 
 <div class="topbar-right">
+
+<!-- NEW: Home button by Platinum -->
+<a class="pill" href="./index.html" title="Home">
+<span class="dot dot-blue"></span>
+<span>Home</span>
+</a>
+
 <div class="pill">
 <span class="dot dot-blue"></span>
 <span>Platinum</span>
@@ -198,16 +208,21 @@ After generating clips, select the ones you want, then click <b>Next</b>.
 <div class="settings-shell">
 <label class="field-label" for="aspect">Aspect Ratio</label>
 <select id="aspect" class="select">
-<option value="square" selected>Square (1024×1024)</option>
+<option value="portrait" selected>Portrait (9:16) — Shorts</option>
 <option value="landscape">Landscape (16:9)</option>
-<option value="portrait">Portrait (9:16)</option>
+<option value="square">Square (1024×1024)</option>
 </select>
 
 <label class="field-label" for="duration">Clip Length</label>
 <select id="duration" class="select">
-<option value="8" selected>8 seconds (default)</option>
-<option value="12">12 seconds (later)</option>
-<option value="16">16 seconds (later)</option>
+<option value="60" selected>1 minute</option>
+<option value="120">2 minutes</option>
+<option value="180">3 minutes</option>
+<option value="300">5 minutes</option>
+<option value="600">10 minutes</option>
+<option value="900">15 minutes</option>
+<option value="1200">20 minutes</option>
+<option value="1800">30 minutes</option>
 </select>
 
 <label class="field-label" for="quality">Quality</label>
