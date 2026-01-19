@@ -1,133 +1,251 @@
-console.log("✅ create-video.js loaded");
+/* create-video.js */
+console.log("create-video.js loaded");
 
-function $(id) {
-return document.getElementById(id);
-}
+/**
+* This file ONLY handles the Text→Video page.
+* Goal: fix 404 by trying multiple possible API routes, without guessing your backend.
+* Once we confirm the correct endpoint, we can lock it to one route.
+*/
 
-function show(el) {
-if (el) el.style.display = "";
-}
-
-function hide(el) {
-if (el) el.style.display = "none";
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-// Only run on the Text→Video page
-const mode = document.body.dataset.mode;
-if (mode !== "text-to-video") return;
+const $ = (id) => document.getElementById(id);
 
 const promptEl = $("prompt");
-const generateBtn = $("generateBtn");
+const clearBtn = $("clearBtn");
+const pasteBtn = $("pasteBtn");
 
 const aspectEl = $("aspect");
 const durationEl = $("duration");
 const qualityEl = $("quality");
 
+const generateBtn = $("generateBtn");
+const downloadBtn = $("downloadBtn");
+
 const previewVideo = $("previewVideo");
 const previewEmpty = $("previewEmpty");
 
-const downloadBtn = $("downloadBtn");
-const deleteBtn = $("deleteBtn"); // optional (your page may not have this)
+// Optional UI parts (if present)
+const nextBtn = $("nextBtn");
+const clipsStrip = $("clipsStrip");
 
-if (!promptEl || !generateBtn || !previewVideo) {
-console.warn("⚠️ Missing required elements for create-video.js");
-return;
+// ---- Helpers
+function showStatus(msg) {
+if (previewEmpty) {
+previewEmpty.style.display = "block";
+previewEmpty.textContent = msg;
+}
+if (previewVideo) previewVideo.style.display = "none";
+if (downloadBtn) downloadBtn.style.display = "none";
 }
 
-// Reset preview UI
-function clearPreview() {
-previewVideo.pause();
-previewVideo.removeAttribute("src");
-previewVideo.load();
-hide(previewVideo);
-if (previewEmpty) show(previewEmpty);
-
-if (downloadBtn) {
-downloadBtn.href = "#";
-downloadBtn.style.display = "none";
-}
-
-// If you add a delete button later, this will work automatically
-if (deleteBtn) deleteBtn.style.display = "none";
-}
-
-// Show preview UI
 function showVideo(url) {
+if (!previewVideo) return;
+
 previewVideo.src = url;
-show(previewVideo);
-previewVideo.play().catch(() => {});
-if (previewEmpty) hide(previewEmpty);
+previewVideo.style.display = "block";
+if (previewEmpty) previewEmpty.style.display = "none";
 
 if (downloadBtn) {
 downloadBtn.href = url;
-downloadBtn.download = "quannaleap-video.mp4";
 downloadBtn.style.display = "inline-flex";
 }
-
-if (deleteBtn) deleteBtn.style.display = "inline-flex";
 }
 
-// Start clean
-clearPreview();
+async function safeJSON(res) {
+const text = await res.text();
+try {
+return JSON.parse(text);
+} catch {
+return { raw: text };
+}
+}
 
-// Hook up Generate
-generateBtn.addEventListener("click", async () => {
-const prompt = (promptEl.value || "").trim();
+/**
+* Some backends return:
+* - { videoUrl: "..." }
+* - { url: "..." }
+* - { output: "..." }
+* - { data: { videoUrl: "..." } }
+* - { result: { uri: "..." } }
+* - or even plain text url
+*/
+function extractVideoUrl(data) {
+if (!data) return null;
+
+// If backend returned plain text in JSON wrapper
+if (typeof data === "string") return data;
+
+const candidates = [
+data.videoUrl,
+data.url,
+data.output,
+data.uri,
+data?.data?.videoUrl,
+data?.data?.url,
+data?.result?.videoUrl,
+data?.result?.url,
+data?.result?.uri,
+data?.video?.url,
+data?.video?.uri,
+];
+
+for (const c of candidates) {
+if (typeof c === "string" && c.trim()) return c.trim();
+}
+
+// If backend returned { raw: "https://..." }
+if (typeof data.raw === "string" && data.raw.includes("http")) {
+return data.raw.trim();
+}
+
+return null;
+}
+
+/**
+* Convert UI aspect selection to what your backend might expect.
+* - your UI: portrait / landscape / square
+* - backend might expect: "9:16", "16:9", "1:1"
+*/
+function mapAspect(value) {
+if (value === "portrait") return "9:16";
+if (value === "landscape") return "16:9";
+if (value === "square") return "1:1";
+return value; // fallback
+}
+
+/**
+* IMPORTANT:
+* Your console proves /api/text-to-video is 404.
+* So we try a shortlist of common routes and use the first that works.
+*/
+const ENDPOINTS_TO_TRY = [
+"/api/text-to-video",
+"/api/text2video",
+"/api/t2v",
+"/api/veo",
+"/api/video",
+"/api/generate-video",
+"/api/generateVideo",
+];
+
+async function postJSON(url, body) {
+const res = await fetch(url, {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify(body),
+});
+
+// If route doesn't exist, res.status will often be 404
+const data = await safeJSON(res);
+return { res, data };
+}
+
+async function generateVideo() {
+const prompt = (promptEl?.value || "").trim();
 if (!prompt) {
-alert("Please enter a prompt first.");
+alert("Enter a prompt first.");
 return;
 }
 
-const durationSeconds = durationEl ? Number(durationEl.value) : undefined;
-const aspect = aspectEl ? aspectEl.value : undefined;
-const quality = qualityEl ? qualityEl.value : undefined;
+const aspect = mapAspect(aspectEl?.value || "9:16");
+const duration = Number(durationEl?.value || 8);
+const quality = (qualityEl?.value || "high").toLowerCase();
 
-generateBtn.disabled = true;
-const originalText = generateBtn.textContent;
-generateBtn.textContent = "Generating...";
-
-try {
+// Payload: include multiple field names so your backend can match one
 const payload = {
 prompt,
-...(Number.isFinite(durationSeconds) ? { durationSeconds } : {}),
-...(aspect ? { aspect } : {}),
-...(quality ? { quality } : {}),
+text: prompt,
+aspect,
+aspectRatio: aspect,
+format: aspect,
+duration,
+seconds: duration,
+length: duration,
+quality,
 };
 
-const res = await fetch("/api/text-to-video", {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify(payload),
-});
+generateBtn.disabled = true;
+showStatus("Generating video…");
 
-const data = await res.json().catch(() => ({}));
-if (!res.ok || !data.ok) {
-throw new Error(data.error || `API error: ${res.status}`);
+let lastErr = null;
+
+for (const endpoint of ENDPOINTS_TO_TRY) {
+try {
+console.log("Trying endpoint:", endpoint, payload);
+
+const { res, data } = await postJSON(endpoint, payload);
+
+// If 404, try next endpoint
+if (res.status === 404) {
+console.warn("404 on", endpoint);
+continue;
 }
 
-// API can return either a URL or base64
-let finalUrl = "";
-if (data.videoUrl) {
-finalUrl = data.videoUrl;
-} else if (data.base64) {
-finalUrl = `data:${data.mimeType || "video/mp4"};base64,${data.base64}`;
-} else {
-throw new Error("No video returned from API.");
+// If not OK, show message + stop (this means route exists but error inside)
+if (!res.ok) {
+console.error("API error on", endpoint, res.status, data);
+lastErr = { endpoint, status: res.status, data };
+break;
 }
 
-showVideo(finalUrl);
-} catch (err) {
-console.error(err);
-alert("Generate video failed. Check Render logs / Console.");
-} finally {
+// Route worked. Extract video URL.
+const url = extractVideoUrl(data);
+
+if (!url) {
+console.error("No video URL returned from", endpoint, data);
+lastErr = { endpoint, status: res.status, data };
+break;
+}
+
+console.log("Video generated from:", endpoint, url);
+showVideo(url);
+
+// Optional: populate a clip slot in the UI (doesn't change layout)
+if (clipsStrip) {
+const firstClip = clipsStrip.querySelector(".clip-card");
+if (firstClip) firstClip.classList.add("is-selected");
+}
+
 generateBtn.disabled = false;
-generateBtn.textContent = originalText;
+return;
+} catch (e) {
+console.error("Request failed on", endpoint, e);
+lastErr = { endpoint, error: String(e) };
 }
-});
+}
 
-// Optional delete hook if you add it later
-if (deleteBtn) {
-deleteBtn.addEventListener("click", clearPreview);
+generateBtn.disabled = false;
+
+// If we reach here, nothing worked.
+console.error("All endpoints failed.", lastErr);
+alert("Generate video failed. Check Render logs / Console.");
+showStatus("Generate video failed. Check Render logs / Console.");
+}
+
+// ---- Wire buttons
+if (clearBtn) {
+clearBtn.addEventListener("click", () => {
+if (promptEl) promptEl.value = "";
+});
+}
+
+if (pasteBtn) {
+pasteBtn.addEventListener("click", async () => {
+try {
+const text = await navigator.clipboard.readText();
+if (promptEl) promptEl.value = text || "";
+} catch {
+alert("Clipboard paste blocked. Use Ctrl+V in the prompt box.");
 }
 });
+}
+
+if (generateBtn) generateBtn.addEventListener("click", generateVideo);
+
+// Optional: keep Next button UI-only for now
+if (nextBtn) {
+nextBtn.addEventListener("click", () => {
+// UI-only. We'll wire animation flow later.
+console.log("Next clicked (UI only for now).");
+});
+}
+
