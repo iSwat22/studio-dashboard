@@ -1,607 +1,341 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Quanne Leap — Text → Video</title>
-
-<style>
-:root{
---bg0:#070a12;
---bg1:#0a1024;
---card:rgba(255,255,255,.06);
---card2:rgba(255,255,255,.08);
---line:rgba(255,255,255,.12);
---text:rgba(255,255,255,.92);
---muted:rgba(255,255,255,.62);
---blue:#2de2ff;
---blue2:#42a5ff;
---shadow: 0 20px 60px rgba(0,0,0,.55);
---radius:18px;
---radius2:14px;
---font: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-}
-
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-margin:0;
-font-family:var(--font);
-color:var(--text);
-background:
-radial-gradient(900px 420px at 52% 18%, rgba(45,226,255,.18), transparent 60%),
-radial-gradient(900px 420px at 20% 0%, rgba(66,165,255,.14), transparent 62%),
-linear-gradient(180deg, var(--bg0), var(--bg1));
-overflow-x:hidden;
-}
-
-/* Top bar */
-.topbar{
-position:sticky; top:0; z-index:10;
-backdrop-filter: blur(10px);
-background: rgba(10,16,36,.55);
-border-bottom:1px solid var(--line);
-}
-.topbarInner{
-max-width:1200px;
-margin:0 auto;
-padding:14px 16px;
-display:flex;
-align-items:center;
-justify-content:space-between;
-gap:12px;
-}
-.brand{
-display:flex; align-items:center; gap:10px;
-user-select:none;
-}
-.brandMark{
-width:34px; height:34px; border-radius:10px;
-display:grid; place-items:center;
-background: linear-gradient(180deg, rgba(45,226,255,.22), rgba(255,255,255,.06));
-border:1px solid rgba(45,226,255,.25);
-box-shadow: 0 10px 30px rgba(45,226,255,.12);
-font-weight:800;
-letter-spacing:.5px;
-}
-.brandText{display:flex; flex-direction:column; line-height:1.05}
-.brandText b{font-size:14px}
-.brandText span{font-size:12px; color:var(--muted)}
-
-.rightPills{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end}
-
-/* Pills hover glow */
-.pill{
-display:inline-flex; align-items:center; gap:8px;
-padding:8px 10px;
-border-radius:999px;
-background: rgba(255,255,255,.06);
-border:1px solid var(--line);
-color:var(--text);
-font-size:12px;
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease, background .12s ease;
-}
-.pill:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 16px 45px rgba(45,226,255,.08);
-transform: translateY(-1px);
-}
-.pill .dot{
-width:8px; height:8px; border-radius:50%;
-background: var(--blue);
-box-shadow: 0 0 20px rgba(45,226,255,.65);
-}
-.avatar{
-width:30px; height:30px; border-radius:10px;
-display:grid; place-items:center;
-background: rgba(255,255,255,.08);
-border:1px solid var(--line);
-font-weight:700;
-}
-.homeBtn{
-text-decoration:none;
-display:inline-flex;
-align-items:center;
-gap:8px;
-padding:9px 12px;
-border-radius:999px;
-background: linear-gradient(90deg, rgba(45,226,255,.18), rgba(66,165,255,.10));
-border:1px solid rgba(45,226,255,.32);
-color:var(--text);
-font-weight:800;
-font-size:12px;
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
-}
-.homeBtn:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 16px 45px rgba(45,226,255,.12);
-transform: translateY(-1px);
-}
-
-/* Page layout */
-.wrap{max-width:1200px; margin:0 auto; padding:18px 16px 28px;}
-.titleRow{
-margin:14px 0 16px;
-display:flex; align-items:flex-end; justify-content:space-between; gap:14px;
-}
-.titleRow h1{
-margin:0;
-font-size:34px;
-letter-spacing:-.5px;
-text-shadow: 0 0 30px rgba(45,226,255,.12);
-}
-.titleRow p{margin:6px 0 0; color:var(--muted); max-width:720px}
-
-.grid{
-display:grid;
-grid-template-columns: 380px 1fr 280px;
-gap:14px;
-align-items:start;
-}
-@media (max-width: 980px){
-.grid{grid-template-columns:1fr; }
-}
-
-.panel{
-background: var(--card);
-border:1px solid var(--line);
-border-radius: var(--radius);
-box-shadow: var(--shadow);
-overflow:hidden;
-}
-.panelHeader{
-padding:14px 14px 10px;
-border-bottom:1px solid rgba(255,255,255,.08);
-display:flex;
-align-items:center;
-justify-content:space-between;
-gap:10px;
-}
-.panelHeader h2{
-margin:0;
-font-size:14px;
-letter-spacing:.2px;
-color:rgba(255,255,255,.86);
-}
-.panelBody{padding:14px}
-
-.label{display:block; font-size:12px; color:var(--muted); margin:10px 0 8px}
-
-.textarea{
-width:100%;
-min-height:180px;
-resize:vertical;
-border-radius:14px;
-border:1px solid rgba(255,255,255,.12);
-background: rgba(0,0,0,.22);
-color:var(--text);
-padding:12px 12px;
-outline:none;
-box-shadow: inset 0 0 0 1px rgba(45,226,255,.0);
-}
-.textarea:focus{
-border-color: rgba(45,226,255,.38);
-box-shadow: inset 0 0 0 1px rgba(45,226,255,.22), 0 0 0 3px rgba(45,226,255,.10);
-}
-
-.row{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
-
-/* Buttons + hover glow */
-.btn{
-border:none;
-cursor:pointer;
-border-radius:999px;
-padding:10px 14px;
-font-weight:800;
-font-size:13px;
-color:var(--text);
-background: rgba(255,255,255,.08);
-border:1px solid rgba(255,255,255,.14);
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease, background .12s ease;
-}
-.btn:hover{
-background: rgba(255,255,255,.10);
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 16px 45px rgba(45,226,255,.08);
-transform: translateY(-1px);
-}
-.btnPrimary{
-width:100%;
-padding:12px 14px;
-background: linear-gradient(90deg, rgba(45,226,255,.20), rgba(66,165,255,.14));
-border:1px solid rgba(45,226,255,.32);
-box-shadow: 0 18px 45px rgba(45,226,255,.12);
-}
-.btnPrimary:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10), 0 18px 55px rgba(45,226,255,.18);
-transform: translateY(-1px);
-}
-.btn[disabled]{
-opacity:.55;
-cursor:not-allowed;
-}
-.btn[disabled]:hover{
-transform:none;
-box-shadow:none;
-border-color: rgba(255,255,255,.14);
-}
-
-.select{
-width:100%;
-border-radius:14px;
-border:1px solid rgba(255,255,255,.12);
-background: rgba(0,0,0,.22);
-color:var(--text);
-padding:11px 12px;
-outline:none;
-}
-.select:focus{
-border-color: rgba(45,226,255,.38);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10);
-}
-
-.glowLine{
-height:1px; width:100%;
-background: linear-gradient(90deg, transparent, rgba(45,226,255,.55), transparent);
-opacity:.55;
-margin:10px 0;
-}
-
-.note{font-size:12px; color:var(--muted); line-height:1.3}
-
-/* Preview */
-.previewWrap{
-padding:14px;
-background: radial-gradient(600px 220px at 50% 18%, rgba(45,226,255,.12), transparent 62%);
-}
-.previewStage{
-border-radius: var(--radius);
-border:1px solid rgba(255,255,255,.12);
-background: rgba(0,0,0,.22);
-height:420px;
-display:grid;
-place-items:center;
-overflow:hidden;
-position:relative;
-}
-.previewEmpty{
-text-align:center;
-color: rgba(255,255,255,.68);
-user-select:none;
-}
-.previewEmpty .icon{
-font-size:34px;
-filter: drop-shadow(0 12px 22px rgba(0,0,0,.55));
-}
-.previewEmpty .txt{margin-top:10px; font-weight:800}
-
-.previewVideo{
-position:absolute; inset:0;
-width:100%; height:100%;
-display:none;
-background: rgba(0,0,0,.14);
-object-fit:contain;
-}
-
-/* Clips strip (future “select clips to stitch”) */
-.clipStrip{
-margin-top:12px;
-border-radius: var(--radius);
-border:1px solid rgba(255,255,255,.12);
-background: rgba(0,0,0,.18);
-padding:10px;
-display:flex;
-gap:10px;
-overflow:auto;
-}
-
-.clip{
-width:140px; height:86px;
-border-radius:12px;
-border:1px solid rgba(255,255,255,.12);
-background: rgba(255,255,255,.05);
-overflow:hidden;
-flex: 0 0 auto;
-cursor:pointer;
-position:relative;
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
-}
-.clip:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10);
-transform: translateY(-1px);
-}
-.clip.active{
-border-color: rgba(45,226,255,.70);
-box-shadow: 0 0 0 3px rgba(45,226,255,.14), 0 18px 55px rgba(45,226,255,.10);
-}
-.clip video{
-width:100%; height:100%;
-object-fit:cover;
-display:block;
-background: rgba(0,0,0,.20);
-}
-.clip .tag{
-position:absolute;
-left:8px; bottom:8px;
-font-size:11px;
-padding:6px 10px;
-border-radius:999px;
-background: rgba(0,0,0,.60);
-border:1px solid rgba(45,226,255,.25);
-color: rgba(255,255,255,.92);
-font-weight:800;
-}
-.clip .xBtn{
-position:absolute;
-top:6px; right:6px;
-width:22px; height:22px;
-border-radius:999px;
-border:1px solid rgba(255,255,255,.18);
-background: rgba(0,0,0,.55);
-color: rgba(255,255,255,.92);
-font-weight:900;
-display:grid;
-place-items:center;
-cursor:pointer;
-line-height:1;
-user-select:none;
-transition: border-color .12s ease, box-shadow .12s ease, transform .08s ease;
-}
-.clip .xBtn:hover{
-border-color: rgba(45,226,255,.55);
-box-shadow: 0 0 0 3px rgba(45,226,255,.10);
-transform: translateY(-1px);
-}
-</style>
+<meta charset="UTF-8" />
+<title>Text → Video • QuannaLeap.AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="./style.css" />
 </head>
 
-<body>
+<body class="bg-stars" data-mode="text-to-video">
 
-<!-- TOP BAR -->
-<div class="topbar">
-<div class="topbarInner">
-<div class="brand">
-<div class="brandMark">QL</div>
-<div class="brandText">
-<b>Quanne Leap</b>
-<span>Create in the future.</span>
-</div>
+<!-- TOPBAR -->
+<header class="topbar">
+<div class="topbar-left">
+<a class="brand" href="./index.html" title="Home">
+<img class="brand-logo" src="./logo.png?v=2" alt="QuannaLeap.AI logo" />
+</a>
+
+<nav class="topnav">
+<a href="./index.html">🏠 Home</a>
+<a href="./assets.html">📁 Assets</a>
+<a href="./characters.html">🧍 Characters</a>
+</nav>
 </div>
 
-<div class="rightPills">
-<a class="homeBtn" href="index.html">⌂ Home</a>
-<div class="pill"><span class="dot"></span>Platinum</div>
-<div class="pill">★ ∞</div>
+<div class="topbar-right">
 <div class="pill">
-<div class="avatar">K</div>
-<div style="display:flex;flex-direction:column;line-height:1.05">
-<b style="font-size:12px;margin:0">KC</b>
-<span style="font-size:11px;color:var(--muted)">Admin</span>
-</div>
-</div>
-</div>
-</div>
+<span class="dot dot-blue"></span>
+<span>Platinum</span>
 </div>
 
-<!-- PAGE -->
-<div class="wrap">
-<div class="titleRow">
-<div>
+<div class="pill">
+<span class="star">★</span>
+<span id="creditCount">∞</span>
+</div>
+
+<button class="icon-btn" type="button" title="Notifications">🔔</button>
+
+<button class="profile-btn" type="button" title="Profile">
+<span class="profile-initials">KC</span>
+<span class="profile-role">Admin</span>
+</button>
+</div>
+</header>
+
+<!-- APP -->
+<div class="app">
+<main class="main">
+<div class="page-wrap">
+
+<!-- HERO -->
+<section class="hero hero-video">
 <h1>Text → Video</h1>
-<p>Generate short clips from a prompt. Later we can stitch selected clips into one animation video.</p>
+<p>Generate short video clips from prompts.</p>
+</section>
+
+<!-- CREATE PANEL (3-column layout) -->
+<section class="create-panel create-panel--video">
+
+<!-- LEFT: PROMPT + THEMES -->
+<aside class="panel-left">
+<div class="panel-title">
+<h3>Prompt + Theme</h3>
+</div>
+
+<div class="prompt-shell">
+<label class="field-label" for="prompt">Prompt</label>
+<textarea
+id="prompt"
+class="prompt-input"
+placeholder='Example: "A Pixar-style futuristic hero team landing on a rooftop at sunset, cinematic lighting, smooth camera move"'
+></textarea>
+
+<div class="actions-row">
+<button id="clearBtn" class="ghost-btn" type="button">Clear</button>
+<button id="pasteBtn" class="ghost-btn" type="button">Paste</button>
+</div>
+
+<div class="help-text">
+Tip: Keep it short and clear. You can refine after the first clip.
 </div>
 </div>
 
-<div class="grid">
-
-<!-- LEFT: Prompt -->
-<div class="panel">
-<div class="panelHeader"><h2>Prompt</h2></div>
-<div class="panelBody">
-<label class="label">Prompt</label>
-<textarea id="prompt" class="textarea" placeholder="Describe the scene you want..."></textarea>
-
-<div class="row">
-<button class="btn" id="clearBtn">Clear</button>
-<button class="btn" id="pasteBtn">Paste</button>
+<div class="picker-shell">
+<div class="picker-header">
+<span class="field-label">Pick Theme (optional)</span>
 </div>
 
-<div class="glowLine"></div>
+<div id="themeGrid" class="card-grid">
+<!-- Theme cards (UI only) -->
+<button class="pick-card is-selected" type="button" data-theme="kids-story" title="Kids Story">
+<div class="thumb">
+<img src="./public/Kids_Story.jpeg" alt="Kids Story" onerror="this.style.display='none';" />
+</div>
+<div class="caption">Kids Story</div>
+</button>
 
-<div class="note">
-This page is UI-ready. Next step is wiring the Generate button to your backend endpoint.
+<button class="pick-card" type="button" data-theme="biblical-epic" title="Biblical Epic">
+<div class="thumb">
+<img src="./public/Biblical_Epic.jpeg" alt="Biblical Epic" onerror="this.style.display='none';" />
 </div>
-</div>
-</div>
+<div class="caption">Biblical Epic</div>
+</button>
 
-<!-- CENTER: Preview + clips strip -->
-<div class="panel">
-<div class="panelHeader"><h2>Preview</h2></div>
+<button class="pick-card" type="button" data-theme="neon-heist" title="Neon City Heist">
+<div class="thumb">
+<img src="./public/Neon_City_Heist.jpeg" alt="Neon City Heist" onerror="this.style.display='none';" />
+</div>
+<div class="caption">Neon City Heist</div>
+</button>
 
-<div class="previewWrap">
-<div class="previewStage">
-<div class="previewEmpty" id="emptyState">
-<div class="icon">🎬</div>
-<div class="txt">Your generated video will appear here.</div>
+<button class="pick-card" type="button" data-theme="future-ops" title="Future Ops">
+<div class="thumb">
+<img src="./public/Future_Ops.jpeg" alt="Future Ops" onerror="this.style.display='none';" />
 </div>
-
-<video id="resultVideo" class="previewVideo" controls playsinline></video>
-</div>
-
-<label class="label" style="margin-top:14px">Clips</label>
-<div id="clipStrip" class="clipStrip" aria-label="Clips strip">
-<!-- clips show here -->
-</div>
-
-<div class="note" style="margin-top:10px">
-Idea: generate multiple clips → select the best ones → stitch into one animation video.
-</div>
-</div>
+<div class="caption">Future Ops</div>
+</button>
 </div>
 
-<!-- RIGHT: Settings + generate/download -->
-<div class="panel">
-<div class="panelHeader"><h2>Settings</h2></div>
-<div class="panelBody">
+<div class="help-text">
+(Optional) Theme helps keep your clips visually consistent.
+</div>
+</div>
+</aside>
 
-<label class="label">Duration (UI only for now)</label>
+<!-- CENTER: PREVIEW + STORYBOARD STRIP -->
+<section class="panel-center">
+<div class="panel-title">
+<h3>Preview</h3>
+</div>
+
+<!-- BIG PREVIEW -->
+<div class="preview-shell preview-shell--video">
+<video
+id="previewVideo"
+class="result-preview result-preview--video"
+controls
+playsinline
+style="display:none;"
+></video>
+
+<div id="previewEmpty" class="help-text">
+Your generated video will appear here.
+</div>
+</div>
+
+<!-- STORYBOARD / CLIP STRIP -->
+<div class="storyboard-shell">
+<div class="storyboard-header">
+<span class="field-label">Clips (generated)</span>
+<span class="muted">Pick clips to animate</span>
+</div>
+
+<div class="storyboard-strip">
+<button class="storyboard-nav" type="button" id="clipsPrev" aria-label="Previous clips">‹</button>
+
+<div id="clipsStrip" class="storyboard-track">
+<!-- Example placeholders (UI only) -->
+<button class="clip-card is-selected" type="button" data-clip="01">
+<div class="clip-thumb">
+<span class="clip-num">01</span>
+</div>
+<div class="clip-label">Clip 01</div>
+</button>
+
+<button class="clip-card" type="button" data-clip="02">
+<div class="clip-thumb"><span class="clip-num">02</span></div>
+<div class="clip-label">Clip 02</div>
+</button>
+
+<button class="clip-card" type="button" data-clip="03">
+<div class="clip-thumb"><span class="clip-num">03</span></div>
+<div class="clip-label">Clip 03</div>
+</button>
+
+<button class="clip-card" type="button" data-clip="04">
+<div class="clip-thumb"><span class="clip-num">04</span></div>
+<div class="clip-label">Clip 04</div>
+</button>
+</div>
+
+<button class="storyboard-nav" type="button" id="clipsNext" aria-label="Next clips">›</button>
+</div>
+
+<div class="help-text">
+After generating clips, select the ones you want, then click <b>Next</b>.
+</div>
+</div>
+</section>
+
+<!-- RIGHT: SETTINGS + ACTIONS -->
+<aside class="panel-right">
+<div class="panel-title">
+<h3>Settings</h3>
+</div>
+
+<div class="settings-shell">
+<label class="field-label" for="aspect">Aspect Ratio</label>
+<select id="aspect" class="select">
+<option value="square" selected>Square (1024×1024)</option>
+<option value="landscape">Landscape (16:9)</option>
+<option value="portrait">Portrait (9:16)</option>
+</select>
+
+<label class="field-label" for="duration">Clip Length</label>
 <select id="duration" class="select">
-<option value="4">4 seconds</option>
-<option value="6">6 seconds</option>
-<option value="8" selected>8 seconds</option>
+<option value="8" selected>8 seconds (default)</option>
+<option value="12">12 seconds (later)</option>
+<option value="16">16 seconds (later)</option>
 </select>
 
-<label class="label">Quality (UI only for now)</label>
+<label class="field-label" for="quality">Quality</label>
 <select id="quality" class="select">
-<option value="standard" selected>Standard</option>
-<option value="high">High</option>
+<option value="standard">Standard</option>
+<option value="high" selected>High</option>
 </select>
 
-<div class="glowLine"></div>
+<div class="actions-stack">
+<button id="generateBtn" class="primary-btn" type="button">Generate</button>
 
-<button class="btn btnPrimary" id="generateBtn">Generate</button>
-<button class="btn" id="downloadBtn" style="width:100%;margin-top:10px" disabled>Download</button>
+<a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">
+Download
+</a>
 
-<div style="margin-top:10px" class="note">
-Generate a clip → it will show in Preview and also appear in Clips.
-</div>
-</div>
-</div>
-
-</div>
+<button id="nextBtn" class="ghost-btn" type="button">
+Next
+</button>
 </div>
 
-<script>
-console.log("✅ create-video.html loaded");
+<div class="help-text">
+Click <b>Generate</b> to create clips. Then use <b>Next</b> to animate selected clips.
+</div>
+</div>
+</aside>
 
-const $ = (s)=>document.querySelector(s);
+</section>
+</div>
+</main>
+</div>
 
-const promptEl = $("#prompt");
-const resultVideo = $("#resultVideo");
-const emptyState = $("#emptyState");
-const generateBtn = $("#generateBtn");
-const downloadBtn = $("#downloadBtn");
-const clipStrip = $("#clipStrip");
+<!-- MODAL: NEXT / ANIMATE FLOW (UI ONLY) -->
+<div id="animateModal" class="modal" style="display:none;" aria-hidden="true">
+<div class="modal-backdrop" data-close="true"></div>
 
-let currentVideoSrc = "";
+<div class="modal-card">
+<div class="modal-header">
+<h3 id="modalTitle">Animate</h3>
+<button class="modal-close" type="button" data-close="true" aria-label="Close">✕</button>
+</div>
 
-function showVideo(src){
-currentVideoSrc = src || "";
-if(!src){
-resultVideo.pause?.();
-resultVideo.removeAttribute("src");
-resultVideo.load?.();
-resultVideo.style.display = "none";
-emptyState.style.display = "block";
-downloadBtn.disabled = true;
-return;
-}
+<!-- STEP 1 -->
+<div id="modalStep1" class="modal-step">
+<div class="modal-tabs">
+<button class="tab is-active" type="button">Animate one</button>
+<button class="tab" type="button">Animate all</button>
+</div>
 
-resultVideo.src = src;
-resultVideo.style.display = "block";
-emptyState.style.display = "none";
-downloadBtn.disabled = false;
-}
+<div class="modal-body">
+<div class="select-row">
+<label class="check">
+<input type="checkbox" id="selectAllClips" checked />
+<span>Select All</span>
+</label>
+</div>
 
-function addClip(src, labelText){
-const clip = document.createElement("div");
-clip.className = "clip";
-clip.setAttribute("data-src", src);
+<div id="clipChecklist" class="clip-list">
+<label class="clip-row">
+<input type="checkbox" checked />
+<span class="clip-id">01</span>
+<span class="clip-type">Static Clip</span>
+</label>
+<label class="clip-row">
+<input type="checkbox" checked />
+<span class="clip-id">02</span>
+<span class="clip-type">Static Clip</span>
+</label>
+<label class="clip-row">
+<input type="checkbox" checked />
+<span class="clip-id">03</span>
+<span class="clip-type">Static Clip</span>
+</label>
+<label class="clip-row">
+<input type="checkbox" checked />
+<span class="clip-id">04</span>
+<span class="clip-type">Static Clip</span>
+</label>
+</div>
+</div>
 
-const v = document.createElement("video");
-v.src = src;
-v.muted = true;
-v.playsInline = true;
+<div class="modal-footer">
+<button class="ghost-btn" type="button" data-close="true">Cancel</button>
+<button id="modalNext1" class="primary-btn" type="button">Next</button>
+</div>
+</div>
 
-const tag = document.createElement("div");
-tag.className = "tag";
-tag.textContent = labelText || "Clip";
+<!-- STEP 2 -->
+<div id="modalStep2" class="modal-step" style="display:none;">
+<div class="modal-body">
+<div class="modal-tabs">
+<button class="tab">Animate one</button>
+<button class="tab is-active" type="button">Animate All</button>
+</div>
 
-const x = document.createElement("div");
-x.className = "xBtn";
-x.textContent = "×";
+<div class="model-grid">
+<button class="model-card is-selected" type="button" data-model="veo">
+<div class="model-icon">V</div>
+<div class="model-name">Veo</div>
+<div class="model-cost">Default</div>
+</button>
 
-clip.addEventListener("click", ()=>{
-document.querySelectorAll(".clip").forEach(c=>c.classList.remove("active"));
-clip.classList.add("active");
-showVideo(src);
-});
+<button class="model-card" type="button" data-model="alt1">
+<div class="model-icon">◌</div>
+<div class="model-name">Model B</div>
+<div class="model-cost">Later</div>
+</button>
 
-x.addEventListener("click", (e)=>{
-e.stopPropagation();
-const wasActive = clip.classList.contains("active");
-clip.remove();
+<button class="model-card" type="button" data-model="alt2">
+<div class="model-icon">◎</div>
+<div class="model-name">Model C</div>
+<div class="model-cost">Later</div>
+</button>
+</div>
 
-if(wasActive){
-const next = clipStrip.querySelector(".clip");
-if(next){
-next.classList.add("active");
-showVideo(next.getAttribute("data-src"));
-}else{
-showVideo(null);
-}
-}
-});
+<div class="help-text">
+Pick the engine you want to animate with. (Wiring comes next.)
+</div>
+</div>
 
-clip.appendChild(v);
-clip.appendChild(tag);
-clip.appendChild(x);
+<div class="modal-footer">
+<button id="modalBack2" class="ghost-btn" type="button">Back</button>
+<button id="modalConfirm" class="primary-btn" type="button">Confirm</button>
+</div>
+</div>
 
-clipStrip.prepend(clip);
+</div>
+</div>
 
-// auto-select newest
-document.querySelectorAll(".clip").forEach(c=>c.classList.remove("active"));
-clip.classList.add("active");
-showVideo(src);
-}
-
-// Buttons
-$("#clearBtn").addEventListener("click", ()=>{ promptEl.value = ""; });
-
-$("#pasteBtn").addEventListener("click", async ()=>{
-try{
-const txt = await navigator.clipboard.readText();
-if(txt) promptEl.value = txt;
-}catch(e){
-alert("Clipboard paste blocked. Just paste manually.");
-}
-});
-
-/*
-Generate (UI-only placeholder):
-When we wire backend, this will be replaced with:
-fetch("/api/text-to-video", { ... })
-and then showVideo(data.videoUrl || dataUrlFromBase64), addClip(...)
-*/
-generateBtn.addEventListener("click", ()=>{
-const prompt = (promptEl.value || "").trim();
-if(!prompt){
-alert("Please enter a prompt first.");
-return;
-}
-
-// Placeholder: No backend yet, so we create a “pending” clip tile with no real src.
-// To keep layout clean: we just alert for now.
-alert("UI is ready. Next step: wire Generate to your /api/text-to-video backend.");
-});
-
-// Download current video
-downloadBtn.addEventListener("click", ()=>{
-if(!currentVideoSrc) return;
-
-const a = document.createElement("a");
-a.href = currentVideoSrc;
-a.download = (currentVideoSrc.split("/").pop() || "quanneleap-video.mp4");
-document.body.appendChild(a);
-a.click();
-a.remove();
-});
-
-// Init
-showVideo(null);
-</script>
-
+<!-- Separate script for this page (keep it isolated) -->
+<script src="./create-video.js"></script>
 </body>
 </html>
