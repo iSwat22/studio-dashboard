@@ -1,347 +1,253 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<title>Text → Video • QuanneLeap.AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" href="./style.css" />
-<link rel="stylesheet" href="./create-video.css" />
-</head>
+/* create-video.js (FULL FILE) */
+console.log("✅ create-video.js loaded");
 
-<body class="bg-stars" data-mode="text-to-video">
+// ======================================================
+// TEXT -> VIDEO (create-video.html)
+// - Starts job: POST /api/text-to-video
+// - Polls: POST /api/text-to-video/status
+// - Shows: <video id="previewVideo">
+// ======================================================
 
-<!-- TOPBAR -->
-<body>
-<header class="topbar">
-<div class="brand">
-<div class="logo">QL</div>
-<div class="brandText">
-<div class="brandName">Quanne Leap</div>
-<div class="brandTag">Create in the future.</div>
-</div>
-</div>
+const pickFirst = (...ids) =>
+ids.map((id) => document.getElementById(id)).find(Boolean);
+
+// Page elements (supports multiple ID variants just in case)
+const t2vPrompt = pickFirst("t2vPrompt", "prompt");
+const t2vBtn = pickFirst("t2vBtn", "generateBtn");
+const t2vStatus = pickFirst(
+"t2vStatus",
+"status",
+"statusText",
+"outputStatus",
+"previewEmpty"
+);
+const t2vVideo = pickFirst("t2vVideo", "resultVideo", "video", "previewVideo");
+
+const downloadBtn = pickFirst("downloadBtn");
+const deleteBtn = pickFirst("deleteBtn");
+const saveToAssetsBtn = pickFirst("saveToAssetsBtn");
+
+const t2vDuration = pickFirst("t2vDuration", "duration");
+const t2vAspect = pickFirst("t2vAspect", "aspect");
+
+// -------------------- UI helpers
+function setT2vStatus(msg) {
+if (t2vStatus) t2vStatus.textContent = msg;
+console.log("[T2V]", msg);
+}
+
+function hideT2vButtons() {
+if (downloadBtn) downloadBtn.style.display = "none";
+if (deleteBtn) deleteBtn.style.display = "none"; // ✅ FIXED (was wrong before)
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "none";
+}
+
+function showT2vButtons(finalUrl) {
+if (downloadBtn) {
+downloadBtn.href = finalUrl;
+downloadBtn.download = "quanneleap-text-video.mp4";
+downloadBtn.style.display = "inline-flex";
+}
+if (deleteBtn) deleteBtn.style.display = "inline-flex";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "inline-flex";
+}
+
+function showVideoBox() {
+if (t2vVideo) t2vVideo.style.display = "block";
+// previewEmpty is often the same node as t2vStatus on this page
+// but if there's a separate empty placeholder, we hide it by blanking status text.
+// (Your CSS already hides/shows based on display; this keeps it clean.)
+}
+
+function extractVideoUrl(data) {
+if (!data) return null;
+if (typeof data === "string") return data;
+
+return (
+data.videoUrl ||
+data.url ||
+data.uri ||
+data?.result?.videoUrl ||
+data?.result?.url ||
+data?.result?.uri ||
+data?.data?.videoUrl ||
+data?.data?.url ||
+null
+);
+}
+
+// -------------------- IMPORTANT: map UI "portrait/landscape/square" to actual ratios
+function mapAspectToRatio(uiValue) {
+const v = String(uiValue || "").toLowerCase();
+if (v === "portrait") return "9:16";
+if (v === "landscape") return "16:9";
+if (v === "square") return "1:1";
+// If you ever set the <option value="9:16"> etc, this will pass through:
+if (v.includes(":")) return v;
+return "9:16";
+}
+
+// -------------------- API calls
+async function startTextToVideoJob(prompt, options) {
+const payload = {
+prompt,
+aspectRatio: options.aspectRatio, // "9:16" / "16:9" / "1:1"
+durationSeconds: options.durationSeconds // number
+};
+
+const res = await fetch("/api/text-to-video", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify(payload),
+});
+
+const data = await res.json().catch(() => ({}));
+console.log("startTextToVideoJob:", res.status, data);
+
+if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start video job");
+if (!data.operationName) throw new Error("Server did not return operationName");
+
+return data.operationName;
+}
+
+async function pollTextToVideo(operationName) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const maxAttempts = 120;
+
+for (let i = 1; i <= maxAttempts; i++) {
+setT2vStatus(`Generating video… (${i}/${maxAttempts})`);
+await sleep(3000);
+
+const res = await fetch("/api/text-to-video/status", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ operationName }),
+});
+
+const data = await res.json().catch(() => ({}));
+if (i === 1 || i % 5 === 0) console.log("poll tick:", i, res.status, data);
+
+if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
+
+if (data.done) {
+const videoUrl = extractVideoUrl(data);
+if (videoUrl) return { videoUrl };
+
+if (data.base64) {
+return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
+}
+
+throw new Error("Video finished, but no videoUrl/base64 returned");
+}
+}
+
+throw new Error("Timed out waiting for the video to finish");
+}
+
+// -------------------- Main wiring
+if (t2vPrompt && t2vBtn && t2vVideo) {
+let lastObjectUrl = null;
+
+function clearT2vUI() {
+if (lastObjectUrl) {
+URL.revokeObjectURL(lastObjectUrl);
+lastObjectUrl = null;
+}
+
+try { t2vVideo.pause?.(); } catch {}
+t2vVideo.removeAttribute("src");
+t2vVideo.load?.();
+t2vVideo.style.display = "none";
+
+hideT2vButtons();
+setT2vStatus("Your generated video will appear here.");
+}
+
+async function setVideoSrc(url) {
+// Force reload even if URL repeats
+try { t2vVideo.pause?.(); } catch {}
+t2vVideo.removeAttribute("src");
+t2vVideo.load?.();
+
+showVideoBox();
+console.log("[T2V] Setting video src:", url);
+
+t2vVideo.controls = true;
+t2vVideo.playsInline = true;
+
+// Attach listeners BEFORE setting src
+t2vVideo.onerror = () => {
+console.error("[T2V] <video> failed to load:", url, t2vVideo.error);
+setT2vStatus("❌ Video URL returned, but the browser could not load it (check Network tab).");
+};
+
+t2vVideo.onloadeddata = () => {
+console.log("[T2V] Video loaded OK");
+setT2vStatus("✅ Video ready");
+};
+
+t2vVideo.src = url;
+t2vVideo.style.display = "block";
+t2vVideo.load?.();
+
+// Try autoplay (won't always be allowed)
+try {
+await t2vVideo.play?.();
+} catch (e) {
+console.warn("[T2V] Autoplay blocked (normal). Click play:", e);
+}
+}
+
+async function generateT2v(prompt) {
+t2vBtn.disabled = true;
+clearT2vUI();
+
+// ✅ FIX: send real ratios ("9:16", "16:9", "1:1") instead of "portrait"
+const durationSeconds = Number(t2vDuration?.value || 8);
+const aspectRatio = mapAspectToRatio(t2vAspect?.value || "portrait");
+
+try {
+setT2vStatus("Starting video job…");
+const opName = await startTextToVideoJob(prompt, { durationSeconds, aspectRatio });
+
+const result = await pollTextToVideo(opName);
+
+if (result.videoUrl) {
+showT2vButtons(result.videoUrl);
+await setVideoSrc(result.videoUrl);
+return;
+}
+
+if (result.base64) {
+const byteChars = atob(result.base64);
+const byteNumbers = new Array(byteChars.length);
+for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+
+const blob = new Blob([new Uint8Array(byteNumbers)], { type: result.mimeType || "video/mp4" });
+lastObjectUrl = URL.createObjectURL(blob);
+
+showT2vButtons(lastObjectUrl);
+await setVideoSrc(lastObjectUrl);
+return;
+}
+
+throw new Error("Unknown video response format");
+} catch (err) {
+console.error(err);
+setT2vStatus(`❌ ${err.message || err}`);
+hideT2vButtons();
+} finally {
+t2vBtn.disabled = false;
+}
+}
+
+t2vBtn.addEventListener("click", () => {
+const prompt = (t2vPrompt.value || "").trim();
+if (!prompt) return setT2vStatus("Please enter a prompt.");
+generateT2v(prompt);
+});
+
+if (deleteBtn) deleteBtn.addEventListener("click", clearT2vUI);
+}
+
   
-<div class="topRight">
-<a class="pill btn" href="index.html">← Home</a>
-<span class="pill plan" id="planPill">Platinum</span>
-<span class="pill stars" id="starsPill">★ ∞</span>
-<div class="profile" id="profileBox">
-<div class="avatar" id="avatarCircle">K</div>
-<div class="profileMeta">
-<div class="profileName" id="profileName">KC</div>
-<div class="profileRole" id="profileRole">Admin</div>
-</div>
-</div>
-</div>
-</header>
-
-
-
-
-
-<!-- APP -->
-<div class="app">
-<main class="main">
-<div class="page-wrap">
-
-<!-- HERO -->
-<section class="hero hero-video">
-<h1>Text → Video</h1>
-<p>Generate short video clips from prompts.</p>
-</section>
-
-<!-- CREATE PANEL (3-column layout) -->
-<section class="create-panel create-panel--video">
-
-<!-- LEFT: PROMPT + THEMES -->
-<aside class="panel-left">
-<div class="panel-title">
-<h3>Prompt + Theme</h3>
-</div>
-
-<div class="prompt-shell">
-<label class="field-label" for="prompt">Prompt</label>
-<textarea
-id="prompt"
-class="prompt-input"
-placeholder='Example: "A Pixar-style futuristic hero team landing on a rooftop at sunset, cinematic lighting, smooth camera move"'
-></textarea>
-
-<div class="actions-row">
-<button id="clearBtn" class="ghost-btn" type="button">Clear</button>
-<button id="pasteBtn" class="ghost-btn" type="button">Paste</button>
-</div>
-
-<div class="help-text">
-Tip: Keep it short and clear. You can refine after the first clip.
-</div>
-</div>
-
-<div class="picker-shell">
-<div class="picker-header">
-<span class="field-label">Pick Theme (optional)</span>
-</div>
-
-<div id="themeGrid" class="card-grid">
-<!-- Theme cards (UI only) -->
-<button class="pick-card is-selected" type="button" data-theme="kids-story" title="Kids Story">
-<div class="thumb">
-<img src=" Kids_Story.jpeg" alt="Kids Story" onerror="this.style.display='none';" />
-</div>
-<div class="caption">Kids Story</div>
-</button>
-
-<button class="pick-card" type="button" data-theme="biblical-epic" title="Biblical Epic">
-<div class="thumb">
-<img src=".Biblical_Epic.jpeg" alt="Biblical Epic" onerror="this.style.display='none';" />
-</div>
-<div class="caption">Biblical Epic</div>
-</button>
-
-<button class="pick-card" type="button" data-theme="neon-heist" title="Neon City Heist">
-<div class="thumb">
-<img src=".Neon_City_Heist.jpeg" alt="Neon City Heist" onerror="this.style.display='none';" />
-</div>
-<div class="caption">Neon City Heist</div>
-</button>
-
-<button class="pick-card" type="button" data-theme="future-ops" title="Future Ops">
-<div class="thumb">
-<img src=".Future_Ops.jpeg" alt="Future Ops" onerror="this.style.display='none';" />
-</div>
-<div class="caption">Future Ops</div>
-</button>
-</div>
-
-<div class="help-text">
-(Optional) Theme helps keep your clips visually consistent.
-</div>
-</div>
-</aside>
-
-<!-- CENTER: PREVIEW + STORYBOARD STRIP -->
-<section class="panel-center">
-<div class="panel-title">
-<h3>Preview</h3>
-</div>
-
-<!-- BIG PREVIEW -->
-<div class="preview-shell preview-shell--video">
-<video
-id="previewVideo"
-class="result-preview result-preview--video"
-controls
-playsinline
-style="display:none;"
-></video>
-
-<div id="previewEmpty" class="help-text">
-Your generated video will appear here.
-</div>
-</div>
-
-<!-- STORYBOARD / CLIP STRIP -->
-<div class="storyboard-shell">
-<div class="storyboard-header">
-<span class="field-label">Clips (generated)</span>
-<span class="muted">Pick clips to animate</span>
-</div>
-
-<div class="storyboard-strip">
-<button class="storyboard-nav" type="button" id="clipsPrev" aria-label="Previous clips">‹</button>
-
-<div id="clipsStrip" class="storyboard-track">
-<!-- Example placeholders (UI only) -->
-<button class="clip-card is-selected" type="button" data-clip="01">
-<div class="clip-thumb">
-<span class="clip-num">01</span>
-</div>
-<div class="clip-label">Clip 01</div>
-</button>
-
-<button class="clip-card" type="button" data-clip="02">
-<div class="clip-thumb"><span class="clip-num">02</span></div>
-<div class="clip-label">Clip 02</div>
-</button>
-
-<button class="clip-card" type="button" data-clip="03">
-<div class="clip-thumb"><span class="clip-num">03</span></div>
-<div class="clip-label">Clip 03</div>
-</button>
-
-<button class="clip-card" type="button" data-clip="04">
-<div class="clip-thumb"><span class="clip-num">04</span></div>
-<div class="clip-label">Clip 04</div>
-</button>
-</div>
-
-<button class="storyboard-nav" type="button" id="clipsNext" aria-label="Next clips">›</button>
-</div>
-
-<div class="help-text">
-After generating clips, select the ones you want, then click <b>Next</b>.
-</div>
-</div>
-</section>
-
-<!-- RIGHT: SETTINGS + ACTIONS -->
-<aside class="panel-right">
-<div class="panel-title">
-<h3>Settings</h3>
-</div>
-
-<div class="settings-shell">
-<label class="field-label" for="aspect">Aspect Ratio</label>
-<select id="aspect" class="select">
-<option value="portrait" selected>YouTube Shorts (9:16)</option>
-<option value="portrait">TikTok (9:16)</option>
-<option value="portrait">Instagram Reels (9:16)</option>
-<option value="portrait">Facebook Reels (9:16)</option>
-<option value="landscape">YouTube (16:9)</option>
-</select>
-
-<label class="field-label" for="duration">Clip Length</label>
-<select id="duration" class="select">
-<option value="8" selected>8 seconds</option>
-<option value="12">12 seconds</option>
-<option value="16">16 seconds</option>
-<option value="60">1 minute</option>
-<option value="120">2 minutes</option>
-<option value="180">3 minutes</option>
-<option value="300">5 minutes</option>
-<option value="600">10 minutes</option>
-<option value="900">15 minutes</option>
-<option value="1200">20 minutes</option>
-<option value="1800">30 minutes</option>
-</select>
-
-<label class="field-label" for="quality">Quality</label>
-<select id="quality" class="select">
-<option value="standard">Standard</option>
-<option value="high" selected>High</option>
-</select>
-
-<div class="actions-stack">
-<button id="generateBtn" class="primary-btn" type="button">Generate</button>
-
-<a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">
-Download
-</a>
-
-<button id="nextBtn" class="ghost-btn" type="button">
-Next
-</button>
-</div>
-
-<div class="help-text">
-Click <b>Generate</b> to create clips. Then use <b>Next</b> to animate selected clips.
-</div>
-</div>
-</aside>
-
-</section>
-</div>
-</main>
-</div>
-
-<!-- MODAL: NEXT / ANIMATE FLOW (UI ONLY) -->
-<div id="animateModal" class="modal" style="display:none;" aria-hidden="true">
-<div class="modal-backdrop" data-close="true"></div>
-
-<div class="modal-card">
-<div class="modal-header">
-<h3 id="modalTitle">Animate</h3>
-<button class="modal-close" type="button" data-close="true" aria-label="Close">✕</button>
-</div>
-
-<!-- STEP 1 -->
-<div id="modalStep1" class="modal-step">
-<div class="modal-tabs">
-<button class="tab is-active" type="button">Animate one</button>
-<button class="tab" type="button">Animate all</button>
-</div>
-
-<div class="modal-body">
-<div class="select-row">
-<label class="check">
-<input type="checkbox" id="selectAllClips" checked />
-<span>Select All</span>
-</label>
-</div>
-
-<div id="clipChecklist" class="clip-list">
-<label class="clip-row">
-<input type="checkbox" checked />
-<span class="clip-id">01</span>
-<span class="clip-type">Static Clip</span>
-</label>
-<label class="clip-row">
-<input type="checkbox" checked />
-<span class="clip-id">02</span>
-<span class="clip-type">Static Clip</span>
-</label>
-<label class="clip-row">
-<input type="checkbox" checked />
-<span class="clip-id">03</span>
-<span class="clip-type">Static Clip</span>
-</label>
-<label class="clip-row">
-<input type="checkbox" checked />
-<span class="clip-id">04</span>
-<span class="clip-type">Static Clip</span>
-</label>
-</div>
-</div>
-
-<div class="modal-footer">
-<button class="ghost-btn" type="button" data-close="true">Cancel</button>
-<button id="modalNext1" class="primary-btn" type="button">Next</button>
-</div>
-</div>
-
-<!-- STEP 2 -->
-<div id="modalStep2" class="modal-step" style="display:none;">
-<div class="modal-body">
-<div class="modal-tabs">
-<button class="tab">Animate one</button>
-<button class="tab is-active" type="button">Animate All</button>
-</div>
-
-<div class="model-grid">
-<button class="model-card is-selected" type="button" data-model="veo">
-<div class="model-icon">V</div>
-<div class="model-name">Veo</div>
-<div class="model-cost">Default</div>
-</button>
-
-<button class="model-card" type="button" data-model="alt1">
-<div class="model-icon">◌</div>
-<div class="model-name">Model B</div>
-<div class="model-cost">Later</div>
-</button>
-
-<button class="model-card" type="button" data-model="alt2">
-<div class="model-icon">◎</div>
-<div class="model-name">Model C</div>
-<div class="model-cost">Later</div>
-</button>
-</div>
-
-<div class="help-text">
-Pick the engine you want to animate with. (Wiring comes next.)
-</div>
-</div>
-
-<div class="modal-footer">
-<button id="modalBack2" class="ghost-btn" type="button">Back</button>
-<button id="modalConfirm" class="primary-btn" type="button">Confirm</button>
-</div>
-</div>
-
-</div>
-</div>
-
-  <!-- Separate script for this page (keep it isolated) -->
-<script src="./create-video.js"></script>
-</body>
-</html>
