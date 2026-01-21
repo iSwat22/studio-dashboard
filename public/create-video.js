@@ -1,17 +1,17 @@
-/* create-video.js */
-console.log("create-video.js loaded");
+/* create-video.js (FULL FILE) */
+console.log("✅ create-video.js loaded");
 
 // ======================================================
 // TEXT -> VIDEO (create-video.html)
 // - Starts job: POST /api/text-to-video
 // - Polls: POST /api/text-to-video/status
-// - Loads <video> reliably, probes URL, logs useful errors
+// - Shows: <video id="previewVideo">
 // ======================================================
 
 const pickFirst = (...ids) =>
 ids.map((id) => document.getElementById(id)).find(Boolean);
 
-// Try multiple possible IDs so this works across your pages
+// Page elements (supports multiple ID variants just in case)
 const t2vPrompt = pickFirst("t2vPrompt", "prompt");
 const t2vBtn = pickFirst("t2vBtn", "generateBtn");
 const t2vStatus = pickFirst(
@@ -30,6 +30,7 @@ const saveToAssetsBtn = pickFirst("saveToAssetsBtn");
 const t2vDuration = pickFirst("t2vDuration", "duration");
 const t2vAspect = pickFirst("t2vAspect", "aspect");
 
+// -------------------- UI helpers
 function setT2vStatus(msg) {
 if (t2vStatus) t2vStatus.textContent = msg;
 console.log("[T2V]", msg);
@@ -37,7 +38,7 @@ console.log("[T2V]", msg);
 
 function hideT2vButtons() {
 if (downloadBtn) downloadBtn.style.display = "none";
-if (deleteBtn) deleteBtn.style.display = "none"; // ✅ FIX (was hiding downloadBtn twice)
+if (deleteBtn) deleteBtn.style.display = "none"; // ✅ FIXED (was wrong before)
 if (saveToAssetsBtn) saveToAssetsBtn.style.display = "none";
 }
 
@@ -49,6 +50,13 @@ downloadBtn.style.display = "inline-flex";
 }
 if (deleteBtn) deleteBtn.style.display = "inline-flex";
 if (saveToAssetsBtn) saveToAssetsBtn.style.display = "inline-flex";
+}
+
+function showVideoBox() {
+if (t2vVideo) t2vVideo.style.display = "block";
+// previewEmpty is often the same node as t2vStatus on this page
+// but if there's a separate empty placeholder, we hide it by blanking status text.
+// (Your CSS already hides/shows based on display; this keeps it clean.)
 }
 
 function extractVideoUrl(data) {
@@ -68,63 +76,23 @@ null
 );
 }
 
-function normalizeVideoUrl(url) {
-if (!url || typeof url !== "string") return url;
-
-// If backend returns the full same-host URL, keep it.
-// If it returns a path like "/assets/test.mp4", keep it.
-// If it returns "assets/test.mp4", fix it to "/assets/test.mp4".
-if (url.startsWith("assets/")) return "/" + url;
-
-return url;
+// -------------------- IMPORTANT: map UI "portrait/landscape/square" to actual ratios
+function mapAspectToRatio(uiValue) {
+const v = String(uiValue || "").toLowerCase();
+if (v === "portrait") return "9:16";
+if (v === "landscape") return "16:9";
+if (v === "square") return "1:1";
+// If you ever set the <option value="9:16"> etc, this will pass through:
+if (v.includes(":")) return v;
+return "9:16";
 }
 
-// Probe the URL to catch the common failure:
-// the “mp4 url” is actually a 404 page or HTML.
-async function probeUrl(url) {
-// HEAD is ideal, but some hosts block HEAD.
-// So try HEAD then fallback to GET with range.
-const tryFetch = async (method, extraHeaders = {}) => {
-const res = await fetch(url, {
-method,
-headers: {
-...extraHeaders,
-},
-// If it’s cross-origin without CORS, this may fail.
-// That’s OK—we’ll detect and report it.
-});
-return res;
-};
-
-try {
-let res;
-try {
-res = await tryFetch("HEAD");
-} catch {
-res = await tryFetch("GET", { Range: "bytes=0-1023" });
-}
-
-const ct = res.headers.get("content-type") || "";
-return {
-ok: res.ok,
-status: res.status,
-contentType: ct,
-};
-} catch (e) {
-return {
-ok: false,
-status: 0,
-contentType: "",
-error: String(e),
-};
-}
-}
-
+// -------------------- API calls
 async function startTextToVideoJob(prompt, options) {
 const payload = {
 prompt,
-aspectRatio: options.aspectRatio,
-durationSeconds: options.durationSeconds,
+aspectRatio: options.aspectRatio, // "9:16" / "16:9" / "1:1"
+durationSeconds: options.durationSeconds // number
 };
 
 const res = await fetch("/api/text-to-video", {
@@ -134,7 +102,7 @@ body: JSON.stringify(payload),
 });
 
 const data = await res.json().catch(() => ({}));
-console.log("startTextToVideoJob response:", res.status, data);
+console.log("startTextToVideoJob:", res.status, data);
 
 if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start video job");
 if (!data.operationName) throw new Error("Server did not return operationName");
@@ -157,17 +125,14 @@ body: JSON.stringify({ operationName }),
 });
 
 const data = await res.json().catch(() => ({}));
-if (i === 1 || i % 5 === 0) console.log("pollTextToVideo tick:", i, res.status, data);
+if (i === 1 || i % 5 === 0) console.log("poll tick:", i, res.status, data);
 
 if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
 
 if (data.done) {
-console.log("pollTextToVideo DONE:", res.status, data);
-
 const videoUrl = extractVideoUrl(data);
-if (videoUrl) return { videoUrl: normalizeVideoUrl(videoUrl) };
+if (videoUrl) return { videoUrl };
 
-// Support base64 fallback
 if (data.base64) {
 return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
 }
@@ -179,7 +144,7 @@ throw new Error("Video finished, but no videoUrl/base64 returned");
 throw new Error("Timed out waiting for the video to finish");
 }
 
-// Only wire Text→Video if the page has the elements
+// -------------------- Main wiring
 if (t2vPrompt && t2vBtn && t2vVideo) {
 let lastObjectUrl = null;
 
@@ -189,10 +154,7 @@ URL.revokeObjectURL(lastObjectUrl);
 lastObjectUrl = null;
 }
 
-try {
-t2vVideo.pause?.();
-} catch {}
-
+try { t2vVideo.pause?.(); } catch {}
 t2vVideo.removeAttribute("src");
 t2vVideo.load?.();
 t2vVideo.style.display = "none";
@@ -202,99 +164,47 @@ setT2vStatus("Your generated video will appear here.");
 }
 
 async function setVideoSrc(url) {
-t2vVideo.style.display = "block";
-t2vVideo.controls = true;
-
-// Clear first so browser reloads even if URL repeats
+// Force reload even if URL repeats
+try { t2vVideo.pause?.(); } catch {}
 t2vVideo.removeAttribute("src");
 t2vVideo.load?.();
 
-console.log("[T2V] Final video URL:", url);
+showVideoBox();
+console.log("[T2V] Setting video src:", url);
 
-// Probe first so we can warn you if it's not an mp4 or it's 404/403
-setT2vStatus("Loading video…");
-const probe = await probeUrl(url);
-console.log("[T2V] Probe result:", probe);
+t2vVideo.controls = true;
+t2vVideo.playsInline = true;
 
-// If probe says 403/404 or not ok, tell you up-front
-if (!probe.ok) {
-setT2vStatus(
-`❌ Video URL not reachable (status ${probe.status || "blocked"}). Open the URL in a new tab or check Network tab.`
-);
-// still try to set src — sometimes probe fails due to CORS but <video> works
-} else {
-// If content-type looks wrong (HTML), that usually means it’s not a real mp4
-const ct = (probe.contentType || "").toLowerCase();
-if (ct && !ct.includes("video") && !ct.includes("mp4") && !ct.includes("octet-stream")) {
-setT2vStatus(
-`❌ URL responded, but content-type is "${probe.contentType}". That usually means it's not an mp4 (often an error page).`
-);
-}
-}
-
-// Hook video events for real browser feedback
+// Attach listeners BEFORE setting src
 t2vVideo.onerror = () => {
 console.error("[T2V] <video> failed to load:", url, t2vVideo.error);
-setT2vStatus(
-"❌ Browser couldn’t play this video. Check Network tab for 403/404 or wrong content-type."
-);
+setT2vStatus("❌ Video URL returned, but the browser could not load it (check Network tab).");
 };
 
 t2vVideo.onloadeddata = () => {
 console.log("[T2V] Video loaded OK");
-setT2vStatus("✅ Video ready (press play if it doesn’t auto-start).");
+setT2vStatus("✅ Video ready");
 };
 
-t2vVideo.oncanplay = () => {
-console.log("[T2V] canplay fired");
-};
-
-// Load it
 t2vVideo.src = url;
+t2vVideo.style.display = "block";
 t2vVideo.load?.();
 
-// Try autoplay (often blocked). Fine.
+// Try autoplay (won't always be allowed)
 try {
 await t2vVideo.play?.();
 } catch (e) {
 console.warn("[T2V] Autoplay blocked (normal). Click play:", e);
 }
-
-// Fallback: if same-origin/cors allows, fetch as blob and play that
-// (This helps when the server requires headers / redirect weirdness.)
-// Only try if the video still isn't usable after a moment.
-setTimeout(async () => {
-// If the browser already loaded metadata, don’t do blob fallback
-if (t2vVideo.readyState >= 2) return;
-
-try {
-setT2vStatus("Trying fallback load…");
-const r = await fetch(url);
-if (!r.ok) throw new Error(`fetch failed ${r.status}`);
-const blob = await r.blob();
-const objUrl = URL.createObjectURL(blob);
-
-if (lastObjectUrl) URL.revokeObjectURL(lastObjectUrl);
-lastObjectUrl = objUrl;
-
-console.log("[T2V] Using blob fallback URL");
-t2vVideo.src = objUrl;
-t2vVideo.load?.();
-setT2vStatus("✅ Video ready (fallback).");
-showT2vButtons(objUrl);
-} catch (e) {
-console.warn("[T2V] Fallback failed (likely CORS):", e);
-// Keep existing status; user can inspect Network tab
-}
-}, 1500);
 }
 
 async function generateT2v(prompt) {
 t2vBtn.disabled = true;
 clearT2vUI();
 
+// ✅ FIX: send real ratios ("9:16", "16:9", "1:1") instead of "portrait"
 const durationSeconds = Number(t2vDuration?.value || 8);
-const aspectRatio = String(t2vAspect?.value || "16:9");
+const aspectRatio = mapAspectToRatio(t2vAspect?.value || "portrait");
 
 try {
 setT2vStatus("Starting video job…");
@@ -313,9 +223,7 @@ const byteChars = atob(result.base64);
 const byteNumbers = new Array(byteChars.length);
 for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
 
-const blob = new Blob([new Uint8Array(byteNumbers)], {
-type: result.mimeType || "video/mp4",
-});
+const blob = new Blob([new Uint8Array(byteNumbers)], { type: result.mimeType || "video/mp4" });
 lastObjectUrl = URL.createObjectURL(blob);
 
 showT2vButtons(lastObjectUrl);
@@ -340,6 +248,4 @@ generateT2v(prompt);
 });
 
 if (deleteBtn) deleteBtn.addEventListener("click", clearT2vUI);
-} else {
-console.log("[T2V] Skipped wiring: page missing required elements.");
 }
