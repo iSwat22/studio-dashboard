@@ -1,253 +1,93 @@
-/* create-video.js (FULL FILE) */
-console.log("✅ create-video.js loaded");
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quanne Leap — Home</title>
+<link rel="stylesheet" href="style.css" />
+</head>
 
-// ======================================================
-// TEXT -> VIDEO (create-video.html)
-// - Starts job: POST /api/text-to-video
-// - Polls: POST /api/text-to-video/status
-// - Shows: <video id="previewVideo">
-// ======================================================
+<body>
+<!-- Top Bar -->
+<header class="topbar">
+<div class="brand">
+<div class="logo">QL</div>
+<div class="brandText">
+<div class="brandName">Quanne Leap</div>
+<div class="brandTag">Create in the future.</div>
+</div>
+</div>
 
-const pickFirst = (...ids) =>
-ids.map((id) => document.getElementById(id)).find(Boolean);
+<div class="topRight">
+<span class="pill plan" id="planPill">Platinum</span>
+<span class="pill stars" id="starsPill">★ ∞</span>
 
-// Page elements (supports multiple ID variants just in case)
-const t2vPrompt = pickFirst("t2vPrompt", "prompt");
-const t2vBtn = pickFirst("t2vBtn", "generateBtn");
-const t2vStatus = pickFirst(
-"t2vStatus",
-"status",
-"statusText",
-"outputStatus",
-"previewEmpty"
-);
-const t2vVideo = pickFirst("t2vVideo", "resultVideo", "video", "previewVideo");
+<button class="pill btn" id="signInBtn">Sign in</button>
 
-const downloadBtn = pickFirst("downloadBtn");
-const deleteBtn = pickFirst("deleteBtn");
-const saveToAssetsBtn = pickFirst("saveToAssetsBtn");
+<div class="profile" id="profileBox" title="Profile">
+<div class="avatar" id="avatarCircle">K</div>
+<div class="profileMeta">
+<div class="profileName" id="profileName">KC</div>
+<div class="profileRole" id="profileRole">Admin</div>
+</div>
+</div>
+</div>
+</header>
 
-const t2vDuration = pickFirst("t2vDuration", "duration");
-const t2vAspect = pickFirst("t2vAspect", "aspect");
+<!-- Main -->
+<main class="container">
+<h1 class="headline">What would you like to create today?</h1>
+<p class="subhead">Pick a <b>Mode</b> + a <b>Theme</b> + a <b>Style</b>. Then we auto-build your prompt.</p>
 
-// -------------------- UI helpers
-function setT2vStatus(msg) {
-if (t2vStatus) t2vStatus.textContent = msg;
-console.log("[T2V]", msg);
-}
+<!-- MODE -->
+<section class="modeRow">
+<div class="rowHeader">
+<h2>Pick a Mode</h2>
+<span class="hint">Tap one</span>
+</div>
 
-function hideT2vButtons() {
-if (downloadBtn) downloadBtn.style.display = "none";
-if (deleteBtn) deleteBtn.style.display = "none"; // ✅ FIXED (was wrong before)
-if (saveToAssetsBtn) saveToAssetsBtn.style.display = "none";
-}
+<div class="modePills" id="modePills"></div>
+</section>
 
-function showT2vButtons(finalUrl) {
-if (downloadBtn) {
-downloadBtn.href = finalUrl;
-downloadBtn.download = "quanneleap-text-video.mp4";
-downloadBtn.style.display = "inline-flex";
-}
-if (deleteBtn) deleteBtn.style.display = "inline-flex";
-if (saveToAssetsBtn) saveToAssetsBtn.style.display = "inline-flex";
-}
+<!-- THEMES ROW -->
+<section class="row">
+<div class="rowHeader">
+<div class="rowTitleWrap">
+<h2>Pick a Theme</h2>
+<button class="miniBtn" id="clearThemeBtn" type="button">Clear</button>
+</div>
+<span class="hint">Scroll left/right</span>
+</div>
 
-function showVideoBox() {
-if (t2vVideo) t2vVideo.style.display = "block";
-// previewEmpty is often the same node as t2vStatus on this page
-// but if there's a separate empty placeholder, we hide it by blanking status text.
-// (Your CSS already hides/shows based on display; this keeps it clean.)
-}
+<div class="rail" id="themeRail" aria-label="Theme scroller"></div>
+</section>
 
-function extractVideoUrl(data) {
-if (!data) return null;
-if (typeof data === "string") return data;
+<!-- STYLES ROW -->
+<section class="row">
+<div class="rowHeader">
+<div class="rowTitleWrap">
+<h2>Pick a Style</h2>
+<button class="miniBtn" id="clearStyleBtn" type="button">Clear</button>
+</div>
+<span class="hint">Scroll left/right</span>
+</div>
 
-return (
-data.videoUrl ||
-data.url ||
-data.uri ||
-data?.result?.videoUrl ||
-data?.result?.url ||
-data?.result?.uri ||
-data?.data?.videoUrl ||
-data?.data?.url ||
-null
-);
-}
+<div class="rail" id="styleRail" aria-label="Style scroller"></div>
+</section>
 
-// -------------------- IMPORTANT: map UI "portrait/landscape/square" to actual ratios
-function mapAspectToRatio(uiValue) {
-const v = String(uiValue || "").toLowerCase();
-if (v === "portrait") return "9:16";
-if (v === "landscape") return "16:9";
-if (v === "square") return "1:1";
-// If you ever set the <option value="9:16"> etc, this will pass through:
-if (v.includes(":")) return v;
-return "9:16";
-}
+<!-- READY -->
+<section class="readyBox">
+<div class="readyText">
+<div class="readyTitle">Ready?</div>
+<div class="readySub" id="readySub">Choose 1 Mode + 1 Theme + 1 Style, then go create.</div>
+</div>
+<button class="cta" id="goCreateBtn" disabled>Go to Create →</button>
+</section>
+</main>
 
-// -------------------- API calls
-async function startTextToVideoJob(prompt, options) {
-const payload = {
-prompt,
-aspectRatio: options.aspectRatio, // "9:16" / "16:9" / "1:1"
-durationSeconds: options.durationSeconds // number
-};
+<script src="script.js"></script>
+</body>
+</html>
 
-const res = await fetch("/api/text-to-video", {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify(payload),
-});
-
-const data = await res.json().catch(() => ({}));
-console.log("startTextToVideoJob:", res.status, data);
-
-if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start video job");
-if (!data.operationName) throw new Error("Server did not return operationName");
-
-return data.operationName;
-}
-
-async function pollTextToVideo(operationName) {
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const maxAttempts = 120;
-
-for (let i = 1; i <= maxAttempts; i++) {
-setT2vStatus(`Generating video… (${i}/${maxAttempts})`);
-await sleep(3000);
-
-const res = await fetch("/api/text-to-video/status", {
-method: "POST",
-headers: { "Content-Type": "application/json" },
-body: JSON.stringify({ operationName }),
-});
-
-const data = await res.json().catch(() => ({}));
-if (i === 1 || i % 5 === 0) console.log("poll tick:", i, res.status, data);
-
-if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
-
-if (data.done) {
-const videoUrl = extractVideoUrl(data);
-if (videoUrl) return { videoUrl };
-
-if (data.base64) {
-return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
-}
-
-throw new Error("Video finished, but no videoUrl/base64 returned");
-}
-}
-
-throw new Error("Timed out waiting for the video to finish");
-}
-
-// -------------------- Main wiring
-if (t2vPrompt && t2vBtn && t2vVideo) {
-let lastObjectUrl = null;
-
-function clearT2vUI() {
-if (lastObjectUrl) {
-URL.revokeObjectURL(lastObjectUrl);
-lastObjectUrl = null;
-}
-
-try { t2vVideo.pause?.(); } catch {}
-t2vVideo.removeAttribute("src");
-t2vVideo.load?.();
-t2vVideo.style.display = "none";
-
-hideT2vButtons();
-setT2vStatus("Your generated video will appear here.");
-}
-
-async function setVideoSrc(url) {
-// Force reload even if URL repeats
-try { t2vVideo.pause?.(); } catch {}
-t2vVideo.removeAttribute("src");
-t2vVideo.load?.();
-
-showVideoBox();
-console.log("[T2V] Setting video src:", url);
-
-t2vVideo.controls = true;
-t2vVideo.playsInline = true;
-
-// Attach listeners BEFORE setting src
-t2vVideo.onerror = () => {
-console.error("[T2V] <video> failed to load:", url, t2vVideo.error);
-setT2vStatus("❌ Video URL returned, but the browser could not load it (check Network tab).");
-};
-
-t2vVideo.onloadeddata = () => {
-console.log("[T2V] Video loaded OK");
-setT2vStatus("✅ Video ready");
-};
-
-t2vVideo.src = url;
-t2vVideo.style.display = "block";
-t2vVideo.load?.();
-
-// Try autoplay (won't always be allowed)
-try {
-await t2vVideo.play?.();
-} catch (e) {
-console.warn("[T2V] Autoplay blocked (normal). Click play:", e);
-}
-}
-
-async function generateT2v(prompt) {
-t2vBtn.disabled = true;
-clearT2vUI();
-
-// ✅ FIX: send real ratios ("9:16", "16:9", "1:1") instead of "portrait"
-const durationSeconds = Number(t2vDuration?.value || 8);
-const aspectRatio = mapAspectToRatio(t2vAspect?.value || "portrait");
-
-try {
-setT2vStatus("Starting video job…");
-const opName = await startTextToVideoJob(prompt, { durationSeconds, aspectRatio });
-
-const result = await pollTextToVideo(opName);
-
-if (result.videoUrl) {
-showT2vButtons(result.videoUrl);
-await setVideoSrc(result.videoUrl);
-return;
-}
-
-if (result.base64) {
-const byteChars = atob(result.base64);
-const byteNumbers = new Array(byteChars.length);
-for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-
-const blob = new Blob([new Uint8Array(byteNumbers)], { type: result.mimeType || "video/mp4" });
-lastObjectUrl = URL.createObjectURL(blob);
-
-showT2vButtons(lastObjectUrl);
-await setVideoSrc(lastObjectUrl);
-return;
-}
-
-throw new Error("Unknown video response format");
-} catch (err) {
-console.error(err);
-setT2vStatus(`❌ ${err.message || err}`);
-hideT2vButtons();
-} finally {
-t2vBtn.disabled = false;
-}
-}
-
-t2vBtn.addEventListener("click", () => {
-const prompt = (t2vPrompt.value || "").trim();
-if (!prompt) return setT2vStatus("Please enter a prompt.");
-generateT2v(prompt);
-});
-
-if (deleteBtn) deleteBtn.addEventListener("click", clearT2vUI);
-}
 
   
