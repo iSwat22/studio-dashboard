@@ -158,7 +158,7 @@ setTimeout(() => {
 videoJobs.set(operationName, {
 done: true,
 videoUrl:
-"https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+"https://quanne-leap-api.onrender.com/assets/test.mp4",
 });
 }, 8000);
 
