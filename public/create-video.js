@@ -1,239 +1,196 @@
 /* create-video.js */
 console.log("create-video.js loaded");
 
-/**
-* This file ONLY handles the Text→Video page.
-* Goal: fix 404 by trying multiple possible API routes, without guessing your backend.
-* Once we confirm the correct endpoint, we can lock it to one route.
-*/
-
+/* =========
+Helpers
+========= */
 const $ = (id) => document.getElementById(id);
 
 const promptEl = $("prompt");
-const clearBtn = $("clearBtn");
-const pasteBtn = $("pasteBtn");
+const generateBtn = $("generateBtn");
 
 const aspectEl = $("aspect");
 const durationEl = $("duration");
-const qualityEl = $("quality");
-
-const generateBtn = $("generateBtn");
-const downloadBtn = $("downloadBtn");
+const qualityEl = $("quality"); // not used by old API, but kept for future
 
 const previewVideo = $("previewVideo");
 const previewEmpty = $("previewEmpty");
+const downloadBtn = $("downloadBtn");
 
-// Optional UI parts (if present)
+// Optional buttons (if present)
+const clearBtn = $("clearBtn");
+const pasteBtn = $("pasteBtn");
 const nextBtn = $("nextBtn");
-const clipsStrip = $("clipsStrip");
 
-// ---- Helpers
-function showStatus(msg) {
+let lastObjectUrl = null;
+
+function setStatus(msg) {
 if (previewEmpty) {
 previewEmpty.style.display = "block";
 previewEmpty.textContent = msg;
 }
-if (previewVideo) previewVideo.style.display = "none";
+console.log("[T2V]", msg);
+}
+
+function hideButtons() {
 if (downloadBtn) downloadBtn.style.display = "none";
 }
 
-function showVideo(url) {
-if (!previewVideo) return;
-
-previewVideo.src = url;
-previewVideo.style.display = "block";
-if (previewEmpty) previewEmpty.style.display = "none";
-
+function showDownload(finalUrl) {
 if (downloadBtn) {
-downloadBtn.href = url;
+downloadBtn.href = finalUrl;
+downloadBtn.download = "quannaleap-text-video.mp4";
 downloadBtn.style.display = "inline-flex";
 }
 }
 
-async function safeJSON(res) {
-const text = await res.text();
-try {
-return JSON.parse(text);
-} catch {
-return { raw: text };
-}
+function clearUI() {
+if (lastObjectUrl) {
+URL.revokeObjectURL(lastObjectUrl);
+lastObjectUrl = null;
 }
 
-/**
-* Some backends return:
-* - { videoUrl: "..." }
-* - { url: "..." }
-* - { output: "..." }
-* - { data: { videoUrl: "..." } }
-* - { result: { uri: "..." } }
-* - or even plain text url
-*/
-function extractVideoUrl(data) {
-if (!data) return null;
-
-if (typeof data === "string") return data;
-
-const candidates = [
-data.videoUrl,
-data.url,
-data.output,
-data.uri,
-data?.data?.videoUrl,
-data?.data?.url,
-data?.result?.videoUrl,
-data?.result?.url,
-data?.result?.uri,
-data?.video?.url,
-data?.video?.uri,
-];
-
-for (const c of candidates) {
-if (typeof c === "string" && c.trim()) return c.trim();
+if (previewVideo) {
+previewVideo.pause?.();
+previewVideo.removeAttribute("src");
+previewVideo.load();
+previewVideo.style.display = "none";
 }
 
-if (typeof data.raw === "string" && data.raw.includes("http")) {
-return data.raw.trim();
+hideButtons();
+setStatus("Your generated video will appear here.");
 }
 
-return null;
+/* =========
+Mapping
+========= */
+// Your UI values: portrait / landscape / square
+// Backend expects: 9:16 / 16:9 / 1:1
+function mapAspect(uiVal) {
+if (uiVal === "portrait") return "9:16";
+if (uiVal === "landscape") return "16:9";
+if (uiVal === "square") return "1:1";
+return "16:9";
 }
 
-/**
-* Convert UI aspect selection to what your backend might expect.
-* - your UI: portrait / landscape / square
-* - backend might expect: "9:16", "16:9", "1:1"
-*/
-function mapAspect(value) {
-if (value === "portrait") return "9:16";
-if (value === "landscape") return "16:9";
-if (value === "square") return "1:1";
-return value;
-}
+/* =========
+API (old proven flow)
+========= */
+async function startTextToVideoJob(prompt, options) {
+const payload = {
+prompt,
+aspectRatio: options.aspectRatio,
+durationSeconds: options.durationSeconds,
+// optional: keep for later if your backend wants it
+quality: options.quality,
+};
 
-/**
-* IMPORTANT:
-* 404 means: route does not exist on THIS server.
-* So we try the same names with and without "/api" prefix.
-*
-* This is the most common mismatch:
-* Frontend calls /api/xxx
-* Backend is actually /xxx (or vice versa)
-*/
-const PATHS = [
-"text-to-video",
-"text2video",
-"t2v",
-"veo",
-"video",
-"generate-video",
-"generateVideo",
-];
-
-// Build endpoints to try (both with and without /api)
-const ENDPOINTS_TO_TRY = [
-...PATHS.map((p) => `/api/${p}`),
-...PATHS.map((p) => `/${p}`),
-];
-
-// If you ever host API on a different service, you can hardcode base here:
-// const API_ORIGIN = "https://YOUR-API-SERVICE.onrender.com";
-const API_ORIGIN = ""; // same-origin (current Render host)
-
-async function postJSON(url, body) {
-const res = await fetch(url, {
+const res = await fetch("/api/text-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify(body),
+body: JSON.stringify(payload),
 });
 
-const data = await safeJSON(res);
-return { res, data };
+// IMPORTANT: backend must return JSON like { ok:true, operationName:"..." }
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok || !data.ok) throw new Error(data.error || `Failed to start video job (${res.status})`);
+if (!data.operationName) throw new Error("Server did not return operationName");
+
+return data.operationName;
 }
 
+async function pollTextToVideo(operationName) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const maxAttempts = 100;
+
+for (let i = 1; i <= maxAttempts; i++) {
+setStatus(`Generating video… (${i}/${maxAttempts})`);
+await sleep(3000);
+
+const res = await fetch("/api/text-to-video/status", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ operationName }),
+});
+
+const data = await res.json().catch(() => ({}));
+
+if (!res.ok || !data.ok) throw new Error(data.error || `Status check failed (${res.status})`);
+
+if (data.done) {
+if (data.videoUrl) return { videoUrl: data.videoUrl };
+if (data.base64) return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
+throw new Error("Video finished, but no videoUrl/base64 returned");
+}
+}
+
+throw new Error("Timed out waiting for the video to finish");
+}
+
+/* =========
+Main action
+========= */
 async function generateVideo() {
 const prompt = (promptEl?.value || "").trim();
 if (!prompt) {
-alert("Enter a prompt first.");
+setStatus("Please enter a prompt.");
 return;
 }
 
-const aspect = mapAspect(aspectEl?.value || "9:16");
-const duration = Number(durationEl?.value || 8);
-const quality = (qualityEl?.value || "high").toLowerCase();
-
-// Payload: include multiple field names so your backend can match one
-const payload = {
-prompt,
-text: prompt,
-aspect,
-aspectRatio: aspect,
-format: aspect,
-duration,
-seconds: duration,
-length: duration,
-quality,
-};
+const durationSeconds = Number(durationEl?.value || 8); // your dropdown is already seconds
+const aspectRatio = mapAspect(aspectEl?.value || "landscape");
+const quality = String(qualityEl?.value || "high").toLowerCase();
 
 generateBtn.disabled = true;
-showStatus("Generating video…");
-
-let lastErr = null;
-
-for (const endpoint of ENDPOINTS_TO_TRY) {
-const fullUrl = `${API_ORIGIN}${endpoint}`;
+clearUI();
 
 try {
-console.log("Trying endpoint:", fullUrl, payload);
+setStatus("Starting video job…");
+const opName = await startTextToVideoJob(prompt, { durationSeconds, aspectRatio, quality });
 
-const { res, data } = await postJSON(fullUrl, payload);
+const result = await pollTextToVideo(opName);
 
-// If 404, try next endpoint
-if (res.status === 404) {
-console.warn("404 on", fullUrl);
-continue;
-}
-
-// If not OK, stop (route exists but backend threw an error)
-if (!res.ok) {
-console.error("API error on", fullUrl, res.status, data);
-lastErr = { endpoint: fullUrl, status: res.status, data };
-break;
-}
-
-// Route worked. Extract video URL.
-const url = extractVideoUrl(data);
-
-if (!url) {
-console.error("No video URL returned from", fullUrl, data);
-lastErr = { endpoint: fullUrl, status: res.status, data };
-break;
-}
-
-console.log("Video generated from:", fullUrl, url);
-showVideo(url);
-
-// Optional: populate a clip slot in the UI (doesn't change layout)
-if (clipsStrip) {
-const firstClip = clipsStrip.querySelector(".clip-card");
-if (firstClip) firstClip.classList.add("is-selected");
-}
-
-generateBtn.disabled = false;
+if (result.videoUrl) {
+previewVideo.src = result.videoUrl;
+previewVideo.style.display = "block";
+if (previewEmpty) previewEmpty.style.display = "none";
+setStatus("✅ Video ready");
+showDownload(result.videoUrl);
 return;
-} catch (e) {
-console.error("Request failed on", fullUrl, e);
-lastErr = { endpoint: fullUrl, error: String(e) };
-}
 }
 
+if (result.base64) {
+const byteChars = atob(result.base64);
+const byteNumbers = new Array(byteChars.length);
+for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+
+const blob = new Blob([new Uint8Array(byteNumbers)], { type: result.mimeType || "video/mp4" });
+lastObjectUrl = URL.createObjectURL(blob);
+
+previewVideo.src = lastObjectUrl;
+previewVideo.style.display = "block";
+if (previewEmpty) previewEmpty.style.display = "none";
+setStatus("✅ Video ready");
+showDownload(lastObjectUrl);
+return;
+}
+
+throw new Error("Unknown video response format");
+} catch (err) {
+console.error(err);
+setStatus(`❌ ${err?.message || err}`);
+hideButtons();
+} finally {
 generateBtn.disabled = false;
-
-console.error("All endpoints failed.", lastErr);
-alert("Generate video failed. Check Render logs / Console.");
-showStatus("Generate video failed. Check Render logs / Console.");
+}
 }
 
-// ---- Wire buttons
+/* =========
+Wire buttons
+========= */
+if (generateBtn) generateBtn.addEventListener("click", generateVideo);
+
 if (clearBtn) {
 clearBtn.addEventListener("click", () => {
 if (promptEl) promptEl.value = "";
@@ -251,13 +208,8 @@ alert("Clipboard paste blocked. Use Ctrl+V in the prompt box.");
 });
 }
 
-if (generateBtn) generateBtn.addEventListener("click", generateVideo);
-
-// Optional: keep Next button UI-only for now
+// keep Next UI-only for now
 if (nextBtn) {
-nextBtn.addEventListener("click", () => {
-console.log("Next clicked (UI only for now).");
-});
+nextBtn.addEventListener("click", () => console.log("Next clicked (UI only for now)."));
 }
-
 
