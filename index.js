@@ -119,6 +119,102 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 }
 });
 
+// ======================================================
+// TEXT → VIDEO (Gemini / Veo)
+// Needs: GEMINI_API_KEY_VIDEO in Render env vars
+// ======================================================
+
+const videoJobs = new Map(); // in-memory job store
+
+app.post("/api/text-to-video", async (req, res) => {
+try {
+const prompt = (req.body?.prompt || "").trim();
+if (!prompt) {
+return res.status(400).json({ ok: false, error: "Missing prompt" });
+}
+
+const API_KEY = process.env.GEMINI_API_KEY_VIDEO;
+if (!API_KEY) {
+return res.status(500).json({
+ok: false,
+error: "Missing GEMINI_API_KEY_VIDEO in environment",
+});
+}
+
+// Create fake operation ID (Veo is async)
+const operationName = `veo_${Date.now()}_${Math.random()
+.toString(36)
+.slice(2)}`;
+
+// Store job (placeholder until Veo callback)
+videoJobs.set(operationName, {
+done: false,
+createdAt: Date.now(),
+});
+
+// TODO: Replace this block with real Veo API call
+// For now we simulate async processing
+setTimeout(() => {
+videoJobs.set(operationName, {
+done: true,
+videoUrl:
+"https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+});
+}, 8000);
+
+return res.json({
+ok: true,
+operationName,
+});
+} catch (err) {
+console.error("text-to-video error:", err);
+return res.status(500).json({
+ok: false,
+error: err.message || "Server error",
+});
+}
+});
+
+app.post("/api/text-to-video/status", async (req, res) => {
+try {
+const { operationName } = req.body || {};
+if (!operationName) {
+return res.status(400).json({
+ok: false,
+error: "Missing operationName",
+});
+}
+
+const job = videoJobs.get(operationName);
+if (!job) {
+return res.status(404).json({
+ok: false,
+error: "Unknown operation",
+});
+}
+
+if (!job.done) {
+return res.json({
+ok: true,
+done: false,
+});
+}
+
+return res.json({
+ok: true,
+done: true,
+videoUrl: job.videoUrl,
+});
+} catch (err) {
+console.error("text-to-video status error:", err);
+return res.status(500).json({
+ok: false,
+error: err.message || "Server error",
+});
+}
+});
+
+
 // =========================================================
 // IMAGE -> VIDEO (FFmpeg slideshow)
 // Upload field name MUST be: images (multiple)
