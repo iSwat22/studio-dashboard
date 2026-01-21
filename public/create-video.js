@@ -1,86 +1,65 @@
 /* create-video.js */
 console.log("create-video.js loaded");
 
-const $ = (id) => document.getElementById(id);
+// ======================================================
+// TEXT -> VIDEO (create-video.html)
+// - Starts job: POST /api/text-to-video
+// - Polls: POST /api/text-to-video/status
+// - Fixes: forces <video> to LOAD/PLAY + logs videoUrl + catches load errors
+// ======================================================
 
-// NEW page IDs (create-video.html)
-const promptEl = $("prompt");
-const generateBtn = $("generateBtn");
-const previewVideo = $("previewVideo");
-const previewEmpty = $("previewEmpty");
-const downloadBtn = $("downloadBtn");
+const pickFirst = (...ids) =>
+ids.map((id) => document.getElementById(id)).find(Boolean);
 
-const aspectEl = $("aspect");
-const durationEl = $("duration");
-const qualityEl = $("quality");
+// Try multiple possible IDs so this works across your pages
+const t2vPrompt = pickFirst("t2vPrompt", "prompt");
+const t2vBtn = pickFirst("t2vBtn", "generateBtn");
+const t2vStatus = pickFirst("t2vStatus", "status", "statusText", "outputStatus", "previewEmpty");
+const t2vVideo = pickFirst("t2vVideo", "resultVideo", "video", "previewVideo");
 
-// Optional UI
-const nextBtn = $("nextBtn");
-const clipsStrip = $("clipsStrip");
+const downloadBtn = pickFirst("downloadBtn");
+const deleteBtn = pickFirst("deleteBtn");
+const saveToAssetsBtn = pickFirst("saveToAssetsBtn");
 
-let lastObjectUrl = null;
+const t2vDuration = pickFirst("t2vDuration", "duration");
+const t2vAspect = pickFirst("t2vAspect", "aspect");
 
-function setStatus(msg) {
-if (previewEmpty) {
-previewEmpty.style.display = "block";
-previewEmpty.textContent = msg;
-}
-if (previewVideo) previewVideo.style.display = "none";
-if (downloadBtn) downloadBtn.style.display = "none";
+function setT2vStatus(msg) {
+if (t2vStatus) t2vStatus.textContent = msg;
 console.log("[T2V]", msg);
 }
 
-function showVideoFromUrl(url) {
-if (!previewVideo) return;
-
-// cleanup old blob url if needed
-if (lastObjectUrl) {
-URL.revokeObjectURL(lastObjectUrl);
-lastObjectUrl = null;
+function hideT2vButtons() {
+if (downloadBtn) downloadBtn.style.display = "none";
+if (deleteBtn) downloadBtn.style.display = "none";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "none";
 }
 
-previewVideo.src = url;
-previewVideo.style.display = "block";
-if (previewEmpty) previewEmpty.style.display = "none";
-
+function showT2vButtons(finalUrl) {
 if (downloadBtn) {
-downloadBtn.href = url;
-downloadBtn.style.display = "inline-flex";
-}
-}
-
-function showVideoFromBase64(base64, mimeType = "video/mp4") {
-if (!previewVideo) return;
-
-// cleanup old blob url if needed
-if (lastObjectUrl) {
-URL.revokeObjectURL(lastObjectUrl);
-lastObjectUrl = null;
-}
-
-const byteChars = atob(base64);
-const byteNumbers = new Array(byteChars.length);
-for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
-
-const blob = new Blob([new Uint8Array(byteNumbers)], { type: mimeType });
-lastObjectUrl = URL.createObjectURL(blob);
-
-previewVideo.src = lastObjectUrl;
-previewVideo.style.display = "block";
-if (previewEmpty) previewEmpty.style.display = "none";
-
-if (downloadBtn) {
-downloadBtn.href = lastObjectUrl;
+downloadBtn.href = finalUrl;
 downloadBtn.download = "quanneleap-text-video.mp4";
 downloadBtn.style.display = "inline-flex";
 }
+if (deleteBtn) deleteBtn.style.display = "inline-flex";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "inline-flex";
 }
 
-function mapAspect(value) {
-if (value === "portrait") return "9:16";
-if (value === "landscape") return "16:9";
-if (value === "square") return "1:1";
-return value || "9:16";
+function extractVideoUrl(data) {
+if (!data) return null;
+if (typeof data === "string") return data;
+
+return (
+data.videoUrl ||
+data.url ||
+data.uri ||
+data?.result?.videoUrl ||
+data?.result?.url ||
+data?.result?.uri ||
+data?.data?.videoUrl ||
+data?.data?.url ||
+null
+);
 }
 
 async function startTextToVideoJob(prompt, options) {
@@ -88,7 +67,6 @@ const payload = {
 prompt,
 aspectRatio: options.aspectRatio,
 durationSeconds: options.durationSeconds,
-quality: options.quality,
 };
 
 const res = await fetch("/api/text-to-video", {
@@ -98,11 +76,9 @@ body: JSON.stringify(payload),
 });
 
 const data = await res.json().catch(() => ({}));
-
-// IMPORTANT: log the response so we can see what server returns
 console.log("startTextToVideoJob response:", res.status, data);
 
-if (!res.ok || !data.ok) throw new Error(data.error || `Failed to start video job (${res.status})`);
+if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start video job");
 if (!data.operationName) throw new Error("Server did not return operationName");
 
 return data.operationName;
@@ -110,10 +86,10 @@ return data.operationName;
 
 async function pollTextToVideo(operationName) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const maxAttempts = 120; // ~6 minutes at 3s
+const maxAttempts = 120;
 
 for (let i = 1; i <= maxAttempts; i++) {
-setStatus(`Generating video… (${i}/${maxAttempts})`);
+setT2vStatus(`Generating video… (${i}/${maxAttempts})`);
 await sleep(3000);
 
 const res = await fetch("/api/text-to-video/status", {
@@ -123,20 +99,19 @@ body: JSON.stringify({ operationName }),
 });
 
 const data = await res.json().catch(() => ({}));
+if (i === 1 || i % 5 === 0) console.log("pollTextToVideo tick:", i, res.status, data);
 
-// IMPORTANT: log final response
-if (data?.done) console.log("pollTextToVideo DONE:", res.status, data);
-
-if (!res.ok || !data.ok) throw new Error(data.error || `Status check failed (${res.status})`);
+if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
 
 if (data.done) {
-// Support either URL or base64
-if (data.videoUrl) return { videoUrl: data.videoUrl };
-if (data.base64) return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
+console.log("pollTextToVideo DONE:", res.status, data);
+const videoUrl = extractVideoUrl(data);
+if (videoUrl) return { videoUrl };
 
-// Some servers might return different key name:
-if (data.url) return { videoUrl: data.url };
-if (data.output) return { videoUrl: data.output };
+// Support base64 fallback
+if (data.base64) {
+return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
+}
 
 throw new Error("Video finished, but no videoUrl/base64 returned");
 }
@@ -145,49 +120,109 @@ throw new Error("Video finished, but no videoUrl/base64 returned");
 throw new Error("Timed out waiting for the video to finish");
 }
 
-async function generateVideo() {
-const prompt = (promptEl?.value || "").trim();
-if (!prompt) return alert("Enter a prompt first.");
+// Only wire Text→Video if the page has the elements
+if (t2vPrompt && t2vBtn && t2vVideo) {
+let lastObjectUrl = null;
 
-const durationSeconds = Number(durationEl?.value || 8);
-const aspectRatio = mapAspect(aspectEl?.value);
-const quality = (qualityEl?.value || "high").toLowerCase();
+function clearT2vUI() {
+if (lastObjectUrl) {
+URL.revokeObjectURL(lastObjectUrl);
+lastObjectUrl = null;
+}
 
-generateBtn.disabled = true;
-setStatus("Starting video job…");
+// Clear video
+try { t2vVideo.pause?.(); } catch {}
+t2vVideo.removeAttribute("src");
+t2vVideo.load?.();
+t2vVideo.style.display = "none";
+
+hideT2vButtons();
+setT2vStatus("Your generated video will appear here.");
+}
+
+async function setVideoSrc(url) {
+// IMPORTANT: force <video> to load, and capture real load errors
+t2vVideo.style.display = "block";
+t2vVideo.controls = true;
+t2vVideo.muted = false;
+
+// clear first so the browser reloads even if same URL
+t2vVideo.removeAttribute("src");
+t2vVideo.load?.();
+
+console.log("[T2V] Setting video src:", url);
+t2vVideo.src = url;
+
+// Catch “video file not accessible” issues
+t2vVideo.onerror = () => {
+console.error("[T2V] <video> failed to load:", url, t2vVideo.error);
+setT2vStatus("❌ Video URL returned, but the browser could not load it (check Network tab for 403/404).");
+};
+
+t2vVideo.onloadeddata = () => {
+console.log("[T2V] Video loaded OK");
+setT2vStatus("✅ Video ready");
+};
+
+t2vVideo.load?.();
+
+// Try autoplay (may be blocked — that’s fine)
+try {
+await t2vVideo.play?.();
+} catch (e) {
+console.warn("[T2V] Autoplay blocked (normal). Click play:", e);
+}
+}
+
+async function generateT2v(prompt) {
+t2vBtn.disabled = true;
+clearT2vUI();
+
+const durationSeconds = Number(t2vDuration?.value || 8);
+const aspectRatio = String(t2vAspect?.value || "16:9");
 
 try {
-const opName = await startTextToVideoJob(prompt, { durationSeconds, aspectRatio, quality });
+setT2vStatus("Starting video job…");
+const opName = await startTextToVideoJob(prompt, { durationSeconds, aspectRatio });
+
 const result = await pollTextToVideo(opName);
 
+// URL result
 if (result.videoUrl) {
-setStatus("✅ Video ready");
-showVideoFromUrl(result.videoUrl);
-} else if (result.base64) {
-setStatus("✅ Video ready");
-showVideoFromBase64(result.base64, result.mimeType);
+showT2vButtons(result.videoUrl);
+await setVideoSrc(result.videoUrl);
+return;
 }
 
-// Optional: UI-only selection highlight
-if (clipsStrip) {
-const firstClip = clipsStrip.querySelector(".clip-card");
-if (firstClip) firstClip.classList.add("is-selected");
+// base64 result
+if (result.base64) {
+const byteChars = atob(result.base64);
+const byteNumbers = new Array(byteChars.length);
+for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+
+const blob = new Blob([new Uint8Array(byteNumbers)], { type: result.mimeType || "video/mp4" });
+lastObjectUrl = URL.createObjectURL(blob);
+
+showT2vButtons(lastObjectUrl);
+await setVideoSrc(lastObjectUrl);
+return;
 }
+
+throw new Error("Unknown video response format");
 } catch (err) {
 console.error(err);
-setStatus(`❌ ${err.message || err}`);
-alert("Generate video failed. Check DevTools Console + Render logs.");
+setT2vStatus(`❌ ${err.message || err}`);
+hideT2vButtons();
 } finally {
-generateBtn.disabled = false;
+t2vBtn.disabled = false;
 }
 }
 
-// Wire buttons
-if (generateBtn) generateBtn.addEventListener("click", generateVideo);
-
-if (nextBtn) {
-nextBtn.addEventListener("click", () => {
-console.log("Next clicked (UI only for now).");
+t2vBtn.addEventListener("click", () => {
+const prompt = (t2vPrompt.value || "").trim();
+if (!prompt) return setT2vStatus("Please enter a prompt.");
+generateT2v(prompt);
 });
-}
 
+if (deleteBtn) deleteBtn.addEventListener("click", clearT2vUI);
+}
