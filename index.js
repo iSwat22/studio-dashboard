@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // ---- Middleware ----
-app.use(express.json({ limit: "10mb" })); // bigger for images/base64 if needed
+app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 // ---- Multer (uploads for image->video) ----
@@ -29,7 +29,90 @@ const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
 cb(null, `${Date.now()}_${Math.random().toString(16).slice(2)}_${safe}`);
 },
 }),
-limits: { fileSize: 8 * 1024 * 1024 }, // 8MB per image
+limits: { fileSize: 8 * 1024 * 1024 },
+});
+
+// ======================================================
+// Helpers
+// ======================================================
+function isHttpUrl(u) {
+try {
+const x = new URL(u);
+return x.protocol === "http:" || x.protocol === "https:";
+} catch {
+return false;
+}
+}
+
+// VERY IMPORTANT: prevent open-proxy abuse
+// Add domains you trust your app to proxy video from.
+const VIDEO_PROXY_ALLOWLIST = [
+"storage.googleapis.com",
+"generativelanguage.googleapis.com",
+"googleapis.com",
+"quanne-leap-api.onrender.com",
+];
+
+function isAllowedVideoHost(urlStr) {
+try {
+const u = new URL(urlStr);
+const host = u.hostname.toLowerCase();
+return VIDEO_PROXY_ALLOWLIST.some((allowed) => {
+allowed = allowed.toLowerCase();
+return host === allowed || host.endsWith("." + allowed);
+});
+} catch {
+return false;
+}
+}
+
+// ======================================================
+// Video Proxy (fixes 403/404 + Range streaming issues)
+// Browser loads THIS url instead of raw remote url.
+// ======================================================
+app.get("/api/video-proxy", async (req, res) => {
+try {
+const url = String(req.query?.url || "").trim();
+if (!url) return res.status(400).send("Missing url");
+
+if (!isHttpUrl(url)) return res.status(400).send("Invalid url");
+if (!isAllowedVideoHost(url)) return res.status(403).send("Host not allowed");
+
+// Forward Range header if present (required for video <video> seeking)
+const range = req.headers.range;
+
+const upstream = await fetch(url, {
+method: "GET",
+headers: range ? { Range: range } : {},
+});
+
+// If upstream says no, pass it through (helps you debug)
+if (!upstream.ok && upstream.status !== 206) {
+const txt = await upstream.text().catch(() => "");
+return res.status(upstream.status).send(txt || `Upstream error ${upstream.status}`);
+}
+
+// Set headers so the browser can play it
+const contentType = upstream.headers.get("content-type") || "video/mp4";
+const contentLength = upstream.headers.get("content-length");
+const contentRange = upstream.headers.get("content-range");
+const acceptRanges = upstream.headers.get("accept-ranges") || "bytes";
+
+res.setHeader("Content-Type", contentType);
+res.setHeader("Accept-Ranges", acceptRanges);
+
+if (contentLength) res.setHeader("Content-Length", contentLength);
+if (contentRange) res.setHeader("Content-Range", contentRange);
+
+// If upstream is partial, we must return 206
+if (upstream.status === 206) res.status(206);
+
+// Stream body
+upstream.body.pipe(res);
+} catch (err) {
+console.error("video-proxy error:", err);
+res.status(500).send("Proxy error");
+}
 });
 
 // ---- Health check ----
@@ -39,6 +122,7 @@ ok: true,
 status: "healthy",
 node: process.version,
 hasGoogleApiKey: Boolean(process.env.GOOGLE_API_KEY),
+hasGeminiVideoKey: Boolean(process.env.GEMINI_API_KEY_VIDEO),
 });
 });
 
@@ -123,7 +207,6 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 // TEXT → VIDEO (Gemini / Veo)
 // Needs: GEMINI_API_KEY_VIDEO in Render env vars
 // ======================================================
-
 const videoJobs = new Map(); // in-memory job store
 
 app.post("/api/text-to-video", async (req, res) => {
@@ -142,23 +225,22 @@ error: "Missing GEMINI_API_KEY_VIDEO in environment",
 }
 
 // Create fake operation ID (Veo is async)
-const operationName = `veo_${Date.now()}_${Math.random()
-.toString(36)
-.slice(2)}`;
+const operationName = `veo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
 // Store job (placeholder until Veo callback)
 videoJobs.set(operationName, {
 done: false,
 createdAt: Date.now(),
+videoUrl: null,
 });
 
-// TODO: Replace this block with real Veo API call
-// For now we simulate async processing
+// TODO: Replace with real Veo call.
+// For now: simulate async processing and point to your local test file.
 setTimeout(() => {
 videoJobs.set(operationName, {
 done: true,
-videoUrl:
-"https://quanne-leap-api.onrender.com/assets/test.mp4",
+// IMPORTANT: This must exist at: /public/assets/test.mp4
+videoUrl: "https://quanne-leap-api.onrender.com/assets/test.mp4",
 });
 }, 8000);
 
@@ -200,10 +282,20 @@ done: false,
 });
 }
 
+const videoUrl = job.videoUrl;
+
+// Return BOTH:
+// - videoUrl (raw, for debugging)
+// - proxyUrl (what the browser should actually load)
+const proxyUrl = videoUrl
+? `/api/video-proxy?url=${encodeURIComponent(videoUrl)}`
+: null;
+
 return res.json({
 ok: true,
 done: true,
-videoUrl: job.videoUrl,
+videoUrl,
+proxyUrl,
 });
 } catch (err) {
 console.error("text-to-video status error:", err);
@@ -213,7 +305,6 @@ error: err.message || "Server error",
 });
 }
 });
-
 
 // =========================================================
 // IMAGE -> VIDEO (FFmpeg slideshow)
@@ -239,7 +330,6 @@ TMP_DIR,
 try {
 const args = ["-y"];
 
-// Add each image as its own looped input
 for (const f of uploaded) {
 args.push("-loop", "1", "-t", String(secondsPerImage), "-i", f.path);
 }
@@ -247,17 +337,7 @@ args.push("-loop", "1", "-t", String(secondsPerImage), "-i", f.path);
 const n = uploaded.length;
 const filter = `concat=n=${n}:v=1:a=0,format=yuv420p`;
 
-args.push(
-"-filter_complex",
-filter,
-"-r",
-"30",
-"-pix_fmt",
-"yuv420p",
-"-movflags",
-"+faststart",
-outPath
-);
+args.push("-filter_complex", filter, "-r", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath);
 
 await new Promise((resolve, reject) => {
 const ff = spawn("ffmpeg", args);
