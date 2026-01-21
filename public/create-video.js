@@ -71,7 +71,6 @@ return { raw: text };
 function extractVideoUrl(data) {
 if (!data) return null;
 
-// If backend returned plain text in JSON wrapper
 if (typeof data === "string") return data;
 
 const candidates = [
@@ -92,7 +91,6 @@ for (const c of candidates) {
 if (typeof c === "string" && c.trim()) return c.trim();
 }
 
-// If backend returned { raw: "https://..." }
 if (typeof data.raw === "string" && data.raw.includes("http")) {
 return data.raw.trim();
 }
@@ -109,23 +107,37 @@ function mapAspect(value) {
 if (value === "portrait") return "9:16";
 if (value === "landscape") return "16:9";
 if (value === "square") return "1:1";
-return value; // fallback
+return value;
 }
 
 /**
 * IMPORTANT:
-* Your console proves /api/text-to-video is 404.
-* So we try a shortlist of common routes and use the first that works.
+* 404 means: route does not exist on THIS server.
+* So we try the same names with and without "/api" prefix.
+*
+* This is the most common mismatch:
+* Frontend calls /api/xxx
+* Backend is actually /xxx (or vice versa)
 */
-const ENDPOINTS_TO_TRY = [
-"/api/text-to-video",
-"/api/text2video",
-"/api/t2v",
-"/api/veo",
-"/api/video",
-"/api/generate-video",
-"/api/generateVideo",
+const PATHS = [
+"text-to-video",
+"text2video",
+"t2v",
+"veo",
+"video",
+"generate-video",
+"generateVideo",
 ];
+
+// Build endpoints to try (both with and without /api)
+const ENDPOINTS_TO_TRY = [
+...PATHS.map((p) => `/api/${p}`),
+...PATHS.map((p) => `/${p}`),
+];
+
+// If you ever host API on a different service, you can hardcode base here:
+// const API_ORIGIN = "https://YOUR-API-SERVICE.onrender.com";
+const API_ORIGIN = ""; // same-origin (current Render host)
 
 async function postJSON(url, body) {
 const res = await fetch(url, {
@@ -134,7 +146,6 @@ headers: { "Content-Type": "application/json" },
 body: JSON.stringify(body),
 });
 
-// If route doesn't exist, res.status will often be 404
 const data = await safeJSON(res);
 return { res, data };
 }
@@ -169,21 +180,23 @@ showStatus("Generating video…");
 let lastErr = null;
 
 for (const endpoint of ENDPOINTS_TO_TRY) {
-try {
-console.log("Trying endpoint:", endpoint, payload);
+const fullUrl = `${API_ORIGIN}${endpoint}`;
 
-const { res, data } = await postJSON(endpoint, payload);
+try {
+console.log("Trying endpoint:", fullUrl, payload);
+
+const { res, data } = await postJSON(fullUrl, payload);
 
 // If 404, try next endpoint
 if (res.status === 404) {
-console.warn("404 on", endpoint);
+console.warn("404 on", fullUrl);
 continue;
 }
 
-// If not OK, show message + stop (this means route exists but error inside)
+// If not OK, stop (route exists but backend threw an error)
 if (!res.ok) {
-console.error("API error on", endpoint, res.status, data);
-lastErr = { endpoint, status: res.status, data };
+console.error("API error on", fullUrl, res.status, data);
+lastErr = { endpoint: fullUrl, status: res.status, data };
 break;
 }
 
@@ -191,12 +204,12 @@ break;
 const url = extractVideoUrl(data);
 
 if (!url) {
-console.error("No video URL returned from", endpoint, data);
-lastErr = { endpoint, status: res.status, data };
+console.error("No video URL returned from", fullUrl, data);
+lastErr = { endpoint: fullUrl, status: res.status, data };
 break;
 }
 
-console.log("Video generated from:", endpoint, url);
+console.log("Video generated from:", fullUrl, url);
 showVideo(url);
 
 // Optional: populate a clip slot in the UI (doesn't change layout)
@@ -208,14 +221,13 @@ if (firstClip) firstClip.classList.add("is-selected");
 generateBtn.disabled = false;
 return;
 } catch (e) {
-console.error("Request failed on", endpoint, e);
-lastErr = { endpoint, error: String(e) };
+console.error("Request failed on", fullUrl, e);
+lastErr = { endpoint: fullUrl, error: String(e) };
 }
 }
 
 generateBtn.disabled = false;
 
-// If we reach here, nothing worked.
 console.error("All endpoints failed.", lastErr);
 alert("Generate video failed. Check Render logs / Console.");
 showStatus("Generate video failed. Check Render logs / Console.");
@@ -244,7 +256,6 @@ if (generateBtn) generateBtn.addEventListener("click", generateVideo);
 // Optional: keep Next button UI-only for now
 if (nextBtn) {
 nextBtn.addEventListener("click", () => {
-// UI-only. We'll wire animation flow later.
 console.log("Next clicked (UI only for now).");
 });
 }
