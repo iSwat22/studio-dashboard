@@ -1,38 +1,60 @@
 // public/create-video.js
 // =======================================
-// Text → Video (Veo) FRONTEND
-// Matches backend polling architecture
+// Text → Video (create-video.html) FRONTEND
+// Uses your existing HTML IDs:
+// - #prompt
+// - #generateBtn
+// - #previewVideo
+// - #previewEmpty (used as status text)
 // =======================================
 
 console.log("✅ create-video.js loaded");
 
 document.addEventListener("DOMContentLoaded", () => {
-const promptInput = document.getElementById("t2vPrompt");
-const generateBtn = document.getElementById("t2vBtn");
-const statusEl = document.getElementById("t2vStatus");
-const videoEl = document.getElementById("t2vVideo");
+const promptInput = document.getElementById("prompt");
+const generateBtn = document.getElementById("generateBtn");
+const videoEl = document.getElementById("previewVideo");
+const statusEl = document.getElementById("previewEmpty"); // we use this as status box
 
-// If this page doesn't have the Text→Video UI, exit safely
-if (!promptInput || !generateBtn || !statusEl || !videoEl) {
-console.warn("⚠️ Text-to-Video elements not found");
+// If this page doesn’t have the right elements, bail safely
+if (!promptInput || !generateBtn || !videoEl || !statusEl) {
+console.warn("⚠️ Text-to-Video elements not found", {
+promptInput: !!promptInput,
+generateBtn: !!generateBtn,
+videoEl: !!videoEl,
+statusEl: !!statusEl,
+});
 return;
 }
 
-generateBtn.addEventListener("click", async () => {
-const prompt = promptInput.value.trim();
-
-if (!prompt) {
-statusEl.textContent = "❌ Please enter a prompt.";
-return;
+// Small helper: set status text
+function setStatus(msg) {
+statusEl.textContent = msg;
+statusEl.style.display = "block";
 }
 
-// Reset UI
-statusEl.textContent = "⏳ Starting video generation…";
-generateBtn.disabled = true;
+// Small helper: reset preview
+function resetVideo() {
+try {
 videoEl.pause();
+} catch {}
 videoEl.removeAttribute("src");
 videoEl.load();
 videoEl.style.display = "none";
+}
+
+generateBtn.addEventListener("click", async () => {
+const prompt = String(promptInput.value || "").trim();
+
+if (!prompt) {
+setStatus("❌ Please enter a prompt.");
+return;
+}
+
+// UI reset
+generateBtn.disabled = true;
+resetVideo();
+setStatus("⏳ Starting video generation…");
 
 try {
 // =========================
@@ -44,20 +66,20 @@ headers: { "Content-Type": "application/json" },
 body: JSON.stringify({ prompt }),
 });
 
-const startData = await startRes.json();
+const startData = await startRes.json().catch(() => ({}));
 
 if (!startRes.ok || !startData.ok || !startData.operationName) {
 throw new Error(startData?.error || "Failed to start video generation");
 }
 
 const operationName = startData.operationName;
-statusEl.textContent = "🎬 Generating video… (this can take ~1 minute)";
+setStatus("🎬 Generating video… (this can take a minute)");
 
 // =========================
 // STEP 2: Poll status
 // =========================
 let attempts = 0;
-const maxAttempts = 60; // ~2 minutes
+const maxAttempts = 60; // 60 * 2s = 120s
 
 while (attempts < maxAttempts) {
 await new Promise((r) => setTimeout(r, 2000));
@@ -69,19 +91,20 @@ headers: { "Content-Type": "application/json" },
 body: JSON.stringify({ operationName }),
 });
 
-const pollData = await pollRes.json();
+const pollData = await pollRes.json().catch(() => ({}));
 
 if (!pollRes.ok || !pollData.ok) {
 throw new Error(pollData?.error || "Polling failed");
 }
 
 if (!pollData.done) {
-statusEl.textContent = `⏳ Generating video… (${attempts * 2}s)`;
+setStatus(`⏳ Generating video… (${attempts * 2}s)`);
 continue;
 }
 
 // =========================
 // STEP 3: Video ready
+// Use proxyUrl first (best for <video> streaming on Render)
 // =========================
 const videoSrc = pollData.proxyUrl || pollData.videoUrl;
 
@@ -89,6 +112,8 @@ if (!videoSrc) {
 throw new Error("Video finished but no URL returned");
 }
 
+// Show video
+statusEl.style.display = "none";
 videoEl.src = videoSrc;
 videoEl.style.display = "block";
 videoEl.load();
@@ -96,19 +121,17 @@ videoEl.load();
 try {
 await videoEl.play();
 } catch {
-// Autoplay might be blocked — user can press play
+// Autoplay might be blocked — user can click play
 }
 
-statusEl.textContent = "✅ Video ready";
 generateBtn.disabled = false;
 return;
 }
 
-throw new Error("Video generation timed out");
-
+throw new Error("Video generation timed out (took too long).");
 } catch (err) {
 console.error("❌ Text-to-Video error:", err);
-statusEl.textContent = "❌ Error generating video";
+setStatus("❌ Error generating video (check Console + Network tab).");
 generateBtn.disabled = false;
 }
 });
