@@ -1,349 +1,249 @@
-import express from "express";
-import path from "path";
-import fs from "fs";
-import os from "os";
-import { spawn } from "child_process";
-import multer from "multer";
-import { fileURLToPath } from "url";
-import { Readable } from "stream";
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// ---- Path helpers (ES Modules) ----
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ---- Middleware ----
-app.use(express.json({ limit: "10mb" }));
-app.use(express.static(path.join(__dirname, "public")));
-
-// ---- Multer (uploads for image->video) ----
-const TMP_DIR = os.tmpdir();
-const upload = multer({
-storage: multer.diskStorage({
-destination: (req, file, cb) => cb(null, TMP_DIR),
-filename: (req, file, cb) => {
-const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-cb(null, `${Date.now()}_${Math.random().toString(16).slice(2)}_${safe}`);
-},
-}),
-limits: { fileSize: 8 * 1024 * 1024 },
-});
+/* create-video.js */
+console.log("create-video.js loaded");
 
 // ======================================================
-// Helpers
+// TEXT -> VIDEO (create-video.html)
+// - Starts job: POST /api/text-to-video
+// - Polls: POST /api/text-to-video/status
+// - Uses proxyUrl if returned
+// - Verifies the returned URL is REALLY a video (not HTML)
 // ======================================================
-function isHttpUrl(u) {
-try {
-const x = new URL(u);
-return x.protocol === "http:" || x.protocol === "https:";
-} catch {
-return false;
-}
-}
 
-// VERY IMPORTANT: prevent open-proxy abuse
-const VIDEO_PROXY_ALLOWLIST = [
-"storage.googleapis.com",
-"generativelanguage.googleapis.com",
-"googleapis.com",
-"quanne-leap-api.onrender.com",
-];
+const pickFirst = (...ids) =>
+ids.map((id) => document.getElementById(id)).find(Boolean);
 
-function isAllowedVideoHost(urlStr) {
-try {
-const u = new URL(urlStr);
-const host = u.hostname.toLowerCase();
-return VIDEO_PROXY_ALLOWLIST.some((allowed) => {
-allowed = allowed.toLowerCase();
-return host === allowed || host.endsWith("." + allowed);
-});
-} catch {
-return false;
-}
+const t2vPrompt = pickFirst("t2vPrompt", "prompt");
+const t2vBtn = pickFirst("t2vBtn", "generateBtn");
+const t2vStatus = pickFirst(
+"t2vStatus",
+"status",
+"statusText",
+"outputStatus",
+"previewEmpty"
+);
+const t2vVideo = pickFirst("t2vVideo", "resultVideo", "video", "previewVideo");
+
+const downloadBtn = pickFirst("downloadBtn");
+const deleteBtn = pickFirst("deleteBtn");
+const saveToAssetsBtn = pickFirst("saveToAssetsBtn");
+
+const t2vDuration = pickFirst("t2vDuration", "duration");
+const t2vAspect = pickFirst("t2vAspect", "aspect");
+
+function setT2vStatus(msg) {
+if (t2vStatus) t2vStatus.textContent = msg;
+console.log("[T2V]", msg);
 }
 
-// ======================================================
-// Video Proxy (fixes Range streaming issues when needed)
-// ======================================================
-app.get("/api/video-proxy", async (req, res) => {
-try {
-const url = String(req.query?.url || "").trim();
-if (!url) return res.status(400).send("Missing url");
-if (!isHttpUrl(url)) return res.status(400).send("Invalid url");
-if (!isAllowedVideoHost(url)) return res.status(403).send("Host not allowed");
-
-const range = req.headers.range;
-
-const upstream = await fetch(url, {
-method: "GET",
-headers: range ? { Range: range } : {},
-});
-
-// allow 200 or 206
-if (!upstream.ok && upstream.status !== 206) {
-const txt = await upstream.text().catch(() => "");
-return res.status(upstream.status).send(txt || `Upstream error ${upstream.status}`);
+function hideT2vButtons() {
+if (downloadBtn) downloadBtn.style.display = "none";
+if (deleteBtn) deleteBtn.style.display = "none";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "none";
 }
 
-const contentType = upstream.headers.get("content-type") || "video/mp4";
-const contentLength = upstream.headers.get("content-length");
-const contentRange = upstream.headers.get("content-range");
-const acceptRanges = upstream.headers.get("accept-ranges") || "bytes";
-
-res.setHeader("Content-Type", contentType);
-res.setHeader("Accept-Ranges", acceptRanges);
-if (contentLength) res.setHeader("Content-Length", contentLength);
-if (contentRange) res.setHeader("Content-Range", contentRange);
-
-if (upstream.status === 206) res.status(206);
-
-// Convert Web ReadableStream -> Node stream
-const nodeStream = Readable.fromWeb(upstream.body);
-nodeStream.pipe(res);
-} catch (err) {
-console.error("video-proxy error:", err);
-res.status(500).send("Proxy error");
+function showT2vButtons(finalUrl) {
+if (downloadBtn) {
+downloadBtn.href = finalUrl;
+downloadBtn.download = "quanneleap-text-video.mp4";
+downloadBtn.style.display = "inline-flex";
 }
-});
-
-// ---- Health check ----
-app.get("/api/health", (req, res) => {
-res.json({
-ok: true,
-status: "healthy",
-node: process.version,
-hasGoogleApiKey: Boolean(process.env.GOOGLE_API_KEY),
-hasGeminiVideoKey: Boolean(process.env.GEMINI_API_KEY_VIDEO),
-});
-});
-
-// =========================================================
-// TEXT -> IMAGE (Gemini 3 Pro Image via API KEY)
-// Needs: GOOGLE_API_KEY in Render env vars
-// =========================================================
-app.post("/api/text-to-image", async (req, res) => {
-try {
-const prompt = (req.body?.prompt || "").trim();
-if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
-
-const API_KEY = process.env.GOOGLE_API_KEY;
-if (!API_KEY) {
-return res.status(500).json({
-ok: false,
-error: "Missing GOOGLE_API_KEY in Render Environment.",
-});
+if (deleteBtn) deleteBtn.style.display = "inline-flex";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "inline-flex";
 }
 
-const url =
-"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent";
-
+async function startTextToVideoJob(prompt, options) {
 const payload = {
-contents: [{ parts: [{ text: prompt }] }],
-generationConfig: {
-imageConfig: { aspectRatio: "1:1", imageSize: "1024" },
-},
+prompt,
+// send both names so backend can match whatever
+aspectRatio: options.aspectRatio,
+durationSeconds: options.durationSeconds,
 };
 
-const apiRes = await fetch(url, {
+const res = await fetch("/api/text-to-video", {
 method: "POST",
-headers: {
-"Content-Type": "application/json",
-"x-goog-api-key": API_KEY,
-},
+headers: { "Content-Type": "application/json" },
 body: JSON.stringify(payload),
 });
 
-const text = await apiRes.text();
-let data;
+const data = await res.json().catch(() => ({}));
+console.log("startTextToVideoJob response:", res.status, data);
+
+if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start video job");
+if (!data.operationName) throw new Error("Server did not return operationName");
+
+return data.operationName;
+}
+
+async function pollTextToVideo(operationName) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const maxAttempts = 120;
+
+for (let i = 1; i <= maxAttempts; i++) {
+setT2vStatus(`Generating video… (${i}/${maxAttempts})`);
+await sleep(3000);
+
+const res = await fetch("/api/text-to-video/status", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ operationName }),
+});
+
+const data = await res.json().catch(() => ({}));
+if (i === 1 || i % 5 === 0) console.log("pollTextToVideo tick:", i, res.status, data);
+
+if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
+
+if (data.done) {
+console.log("pollTextToVideo DONE:", data);
+
+// IMPORTANT: Prefer proxyUrl if the backend provides it
+// because proxyUrl is designed to play nicely in <video>.
+const finalUrl = (data.proxyUrl || data.videoUrl || data.url || data.uri || "").trim();
+
+if (!finalUrl) throw new Error("Done, but server returned no video URL");
+return { url: finalUrl };
+}
+}
+
+throw new Error("Timed out waiting for the video to finish");
+}
+
+// HEAD check to confirm the URL is actually a video file.
+// If the server is returning index.html, content-type will be text/html.
+async function verifyVideoUrl(url) {
 try {
-data = JSON.parse(text);
-} catch {
-return res.status(500).json({
+const res = await fetch(url, { method: "HEAD" });
+const ct = (res.headers.get("content-type") || "").toLowerCase();
+console.log("[T2V] HEAD", url, res.status, ct);
+
+// If your server doesn't support HEAD for the proxy route, this may 405.
+// We'll treat 405 as "unknown but try anyway".
+if (res.status === 405) return { ok: true, note: "HEAD not allowed; trying video load anyway." };
+
+if (!res.ok) return { ok: false, reason: `URL returned ${res.status}` };
+
+if (ct.includes("text/html")) {
+return {
 ok: false,
-error: "Gemini returned non-JSON response",
-raw: text.slice(0, 500),
-});
+reason:
+"URL is returning HTML (your home page), not a video file. This means the mp4 path is wrong or file isn't in /public.",
+};
 }
 
-if (!apiRes.ok) {
-return res.status(apiRes.status).json({
-ok: false,
-error: data?.error?.message || "Gemini request failed",
-details: data,
-});
+// best case: video/*
+if (ct.includes("video/")) return { ok: true };
+
+// Some servers return application/octet-stream for mp4; accept that too.
+if (ct.includes("application/octet-stream")) return { ok: true };
+
+return { ok: true, note: `Unexpected content-type (${ct}), trying anyway.` };
+} catch (e) {
+return { ok: true, note: "HEAD check failed; trying video load anyway." };
+}
 }
 
-const parts = data?.candidates?.[0]?.content?.parts || [];
-const imagePart = parts.find((p) => p.inlineData && p.inlineData.data);
+if (t2vPrompt && t2vBtn && t2vVideo) {
+let lastObjectUrl = null;
 
-if (!imagePart) {
-return res.status(500).json({
-ok: false,
-error: "No image returned from model",
-details: data,
-});
+function clearT2vUI() {
+if (lastObjectUrl) {
+URL.revokeObjectURL(lastObjectUrl);
+lastObjectUrl = null;
 }
 
-const mimeType = imagePart.inlineData.mimeType || "image/png";
-const base64 = imagePart.inlineData.data;
+try { t2vVideo.pause?.(); } catch {}
+t2vVideo.removeAttribute("src");
+t2vVideo.load?.();
+t2vVideo.style.display = "none";
 
-return res.json({ ok: true, mimeType, base64 });
-} catch (err) {
-console.error("text-to-image error:", err);
-return res.status(500).json({ ok: false, error: err.message || "Server error" });
+hideT2vButtons();
+setT2vStatus("Your generated video will appear here.");
 }
-});
 
-// ======================================================
-// TEXT → VIDEO (placeholder wiring test)
-// - returns a REAL static file so the <video> can load
-// - you MUST have: /public/demo.mp4
-// ======================================================
-const videoJobs = new Map();
+async function setVideoSrc(url) {
+// add cache-buster so it reloads
+const final = url.includes("?") ? `${url}&t=${Date.now()}` : `${url}?t=${Date.now()}`;
 
-app.post("/api/text-to-video", async (req, res) => {
+t2vVideo.style.display = "block";
+t2vVideo.controls = true;
+t2vVideo.playsInline = true;
+
+t2vVideo.onerror = () => {
+console.error("[T2V] <video> failed to load:", final, t2vVideo.error);
+setT2vStatus("❌ Browser could not load the video. Open Network tab and click the video request.");
+};
+
+t2vVideo.onloadeddata = () => {
+console.log("[T2V] Video loaded OK");
+setT2vStatus("✅ Video ready");
+};
+
+console.log("[T2V] Setting video src:", final);
+t2vVideo.src = final;
+t2vVideo.load?.();
+
+// autoplay attempt (might be blocked, that’s fine)
 try {
-const prompt = (req.body?.prompt || "").trim();
-if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
-
-// Keep key check, but we’re still in placeholder mode
-const API_KEY = process.env.GEMINI_API_KEY_VIDEO;
-if (!API_KEY) {
-return res.status(500).json({
-ok: false,
-error: "Missing GEMINI_API_KEY_VIDEO in environment",
-});
+await t2vVideo.play?.();
+} catch (e) {
+console.warn("[T2V] Autoplay blocked (normal). Click play.", e);
+}
 }
 
-const operationName = `veo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+async function generateT2v(prompt) {
+t2vBtn.disabled = true;
+clearT2vUI();
 
-videoJobs.set(operationName, {
-done: false,
-createdAt: Date.now(),
-videoUrl: null,
-});
+// Your UI now uses: duration + aspect (not t2vDuration/t2vAspect)
+const durationSeconds = Number(t2vDuration?.value || 8);
 
-// Simulate generation; when done, point to LOCAL static file
-setTimeout(() => {
-videoJobs.set(operationName, {
-done: true,
-// This MUST exist at /public/demo.mp4
-videoUrl: "/demo.mp4",
-});
-}, 3000);
-
-return res.json({ ok: true, operationName });
-} catch (err) {
-console.error("text-to-video error:", err);
-return res.status(500).json({ ok: false, error: err.message || "Server error" });
-}
-});
-
-app.post("/api/text-to-video/status", async (req, res) => {
-try {
-const { operationName } = req.body || {};
-if (!operationName) return res.status(400).json({ ok: false, error: "Missing operationName" });
-
-const job = videoJobs.get(operationName);
-if (!job) return res.status(404).json({ ok: false, error: "Unknown operation" });
-
-if (!job.done) return res.json({ ok: true, done: false });
-
-// If it’s a local URL (/demo.mp4), no proxy needed.
-return res.json({
-ok: true,
-done: true,
-videoUrl: job.videoUrl,
-proxyUrl: null,
-});
-} catch (err) {
-console.error("text-to-video status error:", err);
-return res.status(500).json({ ok: false, error: err.message || "Server error" });
-}
-});
-
-// =========================================================
-// IMAGE -> VIDEO (FFmpeg slideshow)
-// =========================================================
-app.post("/api/image-to-video", upload.array("images", 20), async (req, res) => {
-const uploaded = req.files || [];
-const secondsPerImage = Number(req.body?.secondsPerImage ?? 1.5);
-
-if (!uploaded.length) return res.status(400).json({ ok: false, error: "No images uploaded" });
-if (!Number.isFinite(secondsPerImage) || secondsPerImage <= 0 || secondsPerImage > 10) {
-return res.status(400).json({ ok: false, error: "secondsPerImage must be between 0 and 10" });
-}
-
-const outPath = path.join(
-TMP_DIR,
-`out_${Date.now()}_${Math.random().toString(16).slice(2)}.mp4`
-);
+// Your dropdown has values: portrait / landscape (etc) — but backend expects "9:16" etc.
+// We’ll translate safely:
+const aspectValue = String(t2vAspect?.value || "portrait");
+const aspectRatio =
+aspectValue === "portrait" ? "9:16" :
+aspectValue === "landscape" ? "16:9" :
+aspectValue === "square" ? "1:1" :
+aspectValue; // fallback
 
 try {
-const args = ["-y"];
+setT2vStatus("Starting video job…");
+const opName = await startTextToVideoJob(prompt, { durationSeconds, aspectRatio });
 
-for (const f of uploaded) {
-args.push("-loop", "1", "-t", String(secondsPerImage), "-i", f.path);
+const result = await pollTextToVideo(opName);
+
+// Use returned URL
+const url = result.url;
+showT2vButtons(url);
+
+// VERIFY it’s really a video
+const check = await verifyVideoUrl(url);
+if (!check.ok) {
+console.error("[T2V] verify failed:", check.reason, url);
+setT2vStatus(`❌ ${check.reason}`);
+return;
+} else if (check.note) {
+console.log("[T2V] verify note:", check.note);
 }
 
-const n = uploaded.length;
-const filter = `concat=n=${n}:v=1:a=0,format=yuv420p`;
-
-args.push(
-"-filter_complex",
-filter,
-"-r",
-"30",
-"-pix_fmt",
-"yuv420p",
-"-movflags",
-"+faststart",
-outPath
-);
-
-await new Promise((resolve, reject) => {
-const ff = spawn("ffmpeg", args);
-let errBuf = "";
-ff.stderr.on("data", (d) => (errBuf += d.toString()));
-ff.on("close", (code) => {
-if (code === 0) return resolve();
-reject(new Error(`FFmpeg failed (code ${code}). ${errBuf.slice(-900)}`));
-});
-});
-
-res.setHeader("Content-Type", "video/mp4");
-res.setHeader("Content-Disposition", 'inline; filename="slideshow.mp4"');
-
-const stream = fs.createReadStream(outPath);
-stream.pipe(res);
-
-stream.on("close", () => {
-try { fs.unlinkSync(outPath); } catch {}
-for (const f of uploaded) {
-try { fs.unlinkSync(f.path); } catch {}
-}
-});
+await setVideoSrc(url);
 } catch (err) {
-console.error("image-to-video error:", err);
-
-try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch {}
-for (const f of uploaded) {
-try { fs.unlinkSync(f.path); } catch {}
+console.error(err);
+setT2vStatus(`❌ ${err.message || err}`);
+hideT2vButtons();
+} finally {
+t2vBtn.disabled = false;
+}
 }
 
-return res.status(500).json({ ok: false, error: err.message || "Server error" });
+t2vBtn.addEventListener("click", () => {
+const prompt = (t2vPrompt.value || "").trim();
+if (!prompt) return setT2vStatus("Please enter a prompt.");
+generateT2v(prompt);
+});
+
+if (deleteBtn) deleteBtn.addEventListener("click", clearT2vUI);
+} else {
+console.log("[T2V] create-video.js: required elements not found on this page.");
 }
-});
-
-// ---- Fallback to index.html ----
-app.get("*", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-app.listen(PORT, () => {
-console.log(`Server running on port ${PORT}`);
-});
-
 
