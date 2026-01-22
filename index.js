@@ -1,5 +1,3 @@
-// index.js (FULL FILE) — replace your entire index.js with this exactly
-
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -7,6 +5,7 @@ import os from "os";
 import { spawn } from "child_process";
 import multer from "multer";
 import { fileURLToPath } from "url";
+import { Readable } from "stream";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -45,7 +44,6 @@ return false;
 }
 
 // VERY IMPORTANT: prevent open-proxy abuse
-// Add domains you trust your app to proxy video from.
 const VIDEO_PROXY_ALLOWLIST = [
 "storage.googleapis.com",
 "generativelanguage.googleapis.com",
@@ -67,18 +65,15 @@ return false;
 }
 
 // ======================================================
-// Video Proxy (fixes 403/404 + Range streaming issues)
-// Browser loads THIS url instead of raw remote url.
+// Video Proxy (fixes Range streaming issues when needed)
 // ======================================================
 app.get("/api/video-proxy", async (req, res) => {
 try {
 const url = String(req.query?.url || "").trim();
 if (!url) return res.status(400).send("Missing url");
-
 if (!isHttpUrl(url)) return res.status(400).send("Invalid url");
 if (!isAllowedVideoHost(url)) return res.status(403).send("Host not allowed");
 
-// Forward Range header if present (required for video <video> seeking)
 const range = req.headers.range;
 
 const upstream = await fetch(url, {
@@ -86,13 +81,12 @@ method: "GET",
 headers: range ? { Range: range } : {},
 });
 
-// If upstream says no, pass it through (helps you debug)
+// allow 200 or 206
 if (!upstream.ok && upstream.status !== 206) {
 const txt = await upstream.text().catch(() => "");
 return res.status(upstream.status).send(txt || `Upstream error ${upstream.status}`);
 }
 
-// Set headers so the browser can play it
 const contentType = upstream.headers.get("content-type") || "video/mp4";
 const contentLength = upstream.headers.get("content-length");
 const contentRange = upstream.headers.get("content-range");
@@ -100,15 +94,14 @@ const acceptRanges = upstream.headers.get("accept-ranges") || "bytes";
 
 res.setHeader("Content-Type", contentType);
 res.setHeader("Accept-Ranges", acceptRanges);
-
 if (contentLength) res.setHeader("Content-Length", contentLength);
 if (contentRange) res.setHeader("Content-Range", contentRange);
 
-// If upstream is partial, we must return 206
 if (upstream.status === 206) res.status(206);
 
-// Stream body
-upstream.body.pipe(res);
+// Convert Web ReadableStream -> Node stream
+const nodeStream = Readable.fromWeb(upstream.body);
+nodeStream.pipe(res);
 } catch (err) {
 console.error("video-proxy error:", err);
 res.status(500).send("Proxy error");
@@ -204,18 +197,18 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 });
 
 // ======================================================
-// TEXT → VIDEO (Gemini / Veo)
-// Needs: GEMINI_API_KEY_VIDEO in Render env vars
+// TEXT → VIDEO (placeholder wiring test)
+// - returns a REAL static file so the <video> can load
+// - you MUST have: /public/demo.mp4
 // ======================================================
-const videoJobs = new Map(); // in-memory job store
+const videoJobs = new Map();
 
 app.post("/api/text-to-video", async (req, res) => {
 try {
 const prompt = (req.body?.prompt || "").trim();
-if (!prompt) {
-return res.status(400).json({ ok: false, error: "Missing prompt" });
-}
+if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
+// Keep key check, but we’re still in placeholder mode
 const API_KEY = process.env.GEMINI_API_KEY_VIDEO;
 if (!API_KEY) {
 return res.status(500).json({
@@ -224,100 +217,61 @@ error: "Missing GEMINI_API_KEY_VIDEO in environment",
 });
 }
 
-// Create fake operation ID (Veo is async)
 const operationName = `veo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-// Store job (placeholder until Veo callback)
 videoJobs.set(operationName, {
 done: false,
 createdAt: Date.now(),
 videoUrl: null,
 });
 
-// TODO: Replace with real Veo call.
-// For now: simulate async processing and point to your local test file.
+// Simulate generation; when done, point to LOCAL static file
 setTimeout(() => {
 videoJobs.set(operationName, {
 done: true,
-// IMPORTANT: This must exist at: /public/assets/test.mp4
-videoUrl: "https://quanne-leap-api.onrender.com/assets/test.mp4",
+// This MUST exist at /public/demo.mp4
+videoUrl: "/demo.mp4",
 });
-}, 8000);
+}, 3000);
 
-return res.json({
-ok: true,
-operationName,
-});
+return res.json({ ok: true, operationName });
 } catch (err) {
 console.error("text-to-video error:", err);
-return res.status(500).json({
-ok: false,
-error: err.message || "Server error",
-});
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
 }
 });
 
 app.post("/api/text-to-video/status", async (req, res) => {
 try {
 const { operationName } = req.body || {};
-if (!operationName) {
-return res.status(400).json({
-ok: false,
-error: "Missing operationName",
-});
-}
+if (!operationName) return res.status(400).json({ ok: false, error: "Missing operationName" });
 
 const job = videoJobs.get(operationName);
-if (!job) {
-return res.status(404).json({
-ok: false,
-error: "Unknown operation",
-});
-}
+if (!job) return res.status(404).json({ ok: false, error: "Unknown operation" });
 
-if (!job.done) {
-return res.json({
-ok: true,
-done: false,
-});
-}
+if (!job.done) return res.json({ ok: true, done: false });
 
-const videoUrl = job.videoUrl;
-
-// Return BOTH:
-// - videoUrl (raw, for debugging)
-// - proxyUrl (what the browser should actually load)
-const proxyUrl = videoUrl
-? `/api/video-proxy?url=${encodeURIComponent(videoUrl)}`
-: null;
-
+// If it’s a local URL (/demo.mp4), no proxy needed.
 return res.json({
 ok: true,
 done: true,
-videoUrl,
-proxyUrl,
+videoUrl: job.videoUrl,
+proxyUrl: null,
 });
 } catch (err) {
 console.error("text-to-video status error:", err);
-return res.status(500).json({
-ok: false,
-error: err.message || "Server error",
-});
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
 }
 });
 
 // =========================================================
 // IMAGE -> VIDEO (FFmpeg slideshow)
-// Upload field name MUST be: images (multiple)
-// Optional: secondsPerImage (default 1.5)
 // =========================================================
 app.post("/api/image-to-video", upload.array("images", 20), async (req, res) => {
 const uploaded = req.files || [];
 const secondsPerImage = Number(req.body?.secondsPerImage ?? 1.5);
 
-if (!uploaded.length) {
-return res.status(400).json({ ok: false, error: "No images uploaded" });
-}
+if (!uploaded.length) return res.status(400).json({ ok: false, error: "No images uploaded" });
 if (!Number.isFinite(secondsPerImage) || secondsPerImage <= 0 || secondsPerImage > 10) {
 return res.status(400).json({ ok: false, error: "secondsPerImage must be between 0 and 10" });
 }
@@ -337,14 +291,22 @@ args.push("-loop", "1", "-t", String(secondsPerImage), "-i", f.path);
 const n = uploaded.length;
 const filter = `concat=n=${n}:v=1:a=0,format=yuv420p`;
 
-args.push("-filter_complex", filter, "-r", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath);
+args.push(
+"-filter_complex",
+filter,
+"-r",
+"30",
+"-pix_fmt",
+"yuv420p",
+"-movflags",
+"+faststart",
+outPath
+);
 
 await new Promise((resolve, reject) => {
 const ff = spawn("ffmpeg", args);
 let errBuf = "";
-
 ff.stderr.on("data", (d) => (errBuf += d.toString()));
-
 ff.on("close", (code) => {
 if (code === 0) return resolve();
 reject(new Error(`FFmpeg failed (code ${code}). ${errBuf.slice(-900)}`));
@@ -358,25 +320,17 @@ const stream = fs.createReadStream(outPath);
 stream.pipe(res);
 
 stream.on("close", () => {
-try {
-fs.unlinkSync(outPath);
-} catch {}
+try { fs.unlinkSync(outPath); } catch {}
 for (const f of uploaded) {
-try {
-fs.unlinkSync(f.path);
-} catch {}
+try { fs.unlinkSync(f.path); } catch {}
 }
 });
 } catch (err) {
 console.error("image-to-video error:", err);
 
-try {
-if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
-} catch {}
+try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch {}
 for (const f of uploaded) {
-try {
-fs.unlinkSync(f.path);
-} catch {}
+try { fs.unlinkSync(f.path); } catch {}
 }
 
 return res.status(500).json({ ok: false, error: err.message || "Server error" });
