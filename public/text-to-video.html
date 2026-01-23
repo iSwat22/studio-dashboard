@@ -1,24 +1,27 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Text → Video • QuannaLeap.AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" href="./style.css" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quanne Leap — Text → Video</title>
+<link rel="stylesheet" href="style.css" />
 </head>
 
 <body class="bg-stars" data-mode="text-to-video">
-<!-- TOPBAR -->
 <header class="topbar">
-<div class="topbar-left">
-<a class="brand" href="./index.html">
-<img class="brand-logo" src="./logo.png?v=2" alt="QuannaLeap.AI logo" />
-</a>
+<div class="brand">
+<div class="logo">QL</div>
+<div class="brandText">
+<div class="brandName">Quanna Leap</div>
+<div class="brandTag">Create in the future.</div>
+</div>
+</div>
 
 <div class="topRight">
 <a class="pill btn" href="index.html">← Home</a>
 <span class="pill plan" id="planPill">Platinum</span>
 <span class="pill stars" id="starsPill">★ ∞</span>
+
 <div class="profile" id="profileBox">
 <div class="avatar" id="avatarCircle">K</div>
 <div class="profileMeta">
@@ -28,7 +31,6 @@
 </div>
 </div>
 </header>
-
 
 <div class="app">
 <main class="main">
@@ -59,7 +61,7 @@ Your generated video will appear here.
 <!-- PROMPT -->
 <div class="prompt-shell">
 
-<!-- NEW: Settings row (Duration + Aspect Ratio) -->
+<!-- Settings row (Duration + Aspect Ratio) -->
 <div class="actions-row" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
 <label style="display:flex; align-items:center; gap:8px;">
 <span style="opacity:.85;">Length</span>
@@ -93,7 +95,6 @@ placeholder='Example: "A cinematic 3D city at sunset"'
 <div class="actions-row">
 <button id="t2vBtn" type="button" class="primary-btn">Generate Video</button>
 
-<!-- NEW: Save to Assets button (UI only for now) -->
 <button id="saveToAssetsBtn" type="button" class="ghost-btn" style="display:none;">
 ⭐ Save to Assets
 </button>
@@ -121,4 +122,3 @@ Tip: Pick a length + format, then generate. After it’s ready you can save, dow
 <script src="./script.js" defer></script>
 </body>
 </html>
-
