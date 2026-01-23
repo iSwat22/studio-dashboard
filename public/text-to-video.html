@@ -3,11 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Quanne Leap — Text → Video</title>
-<link rel="stylesheet" href="style.css" />
+<title>Quanna Leap — Text → Video</title>
+<link rel="stylesheet" href="./style.css" />
 </head>
 
 <body class="bg-stars" data-mode="text-to-video">
+
+<!-- ✅ NEW STYLE TOPBAR (KEEP) -->
 <header class="topbar">
 <div class="brand">
 <div class="logo">QL</div>
@@ -32,6 +34,7 @@
 </div>
 </header>
 
+<!-- ✅ PAGE CONTENT (KEEP OLD WORKING IDs) -->
 <div class="app">
 <main class="main">
 <div class="page-wrap">
@@ -61,7 +64,7 @@ Your generated video will appear here.
 <!-- PROMPT -->
 <div class="prompt-shell">
 
-<!-- Settings row (Duration + Aspect Ratio) -->
+<!-- Settings row -->
 <div class="actions-row" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
 <label style="display:flex; align-items:center; gap:8px;">
 <span style="opacity:.85;">Length</span>
@@ -118,7 +121,7 @@ Tip: Pick a length + format, then generate. After it’s ready you can save, dow
 </main>
 </div>
 
-<!-- defer makes sure script runs after HTML exists -->
+<!-- ✅ IMPORTANT: use your existing working script -->
 <script src="./script.js" defer></script>
 </body>
 </html>
