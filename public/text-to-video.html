@@ -1,17 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>Text → Video • QuanneLeap.AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quanne Leap — Text → Video</title>
 
+<!-- Your main site styling -->
 <link rel="stylesheet" href="./style.css" />
+<!-- The layout styling that makes the create-video page look right -->
 <link rel="stylesheet" href="./create-video.css" />
 </head>
 
 <body class="bg-stars" data-mode="text-to-video">
 
-<!-- TOPBAR -->
+<!-- TOPBAR (same as rest of site) -->
 <header class="topbar">
 <div class="brand">
 <div class="logo">QL</div>
@@ -36,7 +38,6 @@
 </div>
 </header>
 
-<!-- APP -->
 <div class="app">
 <main class="main">
 <div class="page-wrap">
@@ -44,19 +45,18 @@
 <!-- HERO -->
 <section class="hero hero-video">
 <h1>Text → Video</h1>
-<p>Generate short video clips from prompts.</p>
+<p>Generate short video clips from prompts. (Using <strong>/api/text-to-video</strong>)</p>
 </section>
 
-<!-- 3-column layout -->
+<!-- 3-column layout (matches create-video look) -->
 <section class="create-panel create-panel--video">
 
-<!-- LEFT: PROMPT + THEMES -->
+<!-- LEFT: Prompt -->
 <aside class="panel-left">
 <div class="panel-title">
-<h3>Prompt + Theme</h3>
+<h3>Prompt</h3>
 </div>
 
-<!-- IMPORTANT: keep WORKING ID = t2vPrompt -->
 <div class="prompt-shell">
 <label class="field-label" for="t2vPrompt">Prompt</label>
 <textarea
@@ -65,17 +65,21 @@ class="prompt-input"
 placeholder='Example: "A cinematic 3D city at sunset, smooth camera move, dramatic lighting"'
 ></textarea>
 
-<div class="actions-row">
-<!-- IMPORTANT: keep WORKING ID = t2vBtn -->
-<button id="t2vBtn" class="primary-btn" type="button">Generate</button>
+<div class="actions-row ql-actions-row">
+<button id="t2vBtn" type="button" class="primary-btn">Generate</button>
 
-<!-- optional buttons (safe for your script.js) -->
-<button id="saveToAssetsBtn" class="ghost-btn" type="button" style="display:none;">
+<!-- optional buttons (kept for your script compatibility) -->
+<button id="saveToAssetsBtn" type="button" class="ghost-btn" style="display:none;">
 ⭐ Save to Assets
 </button>
 
-<a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">Download</a>
-<button id="deleteBtn" class="danger-btn" type="button" style="display:none;">Delete</button>
+<a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">
+Download
+</a>
+
+<button id="deleteBtn" class="danger-btn" type="button" style="display:none;">
+Delete
+</button>
 </div>
 
 <div class="help-text">
@@ -83,35 +87,35 @@ Tip: Keep it short and clear. Generate, then refine.
 </div>
 </div>
 
-<!-- Theme cards (UI only) -->
+<!-- OPTIONAL Theme tiles (visual only, won’t break your JS) -->
 <div class="picker-shell">
 <div class="picker-header">
 <span class="field-label">Pick Theme (optional)</span>
 </div>
 
 <div id="themeGrid" class="card-grid">
-<button class="pick-card is-selected" type="button" data-theme="kids-story" title="Kids Story">
+<button class="pick-card" type="button" title="Kids Story">
 <div class="thumb">
 <img src="/public/Kids_Story.jpeg" alt="Kids Story" onerror="this.style.display='none';" />
 </div>
 <div class="caption">Kids Story</div>
 </button>
 
-<button class="pick-card" type="button" data-theme="biblical-epic" title="Biblical Epic">
+<button class="pick-card" type="button" title="Biblical Epic">
 <div class="thumb">
 <img src="/public/Biblical_Epic.jpeg" alt="Biblical Epic" onerror="this.style.display='none';" />
 </div>
 <div class="caption">Biblical Epic</div>
 </button>
 
-<button class="pick-card" type="button" data-theme="neon-heist" title="Neon City Heist">
+<button class="pick-card" type="button" title="Neon City Heist">
 <div class="thumb">
 <img src="/public/Neon_City_Heist.jpeg" alt="Neon City Heist" onerror="this.style.display='none';" />
 </div>
 <div class="caption">Neon City Heist</div>
 </button>
 
-<button class="pick-card" type="button" data-theme="future-ops" title="Future Ops">
+<button class="pick-card" type="button" title="Future Ops">
 <div class="thumb">
 <img src="/public/Future_Ops.jpeg" alt="Future Ops" onerror="this.style.display='none';" />
 </div>
@@ -120,19 +124,20 @@ Tip: Keep it short and clear. Generate, then refine.
 </div>
 
 <div class="help-text">
-(Optional) Theme helps keep your clips visually consistent.
+Optional: Theme helps keep your clips visually consistent.
 </div>
 </div>
 </aside>
 
-<!-- CENTER: PREVIEW (YouTube-size 16:9 behavior comes from CSS) -->
+<!-- CENTER: Preview + Clips strip (THIS is what you said is missing) -->
 <section class="panel-center">
 <div class="panel-title">
 <h3>Preview</h3>
 </div>
 
+<!-- 16:9 frame so preview is YouTube sized -->
 <div class="preview-shell preview-shell--video">
-<!-- IMPORTANT: keep WORKING ID = t2vVideo -->
+<div class="video-frame video-frame--16x9">
 <video
 id="t2vVideo"
 class="result-preview result-preview--video"
@@ -141,46 +146,80 @@ playsinline
 style="display:none;"
 ></video>
 
-<!-- IMPORTANT: keep WORKING ID = t2vStatus -->
-<div id="t2vStatus" class="help-text">
+<div id="t2vStatus" class="help-text preview-empty">
 Your generated video will appear here.
+</div>
+</div>
+</div>
+
+<!-- Bottom Clips strip -->
+<div class="storyboard-shell">
+<div class="storyboard-header">
+<span class="field-label">Clips (generated)</span>
+<span class="muted">Pick clips to animate</span>
+</div>
+
+<div class="storyboard-strip">
+<button class="storyboard-nav" type="button" id="clipsPrev" aria-label="Previous clips">‹</button>
+
+<div id="clipsStrip" class="storyboard-track">
+<button class="clip-card is-selected" type="button" data-clip="01">
+<div class="clip-thumb"><span class="clip-num">01</span></div>
+<div class="clip-label">Clip 01</div>
+</button>
+
+<button class="clip-card" type="button" data-clip="02">
+<div class="clip-thumb"><span class="clip-num">02</span></div>
+<div class="clip-label">Clip 02</div>
+</button>
+
+<button class="clip-card" type="button" data-clip="03">
+<div class="clip-thumb"><span class="clip-num">03</span></div>
+<div class="clip-label">Clip 03</div>
+</button>
+
+<button class="clip-card" type="button" data-clip="04">
+<div class="clip-thumb"><span class="clip-num">04</span></div>
+<div class="clip-label">Clip 04</div>
+</button>
+</div>
+
+<button class="storyboard-nav" type="button" id="clipsNext" aria-label="Next clips">›</button>
+</div>
+
+<div class="help-text">
+After generating clips, select the ones you want, then click Next.
 </div>
 </div>
 </section>
 
-<!-- RIGHT: SETTINGS -->
+<!-- RIGHT: Settings + Status -->
 <aside class="panel-right">
 <div class="panel-title">
 <h3>Settings</h3>
 </div>
 
 <div class="settings-shell">
-<!-- IMPORTANT: keep WORKING IDs = t2vAspect + t2vDuration -->
 <label class="field-label" for="t2vAspect">Aspect Ratio</label>
 <select id="t2vAspect" class="select">
 <option value="16:9" selected>YouTube (16:9)</option>
-<option value="9:16">Shorts / TikTok (9:16)</option>
+<option value="9:16">YouTube Shorts / TikTok (9:16)</option>
 <option value="1:1">Square (1:1)</option>
 </select>
 
 <label class="field-label" for="t2vDuration">Clip Length</label>
 <select id="t2vDuration" class="select">
 <option value="8" selected>8 seconds</option>
-<option value="12">12 seconds</option>
-<option value="16">16 seconds</option>
+<option value="10">10 seconds</option>
+<option value="15">15 seconds</option>
 <option value="30">30 seconds</option>
 <option value="60">1 minute</option>
 <option value="120">2 minutes</option>
 <option value="300">5 minutes</option>
-<option value="600">10 minutes</option>
-<option value="900">15 minutes</option>
-<option value="1200">20 minutes</option>
-<option value="1800">30 minutes</option>
-  
 </select>
 
-<div class="help-text">
-Pick your aspect + length, then click <b>Generate</b>.
+<div class="help-text" id="t2vRightStatus">
+Pick your format + length, then Generate.
 </div>
 </div>
 </aside>
@@ -190,7 +229,7 @@ Pick your aspect + length, then click <b>Generate</b>.
 </main>
 </div>
 
-<!-- IMPORTANT: keep using your working script -->
+<!-- KEEP your working script -->
 <script src="./script.js" defer></script>
 </body>
 </html>
