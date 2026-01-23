@@ -3,8 +3,7 @@
    - User UI & Authentication
    - Theme/Style Selection (Home)
    - Prompt Management (Create)
-   - Text-to-Video API & Polling (Production Ready)
-   - Blank Video Rendering Fixes
+   - Text-to-Video API & Polling (Blob/ObjectURL Fix)
    ====================================================== */
 
 /* ---------- 1. USER & GLOBAL DATA ---------- */
@@ -115,7 +114,7 @@ function goToCreate() {
     window.location.href = "create.html";
 }
 
-/* ---------- 4. TEXT-TO-VIDEO LOGIC ---------- */
+/* ---------- 4. TEXT-TO-VIDEO RENDERING LOGIC ---------- */
 const t2vPrompt = pickFirst("t2vPrompt", "prompt");
 const t2vBtn = pickFirst("t2vBtn", "generateBtn");
 const t2vStatus = pickFirst("t2vStatus", "status", "statusText", "outputStatus");
@@ -123,7 +122,6 @@ const t2vVideo = pickFirst("t2vVideo", "resultVideo", "video");
 
 const downloadBtn = document.getElementById("downloadBtn");
 const deleteBtn = document.getElementById("deleteBtn");
-const saveToAssetsBtn = document.getElementById("saveToAssetsBtn");
 const t2vDuration = document.getElementById("t2vDuration");
 const t2vAspect = document.getElementById("t2vAspect");
 
@@ -165,31 +163,47 @@ async function generateT2v() {
         const startData = await res.json();
         const result = await pollTextToVideo(startData.operationName);
 
-        // --- Integrated Video Rendering Logic ---
         if (result.videoUrl || result.base64) {
-            const finalSrc = result.videoUrl || `data:video/mp4;base64,${result.base64}`;
+            let finalSrc;
+
+            if (result.videoUrl) {
+                t2vVideo.crossOrigin = "anonymous";
+                finalSrc = result.videoUrl;
+            } else {
+                // Convert Base64 to Blob for better browser compatibility
+                const cleanBase64 = result.base64.replace(/^data:video\/mp4;base64,/, "");
+                const byteChars = atob(cleanBase64);
+                const byteNumbers = new Array(byteChars.length);
+                for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+                
+                const blob = new Blob([new Uint8Array(byteNumbers)], { type: "video/mp4" });
+                finalSrc = URL.createObjectURL(blob);
+            }
             
-            // Core Fixes for Blank Display
-            t2vVideo.muted = true;                      // Browsers block unmuted autoplay
-            t2vVideo.setAttribute("playsinline", "");   // Required for mobile/modern renderers
-            t2vVideo.controls = true;                   // Ensure user can see the playback bar
+            // Apply rendering fixes
+            t2vVideo.muted = true;
+            t2vVideo.setAttribute("playsinline", "");
+            t2vVideo.controls = true;
             t2vVideo.src = finalSrc;
             
+            t2vVideo.load(); 
             t2vVideo.style.display = "block";
             setT2vStatus("✅ Video ready");
 
-            // Force playback to trigger frame rendering
             t2vVideo.play().catch(e => {
-                console.warn("Autoplay blocked. User must click play.", e);
-                setT2vStatus("✅ Video ready (Click Play)");
+                console.warn("Autoplay blocked.", e);
+                setT2vStatus("✅ Video ready (Click Play to watch)");
             });
 
             if (downloadBtn) { 
                 downloadBtn.href = finalSrc; 
                 downloadBtn.style.display = "inline-flex"; 
             }
+        } else {
+            throw new Error("API returned success but no video data found.");
         }
     } catch (err) {
+        console.error("Video Generation Error:", err);
         setT2vStatus(`❌ Error: ${err.message}`);
     } finally {
         t2vBtn.disabled = false;
@@ -209,16 +223,6 @@ function initHome() {
 
     const goBtn = document.getElementById("goCreateBtn");
     if (goBtn) goBtn.addEventListener("click", goToCreate);
-
-    const modeRail = document.getElementById("modeRail");
-    if (modeRail) {
-        modeRail.querySelectorAll(".modeCard").forEach(bubble => {
-            bubble.addEventListener("click", () => {
-                const target = bubble.getAttribute("data-target");
-                if (target) window.location.href = target;
-            });
-        });
-    }
 }
 
 function initCreate() {
@@ -244,18 +248,17 @@ document.addEventListener("DOMContentLoaded", () => {
     initHome();
     initCreate();
 
-    if (t2vBtn) {
-        t2vBtn.addEventListener("click", generateT2v);
-    }
-
+    if (t2vBtn) t2vBtn.addEventListener("click", generateT2v);
+    
     if (deleteBtn && t2vVideo) {
         deleteBtn.addEventListener("click", () => {
             t2vVideo.pause();
             t2vVideo.src = "";
-            t2vVideo.load(); // Forces reset
+            t2vVideo.load();
             t2vVideo.style.display = "none";
             setT2vStatus("Your generated video will appear here.");
-            if (downloadBtn) downloadBtn.style.display = "none";
         });
     }
 });
+
+
