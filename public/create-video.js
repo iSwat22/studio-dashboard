@@ -1,231 +1,230 @@
-/* create-video.js — FULL FILE (drop-in) */
+// create-video.js
 
-console.log("create-video.js loaded");
+console.log("✅ create-video.js loaded");
 
-document.addEventListener("DOMContentLoaded", () => {
-// ===== Grab elements that exist in your create-video.html =====
-const promptEl = document.getElementById("prompt");
-const generateBtn = document.getElementById("generateBtn");
-const clearBtn = document.getElementById("clearBtn");
-const pasteBtn = document.getElementById("pasteBtn");
+// ======================================================
+// TEXT -> VIDEO
+// Works on BOTH:
+// - create-video.html (prompt / generateBtn / previewVideo)
+// - older pages (t2vPrompt / t2vBtn / t2vVideo)
+// ======================================================
 
-const aspectEl = document.getElementById("aspect");
-const durationEl = document.getElementById("duration");
-const qualityEl = document.getElementById("quality");
+const pickFirst = (...ids) =>
+ids.map((id) => document.getElementById(id)).find(Boolean);
 
-const videoEl = document.getElementById("previewVideo");
-const emptyEl = document.getElementById("previewEmpty");
+// Inputs / buttons
+const t2vPrompt = pickFirst("prompt", "t2vPrompt");
+const t2vBtn = pickFirst("generateBtn", "t2vBtn");
+
+// Status text (your create-video page might not have one; that's OK)
+const t2vStatus = pickFirst("status", "t2vStatus", "statusText", "outputStatus");
+
+// ✅ IMPORTANT: your create-video.html uses previewVideo
+const t2vVideo = pickFirst("previewVideo", "t2vVideo", "resultVideo", "video");
+
+// Optional controls
 const downloadBtn = document.getElementById("downloadBtn");
+const deleteBtn = document.getElementById("deleteBtn");
+const saveToAssetsBtn = document.getElementById("saveToAssetsBtn");
+const t2vDuration = document.getElementById("t2vDuration");
+const t2vAspect = document.getElementById("t2vAspect");
 
-if (!promptEl || !generateBtn || !videoEl || !emptyEl) {
-console.warn("[T2V] Text-to-Video elements not found", {
-promptEl: !!promptEl,
-generateBtn: !!generateBtn,
-videoEl: !!videoEl,
-emptyEl: !!emptyEl,
-});
-return;
+function setT2vStatus(msg) {
+if (t2vStatus) t2vStatus.textContent = msg;
+console.log("[T2V]", msg);
 }
 
-// ===== Small status helper (shows on page + logs) =====
-const statusLine = document.createElement("div");
-statusLine.style.marginTop = "10px";
-statusLine.style.fontSize = "14px";
-statusLine.style.opacity = "0.95";
-statusLine.textContent = "";
-emptyEl.parentElement?.appendChild(statusLine);
-
-function setStatus(msg, isError = false) {
-statusLine.textContent = msg;
-statusLine.style.color = isError ? "#ff8080" : "#b9f6c7";
-console.log(msg);
+function hideT2vButtons() {
+if (downloadBtn) downloadBtn.style.display = "none";
+if (deleteBtn) deleteBtn.style.display = "none";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "none";
 }
 
-function showVideo(url) {
-// Reset existing video
-try {
-videoEl.pause();
-} catch {}
-videoEl.removeAttribute("src");
-videoEl.load();
-
-// Set new source
-videoEl.src = url;
-videoEl.style.display = "block";
-emptyEl.style.display = "none";
-
-// Optional download
+function showT2vButtons(finalUrl) {
 if (downloadBtn) {
-downloadBtn.href = url;
-downloadBtn.style.display = "inline-block";
+downloadBtn.href = finalUrl;
+downloadBtn.download = "quannaleap-text-video.mp4";
+downloadBtn.style.display = "inline-flex";
+}
+if (deleteBtn) deleteBtn.style.display = "inline-flex";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "inline-flex";
 }
 
-videoEl.load();
-
-// Autoplay may be blocked; user can click play
-videoEl.play().catch(() => {
-console.warn("[T2V] Autoplay blocked (normal). Click play.");
+// Debug: if elements aren't found, tell us exactly what is missing.
+if (!t2vPrompt || !t2vBtn || !t2vVideo) {
+console.warn("[T2V] Text-to-Video elements not found", {
+hasPrompt: Boolean(t2vPrompt),
+hasButton: Boolean(t2vBtn),
+hasVideo: Boolean(t2vVideo),
+promptId: t2vPrompt?.id,
+buttonId: t2vBtn?.id,
+videoId: t2vVideo?.id,
+});
+} else {
+console.log("[T2V] Wired elements:", {
+promptId: t2vPrompt.id,
+buttonId: t2vBtn.id,
+videoId: t2vVideo.id,
 });
 }
 
-async function safeJson(resp) {
-const text = await resp.text();
-try {
-return { ok: true, json: JSON.parse(text), raw: text };
-} catch {
-return { ok: false, json: null, raw: text };
-}
-}
+async function startTextToVideoJob(prompt, options) {
+const payload = {
+prompt,
+aspectRatio: options.aspectRatio,
+durationSeconds: options.durationSeconds,
+};
 
-async function startJob(payload) {
-setStatus("⏳ Starting video job…");
-
-const resp = await fetch("/api/text-to-video", {
+const res = await fetch("/api/text-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
 body: JSON.stringify(payload),
 });
 
-const parsed = await safeJson(resp);
+const data = await res.json().catch(() => ({}));
 
-console.log("[T2V] START status:", resp.status);
-console.log("[T2V] START raw:", parsed.raw);
-console.log("[T2V] START json:", parsed.json);
+if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start video job");
+if (!data.operationName) throw new Error("Server did not return operationName");
 
-if (!resp.ok) {
-throw new Error(`Start failed (${resp.status}). ${parsed.raw || ""}`.trim());
-}
-if (!parsed.json || parsed.json.ok !== true) {
-throw new Error(parsed.json?.error || "Start failed: bad JSON");
-}
-if (!parsed.json.operationName) {
-throw new Error("Start succeeded but operationName missing");
+return data.operationName;
 }
 
-return parsed.json.operationName;
-}
+async function pollTextToVideo(operationName) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const maxAttempts = 100;
 
-async function pollStatus(operationName) {
-const resp = await fetch("/api/text-to-video/status", {
+for (let i = 1; i <= maxAttempts; i++) {
+setT2vStatus(`Generating video… (${i}/${maxAttempts})`);
+await sleep(3000);
+
+const res = await fetch("/api/text-to-video/status", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
 body: JSON.stringify({ operationName }),
 });
 
-const parsed = await safeJson(resp);
+const data = await res.json().catch(() => ({}));
+console.log("[T2V] STATUS json:", data);
 
-console.log("[T2V] STATUS status:", resp.status);
-console.log("[T2V] STATUS raw:", parsed.raw);
-console.log("[T2V] STATUS json:", parsed.json);
+if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
 
-if (!resp.ok) {
-throw new Error(`Status failed (${resp.status}). ${parsed.raw || ""}`.trim());
+if (data.done) {
+// ✅ Prefer proxyUrl when available (best for browser <video>)
+if (data.proxyUrl) return { videoUrl: data.proxyUrl };
+if (data.videoUrl) return { videoUrl: data.videoUrl };
+if (data.base64) return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
+throw new Error("Video finished, but no proxyUrl/videoUrl/base64 returned");
 }
-if (!parsed.json || parsed.json.ok !== true) {
-throw new Error(parsed.json?.error || "Status failed: bad JSON");
-}
-
-return parsed.json;
 }
 
-async function generateVideoFlow() {
-const prompt = (promptEl.value || "").trim();
-if (!prompt) {
-setStatus("❌ Please enter a prompt.", true);
-return;
+throw new Error("Timed out waiting for the video to finish");
 }
 
-// Hide preview until we have something
-videoEl.style.display = "none";
-emptyEl.style.display = "block";
-if (downloadBtn) downloadBtn.style.display = "none";
+if (t2vPrompt && t2vBtn && t2vVideo) {
+let lastObjectUrl = null;
 
-const payload = {
-prompt,
-aspect: aspectEl?.value || "portrait",
-duration: Number(durationEl?.value || 8),
-quality: qualityEl?.value || "high",
-};
-
-generateBtn.disabled = true;
+function clearT2vUI() {
+try {
+if (lastObjectUrl) {
+URL.revokeObjectURL(lastObjectUrl);
+lastObjectUrl = null;
+}
+} catch {}
 
 try {
-// 1) Start
-const operationName = await startJob(payload);
-setStatus(`✅ Job started. operationName=${operationName}`);
+t2vVideo.pause?.();
+t2vVideo.removeAttribute("src");
+// Force reload to clear
+t2vVideo.load?.();
+} catch {}
 
-// 2) Poll
-setStatus("⏳ Generating… waiting for video URL");
-const maxMs = 120000; // 2 minutes
-const intervalMs = 2000;
-const start = Date.now();
+// Keep it visible if your UI wants it visible; otherwise hide
+t2vVideo.style.display = "block";
 
-while (Date.now() - start < maxMs) {
-await new Promise((r) => setTimeout(r, intervalMs));
-
-const status = await pollStatus(operationName);
-
-if (!status.done) {
-setStatus("⏳ Still working…");
-continue;
+hideT2vButtons();
+setT2vStatus("Your generated video will appear here.");
 }
 
-// 3) Done — need URL
-const url = status.proxyUrl || status.videoUrl;
+async function attachAndPlay(urlToLoad) {
+// Some pages hide controls; ensure playable
+try {
+t2vVideo.controls = true;
+t2vVideo.muted = false;
+} catch {}
 
-if (!url) {
-// THIS is your current issue — we show EXACTLY what came back.
-console.error("[T2V] DONE but missing URL. Full status JSON:", status);
-setStatus(
-"❌ Video finished but no URL returned. Open Console → see STATUS json.",
-true
-);
+setT2vStatus(`Video ready. Loading: ${urlToLoad}`);
 
-// Also show it on-screen (so you can screenshot it)
-const pretty = JSON.stringify(status, null, 2);
-const pre = document.createElement("pre");
-pre.style.marginTop = "10px";
-pre.style.whiteSpace = "pre-wrap";
-pre.style.fontSize = "12px";
-pre.style.opacity = "0.9";
-pre.textContent = pretty;
-statusLine.parentElement?.appendChild(pre);
+t2vVideo.src = urlToLoad;
+t2vVideo.style.display = "block";
+t2vVideo.load?.();
 
+// Autoplay may be blocked; that's fine
+try {
+await t2vVideo.play();
+} catch {
+console.warn("[T2V] Autoplay blocked (normal). Click play.");
+}
+
+showT2vButtons(urlToLoad);
+}
+
+async function generateT2v(prompt) {
+t2vBtn.disabled = true;
+clearT2vUI();
+
+const durationSeconds = Number(t2vDuration?.value || 8);
+const aspectRatio = String(t2vAspect?.value || "16:9");
+
+try {
+setT2vStatus("Starting video job…");
+const opName = await startTextToVideoJob(prompt, { durationSeconds, aspectRatio });
+
+const result = await pollTextToVideo(opName);
+
+// Case: server returns URL (proxyUrl/videoUrl)
+if (result.videoUrl) {
+await attachAndPlay(result.videoUrl);
+setT2vStatus("✅ Video ready");
 return;
 }
 
-setStatus(`✅ Video ready. Loading: ${url}`);
-showVideo(url);
+// Case: server returns base64
+if (result.base64) {
+const byteChars = atob(result.base64);
+const byteNumbers = new Array(byteChars.length);
+for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+
+const blob = new Blob([new Uint8Array(byteNumbers)], {
+type: result.mimeType || "video/mp4",
+});
+
+lastObjectUrl = URL.createObjectURL(blob);
+
+await attachAndPlay(lastObjectUrl);
+setT2vStatus("✅ Video ready");
 return;
 }
 
-setStatus("❌ Timed out waiting for video.", true);
+throw new Error("Unknown video response format");
 } catch (err) {
 console.error(err);
-setStatus(`❌ ${err.message || "Error generating video"}`, true);
+setT2vStatus(`❌ ${err.message || err}`);
+hideT2vButtons();
 } finally {
-generateBtn.disabled = false;
+t2vBtn.disabled = false;
 }
 }
 
-// Buttons
-generateBtn.addEventListener("click", generateVideoFlow);
+t2vBtn.addEventListener("click", () => {
+const prompt = t2vPrompt.value.trim();
+if (!prompt) {
+setT2vStatus("Please enter a prompt.");
+return;
+}
+generateT2v(prompt);
+});
 
-if (clearBtn) {
-clearBtn.addEventListener("click", () => {
-promptEl.value = "";
-setStatus("");
-});
+if (deleteBtn) {
+deleteBtn.addEventListener("click", clearT2vUI);
 }
-
-if (pasteBtn) {
-pasteBtn.addEventListener("click", async () => {
-try {
-const text = await navigator.clipboard.readText();
-if (text) promptEl.value = text;
-} catch (e) {
-console.warn("Paste blocked by browser permissions.");
 }
-});
-}
-});
