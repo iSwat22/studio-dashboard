@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Quanna Leap — Text → Video</title>
 <link rel="stylesheet" href="./style.css" />
+<!-- optional: if you have create-video.css and want it, uncomment -->
+<!-- <link rel="stylesheet" href="./create-video.css" /> -->
 </head>
 
 <body class="bg-stars" data-mode="text-to-video">
 
-<!-- ✅ NEW STYLE TOPBAR (KEEP) -->
+<!-- TOPBAR (KEEP) -->
 <header class="topbar">
 <div class="brand">
 <div class="logo">QL</div>
@@ -34,23 +36,50 @@
 </div>
 </header>
 
-<!-- ✅ PAGE CONTENT (KEEP OLD WORKING IDs) -->
+<!-- APP -->
 <div class="app">
 <main class="main">
 <div class="page-wrap">
 
-<section class="hero hero-image">
+<!-- HERO -->
+<section class="hero hero-video">
 <h1>Text → Video</h1>
-<p>Generate videos from prompts. (Using <strong>/api/text-to-video</strong>)</p>
+<p>Generate short video clips from prompts.</p>
 </section>
 
-<section class="create-panel">
+<!-- 3-COLUMN LAYOUT (but keeps your WORKING IDs) -->
+<section class="create-panel create-panel--video">
 
-<!-- PREVIEW -->
-<div class="preview-shell">
+<!-- LEFT: PROMPT -->
+<aside class="panel-left">
+<div class="panel-title">
+<h3>Prompt</h3>
+</div>
+
+<div class="prompt-shell">
+<label class="field-label" for="t2vPrompt">Prompt</label>
+<textarea
+id="t2vPrompt"
+class="prompt-input"
+placeholder='Example: "A cinematic 3D city at sunset, smooth camera move, realistic lighting"'
+></textarea>
+
+<div class="help-text">
+Tip: Keep it short and clear. You can refine after the first clip.
+</div>
+</div>
+</aside>
+
+<!-- CENTER: PREVIEW -->
+<section class="panel-center">
+<div class="panel-title">
+<h3>Preview</h3>
+</div>
+
+<div class="preview-shell preview-shell--video">
 <video
 id="t2vVideo"
-class="result-preview"
+class="result-preview result-preview--video"
 controls
 playsinline
 style="display:none;"
@@ -60,44 +89,40 @@ style="display:none;"
 Your generated video will appear here.
 </div>
 </div>
+</section>
 
-<!-- PROMPT -->
-<div class="prompt-shell">
-
-<!-- Settings row -->
-<div class="actions-row" style="gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-<label style="display:flex; align-items:center; gap:8px;">
-<span style="opacity:.85;">Length</span>
-<select id="t2vDuration" class="ghost-btn" style="padding:10px 12px;">
-<option value="8" selected>8s (default)</option>
-<option value="10">10s</option>
-<option value="15">15s</option>
-<option value="30">30s</option>
-<option value="60">60s</option>
-<option value="120">2 min</option>
-<option value="300">5 min</option>
-</select>
-</label>
-
-<label style="display:flex; align-items:center; gap:8px;">
-<span style="opacity:.85;">Format</span>
-<select id="t2vAspect" class="ghost-btn" style="padding:10px 12px;">
-<option value="16:9" selected>16:9 (YouTube)</option>
-<option value="9:16">9:16 (Shorts/TikTok)</option>
-<option value="1:1">1:1 (Square)</option>
-</select>
-</label>
+<!-- RIGHT: SETTINGS + ACTIONS -->
+<aside class="panel-right">
+<div class="panel-title">
+<h3>Settings</h3>
 </div>
 
-<textarea
-id="t2vPrompt"
-class="prompt-input"
-placeholder='Example: "A cinematic 3D city at sunset"'
-></textarea>
+<div class="settings-shell">
+<label class="field-label" for="t2vAspect">Aspect Ratio</label>
+<select id="t2vAspect" class="select">
+<option value="9:16">YouTube Shorts (9:16)</option>
+<option value="9:16">TikTok (9:16)</option>
+<option value="9:16">Instagram Reels (9:16)</option>
+<option value="16:9" selected>YouTube (16:9)</option>
+<option value="1:1">Square (1:1)</option>
+</select>
 
-<div class="actions-row">
-<button id="t2vBtn" type="button" class="primary-btn">Generate Video</button>
+<label class="field-label" for="t2vDuration">Clip Length</label>
+<select id="t2vDuration" class="select">
+<option value="8" selected>8 seconds</option>
+<option value="10">10 seconds</option>
+<option value="15">15 seconds</option>
+<option value="30">30 seconds</option>
+<option value="60">1 minute</option>
+<option value="120">2 minutes</option>
+<option value="300">5 minutes</option>
+</select>
 
+<div class="actions-stack">
+<!-- WORKING BUTTON ID -->
+<button id="t2vBtn" class="primary-btn" type="button">Generate</button>
+
+<!-- Optional buttons (kept for your script.js compatibility) -->
 <button id="saveToAssetsBtn" type="button" class="ghost-btn" style="display:none;">
 ⭐ Save to Assets
 </button>
@@ -112,16 +137,18 @@ Delete
 </div>
 
 <div class="help-text">
-Tip: Pick a length + format, then generate. After it’s ready you can save, download, or delete.
+Click <b>Generate</b> to create a clip. When it’s ready, it will appear in Preview.
 </div>
 </div>
+</aside>
 
 </section>
+
 </div>
 </main>
 </div>
 
-<!-- ✅ IMPORTANT: use your existing working script -->
+<!-- IMPORTANT: keep using your working script -->
 <script src="./script.js" defer></script>
 </body>
 </html>
