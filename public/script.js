@@ -32,7 +32,7 @@ if (avatarCircle) avatarCircle.textContent = (USER.name || "U").trim().charAt(0)
 Put card JPGs in: /public/quannaleap_cards/
 Then set IMAGE_BASE to "/quannaleap_cards/"
 --------------------------------- */
-const IMAGE_BASE = "/quannaleap_cards/"; // <-- THIS is why your images disappeared when it was "/"
+const IMAGE_BASE = "/"; // <-- THIS is why your images disappeared when it was "/"
 
 /* ---------- CARDS DATA ---------- */
 const THEMES = [
