@@ -4,6 +4,7 @@
    - Theme/Style Selection (Home)
    - Prompt Management (Create)
    - Text-to-Video API & Polling (Production Ready)
+   - Blank Video Rendering Fixes
    ====================================================== */
 
 /* ---------- 1. USER & GLOBAL DATA ---------- */
@@ -145,8 +146,8 @@ async function pollTextToVideo(operationName) {
 }
 
 async function generateT2v() {
-    const prompt = t2vPrompt.value.trim();
-    if (!prompt) return setT2vStatus("Please enter a prompt.");
+    const promptValue = t2vPrompt.value.trim();
+    if (!promptValue) return setT2vStatus("Please enter a prompt.");
     
     t2vBtn.disabled = true;
     setT2vStatus("Starting video job...");
@@ -155,17 +156,38 @@ async function generateT2v() {
         const res = await fetch("/api/text-to-video", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt, aspectRatio: t2vAspect?.value || "16:9", durationSeconds: t2vDuration?.value || 8 }),
+            body: JSON.stringify({ 
+                prompt: promptValue, 
+                aspectRatio: t2vAspect?.value || "16:9", 
+                durationSeconds: t2vDuration?.value || 8 
+            }),
         });
         const startData = await res.json();
         const result = await pollTextToVideo(startData.operationName);
 
+        // --- Integrated Video Rendering Logic ---
         if (result.videoUrl || result.base64) {
             const finalSrc = result.videoUrl || `data:video/mp4;base64,${result.base64}`;
+            
+            // Core Fixes for Blank Display
+            t2vVideo.muted = true;                      // Browsers block unmuted autoplay
+            t2vVideo.setAttribute("playsinline", "");   // Required for mobile/modern renderers
+            t2vVideo.controls = true;                   // Ensure user can see the playback bar
             t2vVideo.src = finalSrc;
+            
             t2vVideo.style.display = "block";
             setT2vStatus("✅ Video ready");
-            if (downloadBtn) { downloadBtn.href = finalSrc; downloadBtn.style.display = "inline-flex"; }
+
+            // Force playback to trigger frame rendering
+            t2vVideo.play().catch(e => {
+                console.warn("Autoplay blocked. User must click play.", e);
+                setT2vStatus("✅ Video ready (Click Play)");
+            });
+
+            if (downloadBtn) { 
+                downloadBtn.href = finalSrc; 
+                downloadBtn.style.display = "inline-flex"; 
+            }
         }
     } catch (err) {
         setT2vStatus(`❌ Error: ${err.message}`);
@@ -222,15 +244,18 @@ document.addEventListener("DOMContentLoaded", () => {
     initHome();
     initCreate();
 
-    if (t2vBtn) t2vBtn.addEventListener("click", generateT2v);
-    if (deleteBtn) {
+    if (t2vBtn) {
+        t2vBtn.addEventListener("click", generateT2v);
+    }
+
+    if (deleteBtn && t2vVideo) {
         deleteBtn.addEventListener("click", () => {
+            t2vVideo.pause();
             t2vVideo.src = "";
+            t2vVideo.load(); // Forces reset
             t2vVideo.style.display = "none";
             setT2vStatus("Your generated video will appear here.");
+            if (downloadBtn) downloadBtn.style.display = "none";
         });
     }
 });
-
-
-
