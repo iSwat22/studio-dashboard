@@ -5,13 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Quanna Leap — Text → Video</title>
 <link rel="stylesheet" href="./style.css" />
-<!-- optional: if you have create-video.css and want it, uncomment -->
-<!-- <link rel="stylesheet" href="./create-video.css" /> -->
 </head>
 
 <body class="bg-stars" data-mode="text-to-video">
 
-<!-- TOPBAR (KEEP) -->
+<!-- ✅ TOPBAR (matches the rest of the site) -->
 <header class="topbar">
 <div class="brand">
 <div class="logo">QL</div>
@@ -36,111 +34,96 @@
 </div>
 </header>
 
-<!-- APP -->
 <div class="app">
 <main class="main">
 <div class="page-wrap">
 
-<!-- HERO -->
-<section class="hero hero-video">
+<!-- Title -->
+<section class="hero hero-image">
 <h1>Text → Video</h1>
-<p>Generate short video clips from prompts.</p>
+<p>Generate short video clips from prompts. (Using <strong>/api/text-to-video</strong>)</p>
 </section>
 
-<!-- 3-COLUMN LAYOUT (but keeps your WORKING IDs) -->
-<section class="create-panel create-panel--video">
+<!-- ✅ Create-video style 3-column layout -->
+<section class="create-panel" style="display:grid; grid-template-columns: 1fr 1.6fr 0.9fr; gap:14px; align-items:start;">
 
-<!-- LEFT: PROMPT -->
-<aside class="panel-left">
-<div class="panel-title">
-<h3>Prompt</h3>
-</div>
+<!-- LEFT: Prompt + actions -->
+<div class="panel" style="padding:14px; border-radius:18px;">
+<div class="panelTitle" style="font-weight:900; margin-bottom:10px;">Prompt</div>
 
-<div class="prompt-shell">
-<label class="field-label" for="t2vPrompt">Prompt</label>
+<!-- REQUIRED ID -->
 <textarea
 id="t2vPrompt"
 class="prompt-input"
-placeholder='Example: "A cinematic 3D city at sunset, smooth camera move, realistic lighting"'
+placeholder='Example: "A Pixar-style futuristic hero team landing on a rooftop at sunset, cinematic lighting, smooth camera move"'
+style="min-height:190px;"
 ></textarea>
 
-<div class="help-text">
+<div class="actions-row" style="margin-top:12px;">
+<!-- REQUIRED ID -->
+<button id="t2vBtn" type="button" class="primary-btn">Generate</button>
+
+<!-- Optional UI buttons your script may hide/show -->
+<button id="saveToAssetsBtn" type="button" class="ghost-btn" style="display:none;">⭐ Save</button>
+
+<!-- IMPORTANT: downloadBtn MUST be an <a> -->
+<a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">Download</a>
+
+<button id="deleteBtn" type="button" class="danger-btn" style="display:none;">Delete</button>
+</div>
+
+<div class="help-text" style="margin-top:10px;">
 Tip: Keep it short and clear. You can refine after the first clip.
 </div>
 </div>
-</aside>
 
-<!-- CENTER: PREVIEW -->
-<section class="panel-center">
-<div class="panel-title">
-<h3>Preview</h3>
-</div>
+<!-- MIDDLE: Preview -->
+<div class="panel" style="padding:14px; border-radius:18px;">
+<div class="panelTitle" style="font-weight:900; margin-bottom:10px;">Preview</div>
 
-<div class="preview-shell preview-shell--video">
+<!-- REQUIRED ID -->
 <video
 id="t2vVideo"
-class="result-preview result-preview--video"
+class="result-preview"
 controls
 playsinline
-style="display:none;"
+style="display:none; width:100%; border-radius:14px;"
 ></video>
 
-<div id="t2vStatus" class="help-text">
+<!-- REQUIRED ID -->
+<div id="t2vStatus" class="help-text" style="margin-top:10px;">
 Your generated video will appear here.
 </div>
 </div>
-</section>
 
-<!-- RIGHT: SETTINGS + ACTIONS -->
-<aside class="panel-right">
-<div class="panel-title">
-<h3>Settings</h3>
-</div>
+<!-- RIGHT: Settings -->
+<div class="panel" style="padding:14px; border-radius:18px;">
+<div class="panelTitle" style="font-weight:900; margin-bottom:10px;">Settings</div>
 
-<div class="settings-shell">
-<label class="field-label" for="t2vAspect">Aspect Ratio</label>
-<select id="t2vAspect" class="select">
-<option value="9:16">YouTube Shorts (9:16)</option>
-<option value="9:16">TikTok (9:16)</option>
-<option value="9:16">Instagram Reels (9:16)</option>
+<label style="display:block; margin-bottom:6px; opacity:.85;">Aspect Ratio</label>
+<!-- REQUIRED ID -->
+<select id="t2vAspect" class="ghost-btn" style="width:100%; padding:10px 12px; margin-bottom:12px;">
 <option value="16:9" selected>YouTube (16:9)</option>
+<option value="9:16">YouTube Shorts (9:16)</option>
 <option value="1:1">Square (1:1)</option>
 </select>
 
-<label class="field-label" for="t2vDuration">Clip Length</label>
-<select id="t2vDuration" class="select">
+<label style="display:block; margin-bottom:6px; opacity:.85;">Clip Length</label>
+<!-- REQUIRED ID -->
+<select id="t2vDuration" class="ghost-btn" style="width:100%; padding:10px 12px;">
 <option value="8" selected>8 seconds</option>
 <option value="10">10 seconds</option>
 <option value="15">15 seconds</option>
 <option value="30">30 seconds</option>
-<option value="60">1 minute</option>
-<option value="120">2 minutes</option>
-<option value="300">5 minutes</option>
+<option value="60">60 seconds</option>
+<option value="120">2 min</option>
+<option value="300">5 min</option>
 </select>
 
-<div class="actions-stack">
-<!-- WORKING BUTTON ID -->
-<button id="t2vBtn" class="primary-btn" type="button">Generate</button>
-
-<!-- Optional buttons (kept for your script.js compatibility) -->
-<button id="saveToAssetsBtn" type="button" class="ghost-btn" style="display:none;">
-⭐ Save to Assets
-</button>
-
-<a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">
-Download
-</a>
-
-<button id="deleteBtn" class="danger-btn" style="display:none;">
-Delete
-</button>
-</div>
-
-<div class="help-text">
-Click <b>Generate</b> to create a clip. When it’s ready, it will appear in Preview.
+<div class="help-text" style="margin-top:10px;">
+Pick format + length, then generate.
 </div>
 </div>
-</aside>
 
 </section>
 
@@ -148,7 +131,7 @@ Click <b>Generate</b> to create a clip. When it’s ready, it will appear in Pre
 </main>
 </div>
 
-<!-- IMPORTANT: keep using your working script -->
+<!-- ✅ keep using your existing script -->
 <script src="./script.js" defer></script>
 </body>
 </html>
