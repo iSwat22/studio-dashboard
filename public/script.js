@@ -177,3 +177,4 @@ document.addEventListener("DOMContentLoaded", () => {
     // Global Video Trigger
     if (t2vBtn) t2vBtn.addEventListener("click", generateT2v);
 });
+
