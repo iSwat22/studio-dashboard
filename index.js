@@ -199,22 +199,32 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 // ======================================================
 // TEXT → VIDEO (placeholder wiring test)
 // - returns a REAL static file so the <video> can load
-// - you MUST have: /public/demo.mp4
+// - you MUST have: /public/demo.mp4 (or /public/mp4/demo.mp4)
 // ======================================================
 const videoJobs = new Map();
+
+/** Pick the best local demo file we can serve */
+function pickLocalDemoUrl() {
+// Prefer /public/demo.mp4, fallback to /public/mp4/demo.mp4
+const p1 = path.join(__dirname, "public", "demo.mp4");
+if (fs.existsSync(p1)) return "/demo.mp4";
+
+const p2 = path.join(__dirname, "public", "mp4", "demo.mp4");
+if (fs.existsSync(p2)) return "/mp4/demo.mp4";
+
+// Last fallback (still return something predictable)
+return "/demo.mp4";
+}
 
 app.post("/api/text-to-video", async (req, res) => {
 try {
 const prompt = (req.body?.prompt || "").trim();
 if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
-// Keep key check, but we’re still in placeholder mode
+// Keep the env var check visible in logs, but DO NOT block placeholder testing.
 const API_KEY = process.env.GEMINI_API_KEY_VIDEO;
 if (!API_KEY) {
-return res.status(500).json({
-ok: false,
-error: "Missing GEMINI_API_KEY_VIDEO in environment",
-});
+console.warn("⚠️ GEMINI_API_KEY_VIDEO missing — running Text→Video in placeholder demo mode.");
 }
 
 const operationName = `veo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -223,14 +233,19 @@ videoJobs.set(operationName, {
 done: false,
 createdAt: Date.now(),
 videoUrl: null,
+proxyUrl: null,
 });
 
 // Simulate generation; when done, point to LOCAL static file
 setTimeout(() => {
+const localUrl = pickLocalDemoUrl();
+
 videoJobs.set(operationName, {
 done: true,
-// This MUST exist at /public/demo.mp4
-videoUrl: "/demo.mp4",
+createdAt: Date.now(),
+// local static video served by express.static
+videoUrl: localUrl,
+proxyUrl: null,
 });
 }, 3000);
 
@@ -251,12 +266,20 @@ if (!job) return res.status(404).json({ ok: false, error: "Unknown operation" })
 
 if (!job.done) return res.json({ ok: true, done: false });
 
-// If it’s a local URL (/demo.mp4), no proxy needed.
+// If it’s a local URL (/demo.mp4 or /mp4/demo.mp4), no proxy needed.
+// If later you return an external URL, proxy it automatically.
+let videoUrl = job.videoUrl;
+let proxyUrl = job.proxyUrl;
+
+if (videoUrl && isHttpUrl(videoUrl) && isAllowedVideoHost(videoUrl)) {
+proxyUrl = `/api/video-proxy?url=${encodeURIComponent(videoUrl)}`;
+}
+
 return res.json({
 ok: true,
 done: true,
-videoUrl: job.videoUrl,
-proxyUrl: null,
+videoUrl,
+proxyUrl: proxyUrl || null,
 });
 } catch (err) {
 console.error("text-to-video status error:", err);
@@ -320,17 +343,25 @@ const stream = fs.createReadStream(outPath);
 stream.pipe(res);
 
 stream.on("close", () => {
-try { fs.unlinkSync(outPath); } catch {}
+try {
+fs.unlinkSync(outPath);
+} catch {}
 for (const f of uploaded) {
-try { fs.unlinkSync(f.path); } catch {}
+try {
+fs.unlinkSync(f.path);
+} catch {}
 }
 });
 } catch (err) {
 console.error("image-to-video error:", err);
 
-try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch {}
+try {
+if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+} catch {}
 for (const f of uploaded) {
-try { fs.unlinkSync(f.path); } catch {}
+try {
+fs.unlinkSync(f.path);
+} catch {}
 }
 
 return res.status(500).json({ ok: false, error: err.message || "Server error" });
@@ -345,4 +376,3 @@ res.sendFile(path.join(__dirname, "public", "index.html"));
 app.listen(PORT, () => {
 console.log(`Server running on port ${PORT}`);
 });
-
