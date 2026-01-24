@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,6 +64,9 @@ class="prompt-input"
 placeholder='Example: "A Pixar-style futuristic hero team landing on a rooftop at sunset, cinematic lighting, smooth camera move"'
 ></textarea>
 
+<!-- ✅ ADDED: old-working ID alias (SCRIPT B expects t2vPrompt) -->
+<textarea id="t2vPrompt" class="prompt-input" style="display:none;"></textarea>
+
 <div class="actions-row">
 <button id="clearBtn" class="ghost-btn" type="button">Clear</button>
 <button id="pasteBtn" class="ghost-btn" type="button">Paste</button>
@@ -123,6 +125,8 @@ Tip: Keep it short and clear. You can refine after the first clip.
 </div>
 
 <div class="preview-shell preview-shell--video">
+
+<!-- ✅ KEEP original previewVideo -->
 <video
 id="previewVideo"
 class="result-preview result-preview--video"
@@ -131,9 +135,25 @@ playsinline
 style="display:none;"
 ></video>
 
+<!-- ✅ ADDED: old-working ID alias (SCRIPT B expects t2vVideo) -->
+<video
+id="t2vVideo"
+class="result-preview result-preview--video"
+controls
+playsinline
+style="display:none;"
+></video>
+
+<!-- ✅ KEEP original previewEmpty -->
 <div id="previewEmpty" class="help-text">
 Your generated video will appear here.
 </div>
+
+<!-- ✅ ADDED: old-working ID alias (SCRIPT B expects t2vStatus) -->
+<div id="t2vStatus" class="help-text" style="display:none;">
+Your generated video will appear here.
+</div>
+
 </div>
 
 <div class="storyboard-shell">
@@ -193,6 +213,9 @@ After generating clips, select the ones you want, then click <b>Next</b>.
 <option value="square">Square (1:1)</option>
 </select>
 
+<!-- ✅ ADDED: old-working alias id -->
+<select id="t2vAspect" class="select" style="display:none;"></select>
+
 <label class="field-label" for="duration">Clip Length</label>
 <select id="duration" class="select">
 <option value="8" selected>8 seconds</option>
@@ -208,6 +231,9 @@ After generating clips, select the ones you want, then click <b>Next</b>.
 <option value="1800">30 minutes</option>
 </select>
 
+<!-- ✅ ADDED: old-working alias id -->
+<select id="t2vDuration" class="select" style="display:none;"></select>
+
 <label class="field-label" for="quality">Quality</label>
 <select id="quality" class="select">
 <option value="standard">Standard</option>
@@ -215,11 +241,20 @@ After generating clips, select the ones you want, then click <b>Next</b>.
 </select>
 
 <div class="actions-stack">
+
+<!-- ✅ KEEP original generateBtn -->
 <button id="generateBtn" class="primary-btn" type="button">Generate</button>
+
+<!-- ✅ ADDED: old-working ID (SCRIPT B expects t2vBtn) -->
+<button id="t2vBtn" class="primary-btn" type="button" style="display:none;">Generate Video</button>
 
 <a id="downloadBtn" class="ghost-btn" href="#" download style="display:none;">
 Download
 </a>
+
+<!-- ✅ ADDED: optional old buttons for script compatibility -->
+<button id="deleteBtn" class="ghost-btn" type="button" style="display:none;">Delete</button>
+<button id="saveToAssetsBtn" type="button" style="display:none;">Save</button>
 
 <button id="nextBtn" class="ghost-btn" type="button">Next</button>
 </div>
@@ -235,8 +270,69 @@ Click <b>Generate</b> to create clips. Then use <b>Next</b> to animate selected 
 </main>
 </div>
 
-<!-- Page script -->
-<script src="./create-video.js"defer></script>
+<!-- ✅ Bridge: keep your UI IDs, feed the old script IDs -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+const prompt = document.getElementById("prompt");
+const t2vPrompt = document.getElementById("t2vPrompt");
+const generateBtn = document.getElementById("generateBtn");
+const t2vBtn = document.getElementById("t2vBtn");
+
+const previewVideo = document.getElementById("previewVideo");
+const t2vVideo = document.getElementById("t2vVideo");
+
+const previewEmpty = document.getElementById("previewEmpty");
+const t2vStatus = document.getElementById("t2vStatus");
+
+const aspect = document.getElementById("aspect");
+const t2vAspect = document.getElementById("t2vAspect");
+
+const duration = document.getElementById("duration");
+const t2vDuration = document.getElementById("t2vDuration");
+
+// keep text mirrored
+const syncPrompt = () => { if (prompt && t2vPrompt) t2vPrompt.value = prompt.value; };
+if (prompt) prompt.addEventListener("input", syncPrompt);
+syncPrompt();
+
+// mirror settings
+const syncSelect = (src, dst) => { if (src && dst) dst.value = src.value; };
+if (aspect && t2vAspect) {
+t2vAspect.innerHTML = aspect.innerHTML;
+syncSelect(aspect, t2vAspect);
+aspect.addEventListener("change", () => syncSelect(aspect, t2vAspect));
+}
+if (duration && t2vDuration) {
+t2vDuration.innerHTML = duration.innerHTML;
+syncSelect(duration, t2vDuration);
+duration.addEventListener("change", () => syncSelect(duration, t2vDuration));
+}
+
+// show only ONE set (use your visible UI)
+// but let the old script operate on its IDs
+if (t2vVideo && previewVideo) {
+// keep t2vVideo as the real one the script sets
+previewVideo.style.display = "none";
+}
+if (t2vStatus && previewEmpty) {
+// keep t2vStatus visible for script updates
+t2vStatus.style.display = "block";
+previewEmpty.style.display = "none";
+}
+
+// clicking visible Generate triggers old script button
+if (generateBtn && t2vBtn) {
+generateBtn.addEventListener("click", () => {
+syncPrompt();
+t2vBtn.click();
+});
+}
+});
+</script>
+
+<!-- IMPORTANT: keep using your working script (NOT create-video.js yet) -->
+<script src="./script.js" defer></script>
+
 </body>
 </html>
   
