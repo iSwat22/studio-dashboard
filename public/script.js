@@ -1,8 +1,8 @@
 /* ======================================================
-Quanne Leap — script.js (SAFE)
-- Home page: mode bubbles + theme/style cards + Go Create
-- Create page: fills promptBox from localStorage
-- Text→Video page: works ONLY when those IDs exist
+Quanne Leap — script.js (FINAL SAFE + WORKING T2V)
+- Home: mode bubbles + theme/style cards + Go Create
+- Create: fills promptBox from localStorage
+- Text→Video: Script B logic (working) + supports NEW/OLD IDs + proxyUrl
 ====================================================== */
 
 /* ---------- USER UI (top-right pills) ---------- */
@@ -29,32 +29,73 @@ if (avatarCircle) avatarCircle.textContent = (USER.name || "U").trim().charAt(0)
 }
 
 /* ---------- IMAGE PATH ----------
-Put card JPGs in: /public/quannaleap_cards/
-Then set IMAGE_BASE to "/quannaleap_cards/"
+YOU SAID: images are in /public at root like:
+/Kids_Story.jpeg
+So IMAGE_BASE MUST be "/"
 --------------------------------- */
-const IMAGE_BASE = "/"; // <-- THIS is why your images disappeared when it was "/"
+const IMAGE_BASE = "/";
 
 /* ---------- CARDS DATA ---------- */
 const THEMES = [
-{ id: "Kids_Story", title: "Kids Story", sub: "Kid-friendly adventure", image: "Kids_Story.jpeg",
-promptSeed: `Create a kid-friendly story with warm, hopeful tone. Simple dialogue, clear action, meaningful lesson.` },
-{ id: "Biblical_Epic", title: "Biblical Epic", sub: "Faith + cinematic scale", image: "Biblical_Epic.jpeg",
-promptSeed: `Create a respectful biblical-inspired epic with emotional moments, dramatic stakes, uplifting resolution.` },
-{ id: "Neon_City_Heist", title: "Neon City Heist", sub: "Neon crime story (original)", image: "Neon_City_Heist.jpeg",
-promptSeed: `Create a neon cyber-city heist story: fast pacing, clever plan, twists, stylish futuristic setting.` },
-{ id: "Future_Ops", title: "Future Ops", sub: "Tactical sci-fi action", image: "Future_Ops.jpeg",
-promptSeed: `Create a futuristic special-ops mission story: tactical planning, high-tech gear, intense action, team dialogue.` }
+{
+id: "Kids_Story",
+title: "Kids Story",
+sub: "Kid-friendly adventure",
+image: "Kids_Story.jpeg",
+promptSeed: `Create a kid-friendly story with warm, hopeful tone. Simple dialogue, clear action, meaningful lesson.`
+},
+{
+id: "Biblical_Epic",
+title: "Biblical Epic",
+sub: "Faith + cinematic scale",
+image: "Biblical_Epic.jpeg",
+promptSeed: `Create a respectful biblical-inspired epic with emotional moments, dramatic stakes, uplifting resolution.`
+},
+{
+id: "Neon_City_Heist",
+title: "Neon City Heist",
+sub: "Neon crime story (original)",
+image: "Neon_City_Heist.jpeg",
+promptSeed: `Create a neon cyber-city heist story: fast pacing, clever plan, twists, stylish futuristic setting.`
+},
+{
+id: "Future_Ops",
+title: "Future Ops",
+sub: "Tactical sci-fi action",
+image: "Future_Ops.jpeg",
+promptSeed: `Create a futuristic special-ops mission story: tactical planning, high-tech gear, intense action, team dialogue.`
+}
 ];
 
 const STYLES = [
-{ id: "Pixar_Style", title: "Pixar Style", sub: "3D, emotional, cinematic", image: "Pixar_Style.jpeg",
-styleSeed: `Style: high-quality 3D animated family film look, expressive characters, soft cinematic lighting, emotional beats.` },
-{ id: "Disney_Style", title: "Disney Style", sub: "Magical, bright, classic", image: "Disney_Style.jpeg",
-styleSeed: `Style: magical, bright, family-friendly animated feel, charming environments, uplifting tone.` },
-{ id: "Anime_Fantasy", title: "Anime Fantasy", sub: "Dramatic + stylized", image: "Anime_Fantasy.jpeg",
-styleSeed: `Style: anime-inspired cinematic look, dynamic camera moves, expressive eyes, dramatic lighting and atmosphere.` },
-{ id: "Realistic_Cinema", title: "Realistic Cinema", sub: "Live-action vibe", image: "Realistic_Cinema.jpeg",
-styleSeed: `Style: realistic cinematic live-action look, natural textures, film lighting, shallow depth of field.` }
+{
+id: "Pixar_Style",
+title: "Pixar Style",
+sub: "3D, emotional, cinematic",
+image: "Pixar_Style.jpeg",
+styleSeed: `Style: high-quality 3D animated family film look, expressive characters, soft cinematic lighting, emotional beats.`
+},
+{
+id: "Disney_Style",
+title: "Disney Style",
+sub: "Magical, bright, classic",
+image: "Disney_Style.jpeg",
+styleSeed: `Style: magical, bright, family-friendly animated feel, charming environments, uplifting tone.`
+},
+{
+id: "Anime_Fantasy",
+title: "Anime Fantasy",
+sub: "Dramatic + stylized",
+image: "Anime_Fantasy.jpeg",
+styleSeed: `Style: anime-inspired cinematic look, dynamic camera moves, expressive eyes, dramatic lighting and atmosphere.`
+},
+{
+id: "Realistic_Cinema",
+title: "Realistic Cinema",
+sub: "Live-action vibe",
+image: "Realistic_Cinema.jpeg",
+styleSeed: `Style: realistic cinematic live-action look, natural textures, film lighting, shallow depth of field.`
+}
 ];
 
 /* ---------- STATE (cards only) ---------- */
@@ -75,7 +116,7 @@ const card = el("div", "card", { "data-id": item.id, "data-type": type });
 
 const img = el("img", "cardImg", {
 alt: item.title,
-src: IMAGE_BASE + item.image
+src: IMAGE_BASE + item.image // "/Kids_Story.jpeg"
 });
 
 img.addEventListener("error", () => {
@@ -112,12 +153,12 @@ return card;
 function markSelected(railId, selectedId) {
 const rail = document.getElementById(railId);
 if (!rail) return;
-rail.querySelectorAll(".card").forEach(c => {
+rail.querySelectorAll(".card").forEach((c) => {
 c.classList.toggle("selected", c.getAttribute("data-id") === selectedId);
 });
 }
 
-/* ---------- READY BOX LOGIC (cards only) ---------- */
+/* ---------- READY BOX LOGIC ---------- */
 function updateReady() {
 const btn = document.getElementById("goCreateBtn");
 const line = document.getElementById("readySub");
@@ -176,7 +217,7 @@ function initModeBubbles() {
 const modeRail = document.getElementById("modeRail");
 if (!modeRail) return;
 
-modeRail.querySelectorAll(".modeCard").forEach(bubble => {
+modeRail.querySelectorAll(".modeCard").forEach((bubble) => {
 bubble.addEventListener("click", () => {
 const target = bubble.getAttribute("data-target");
 if (!target) return;
@@ -196,8 +237,8 @@ if (!themeRail || !styleRail) return;
 themeRail.innerHTML = "";
 styleRail.innerHTML = "";
 
-THEMES.forEach(t => themeRail.appendChild(buildCard(t, "theme")));
-STYLES.forEach(s => styleRail.appendChild(buildCard(s, "style")));
+THEMES.forEach((t) => themeRail.appendChild(buildCard(t, "theme")));
+STYLES.forEach((s) => styleRail.appendChild(buildCard(s, "style")));
 
 if (goBtn) goBtn.addEventListener("click", goToCreate);
 
@@ -206,7 +247,7 @@ initModeBubbles();
 updateReady();
 }
 
-/* ---------- CREATE PAGE INIT (fills prompt) ---------- */
+/* ---------- CREATE PAGE INIT ---------- */
 function initCreate() {
 applyUserUI();
 
@@ -231,43 +272,79 @@ selectionLine.textContent = parts.length ? parts.join(" • ") : "Selection load
 if (promptBox) promptBox.value = data.prompt || "";
 }
 
-/* ---------- TEXT → VIDEO (ONLY if IDs exist on this page) ---------- */
+/* ======================================================
+TEXT -> VIDEO (SCRIPT B LOGIC, BUT SAFE FOR NEW/OLD IDs)
+- Works with either page’s IDs
+- Accepts proxyUrl OR videoUrl OR base64
+====================================================== */
 (function initTextToVideo() {
-const pickFirst = (...ids) => ids.map(id => document.getElementById(id)).find(Boolean);
+const pickFirst = (...ids) => ids.map((id) => document.getElementById(id)).find(Boolean);
 
+// Inputs / Buttons
 const t2vPrompt = pickFirst("t2vPrompt", "prompt");
 const t2vBtn = pickFirst("t2vBtn", "generateBtn");
-const t2vStatus = pickFirst("t2vStatus", "previewEmpty", "statusText");
-const t2vVideo = pickFirst("t2vVideo", "previewVideo");
 
+// Status / Video (support BOTH layouts)
+const t2vStatus = pickFirst("t2vStatus", "previewEmpty", "statusText", "outputStatus");
+const t2vVideo = pickFirst("t2vVideo", "previewVideo", "resultVideo", "video");
+
+// Settings (support BOTH layouts)
 const t2vDuration = document.getElementById("t2vDuration") || document.getElementById("duration");
 const t2vAspect = document.getElementById("t2vAspect") || document.getElementById("aspect");
 
-function setStatus(msg) {
+// Optional buttons
+const downloadBtn = document.getElementById("downloadBtn");
+const deleteBtn = document.getElementById("deleteBtn");
+const saveToAssetsBtn = document.getElementById("saveToAssetsBtn");
+
+function setT2vStatus(msg) {
 if (t2vStatus) t2vStatus.textContent = msg;
 console.log("[T2V]", msg);
 }
 
-async function startJob(prompt, options) {
+function hideT2vButtons() {
+if (downloadBtn) downloadBtn.style.display = "none";
+if (deleteBtn) deleteBtn.style.display = "none";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "none";
+}
+
+function showT2vButtons(finalUrl) {
+if (downloadBtn) {
+downloadBtn.href = finalUrl;
+downloadBtn.download = "quannaleap-text-video.mp4";
+downloadBtn.style.display = "inline-flex";
+}
+if (deleteBtn) deleteBtn.style.display = "inline-flex";
+if (saveToAssetsBtn) saveToAssetsBtn.style.display = "inline-flex";
+}
+
+async function startTextToVideoJob(prompt, options) {
+const payload = {
+prompt,
+aspectRatio: options.aspectRatio,
+durationSeconds: options.durationSeconds
+};
+
 const res = await fetch("/api/text-to-video", {
 method: "POST",
 headers: { "Content-Type": "application/json" },
-body: JSON.stringify({
-prompt,
-durationSeconds: options.durationSeconds,
-aspectRatio: options.aspectRatio
-})
+body: JSON.stringify(payload)
 });
+
 const data = await res.json().catch(() => ({}));
+
 if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start video job");
 if (!data.operationName) throw new Error("Server did not return operationName");
+
 return data.operationName;
 }
 
-async function poll(operationName) {
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-for (let i = 1; i <= 100; i++) {
-setStatus(`Generating video… (${i}/100)`);
+async function pollTextToVideo(operationName) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const maxAttempts = 100;
+
+for (let i = 1; i <= maxAttempts; i++) {
+setT2vStatus(`Generating video… (${i}/${maxAttempts})`);
 await sleep(3000);
 
 const res = await fetch("/api/text-to-video/status", {
@@ -275,50 +352,104 @@ method: "POST",
 headers: { "Content-Type": "application/json" },
 body: JSON.stringify({ operationName })
 });
+
 const data = await res.json().catch(() => ({}));
 if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
 
 if (data.done) {
-// Accept videoUrl OR proxyUrl (if your backend returns it)
-if (data.proxyUrl) return data.proxyUrl;
-if (data.videoUrl) return data.videoUrl;
-throw new Error("Video finished, but no URL returned");
+// MOST IMPORTANT: accept proxyUrl first (new backend), then videoUrl, then base64
+if (data.proxyUrl) return { videoUrl: data.proxyUrl };
+if (data.videoUrl) return { videoUrl: data.videoUrl };
+if (data.base64) return { base64: data.base64, mimeType: data.mimeType || "video/mp4" };
+
+throw new Error("Video finished, but no URL/base64 returned");
 }
-}
-throw new Error("Timed out waiting for the video");
 }
 
-async function generate() {
-const prompt = (t2vPrompt?.value || "").trim();
-if (!prompt) return setStatus("Please enter a prompt.");
+throw new Error("Timed out waiting for the video to finish");
+}
 
+// Only wire up if this page actually has the needed elements
+if (!t2vPrompt || !t2vBtn || !t2vVideo) return;
+
+let lastObjectUrl = null;
+
+function clearT2vUI() {
+if (lastObjectUrl) {
+URL.revokeObjectURL(lastObjectUrl);
+lastObjectUrl = null;
+}
+
+try { t2vVideo.pause?.(); } catch {}
+t2vVideo.removeAttribute("src");
+t2vVideo.load?.();
+t2vVideo.style.display = "none";
+
+hideT2vButtons();
+setT2vStatus("Your generated video will appear here.");
+}
+
+async function generateT2v() {
+const prompt = (t2vPrompt.value || "").trim();
+if (!prompt) {
+setT2vStatus("Please enter a prompt.");
+return;
+}
+
+t2vBtn.disabled = true;
+clearT2vUI();
+
+// Read settings, but keep sane defaults
 const durationSeconds = Number(t2vDuration?.value || 8);
 const aspectRatio = String(t2vAspect?.value || "16:9");
 
-if (!t2vBtn || !t2vVideo) return;
-
-t2vBtn.disabled = true;
 try {
-setStatus("Starting video job…");
-const op = await startJob(prompt, { durationSeconds, aspectRatio });
-const url = await poll(op);
+setT2vStatus("Starting video job…");
+const opName = await startTextToVideoJob(prompt, { durationSeconds, aspectRatio });
+const result = await pollTextToVideo(opName);
 
-t2vVideo.src = url;
+// URL case
+if (result.videoUrl) {
+t2vVideo.src = result.videoUrl;
 t2vVideo.style.display = "block";
-t2vVideo.load();
-t2vVideo.play().catch(() => {});
-setStatus("✅ Video ready");
-} catch (e) {
-console.error(e);
-setStatus(`❌ ${e.message || e}`);
+t2vVideo.load?.();
+t2vVideo.play?.().catch(() => {});
+setT2vStatus("✅ Video ready");
+showT2vButtons(result.videoUrl);
+return;
+}
+
+// Base64 case
+if (result.base64) {
+const byteChars = atob(result.base64);
+const byteNumbers = new Array(byteChars.length);
+for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+
+const blob = new Blob([new Uint8Array(byteNumbers)], { type: result.mimeType || "video/mp4" });
+lastObjectUrl = URL.createObjectURL(blob);
+
+t2vVideo.src = lastObjectUrl;
+t2vVideo.style.display = "block";
+t2vVideo.load?.();
+t2vVideo.play?.().catch(() => {});
+setT2vStatus("✅ Video ready");
+showT2vButtons(lastObjectUrl);
+return;
+}
+
+throw new Error("Unknown video response format");
+} catch (err) {
+console.error(err);
+setT2vStatus(`❌ ${err.message || err}`);
+hideT2vButtons();
 } finally {
 t2vBtn.disabled = false;
 }
 }
 
-if (t2vPrompt && t2vBtn && t2vVideo) {
-t2vBtn.addEventListener("click", generate);
-}
+t2vBtn.addEventListener("click", generateT2v);
+
+if (deleteBtn) deleteBtn.addEventListener("click", clearT2vUI);
 })();
 
 /* ---------- BOOT ---------- */
@@ -328,5 +459,8 @@ const isCreate = document.getElementById("promptBox");
 
 if (isHome) initHome();
 if (isCreate) initCreate();
+
+// Always safe:
+applyUserUI();
 });
 
