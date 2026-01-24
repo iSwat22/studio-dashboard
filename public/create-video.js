@@ -1,113 +1,199 @@
-<!-- ✅ PAGE CONTENT (KEEP OLD WORKING IDs) -->
-<div class="container">
-<h1 class="headline">Text → Video</h1>
-<p class="subhead">Generate short video clips from prompts. (Using <strong>/api/text-to-video</strong>)</p>
+/* ======================================================
+QuanneLeap.AI — create-video.js (Single Source of Truth)
+- Uses ONLY create-video.html IDs
+- Calls /api/text-to-video then polls /api/text-to-video/status
+- Sets previewVideo src to proxyUrl || videoUrl
+====================================================== */
 
-<div class="createGrid">
+const USER = { name: "KC", role: "Admin", plan: "Platinum", stars: "∞", isAdmin: true };
 
-<!-- LEFT: Prompt -->
-<section class="panel">
-<div class="panelTitle">Prompt + Theme</div>
+function applyUserUI() {
+const planPill = document.getElementById("planPill");
+const starsPill = document.getElementById("starsPill");
+const profileName = document.getElementById("profileName");
+const profileRole = document.getElementById("profileRole");
+const avatarCircle = document.getElementById("avatarCircle");
 
-<label for="t2vPrompt">Prompt</label>
-<textarea
-id="t2vPrompt"
-class="promptBox"
-placeholder='Example: "A Pixar-style futuristic hero team landing on a rooftop at sunset, cinematic lighting, smooth camera move"'
-></textarea>
+if (planPill) planPill.textContent = USER.plan;
+if (starsPill) starsPill.textContent = USER.isAdmin ? "★ ∞" : `★ ${USER.stars}`;
+if (profileName) profileName.textContent = USER.name;
+if (profileRole) profileRole.textContent = USER.role;
+if (avatarCircle) avatarCircle.textContent = (USER.name || "U").trim().charAt(0).toUpperCase();
+}
 
-<div class="panelActions">
-<!-- optional UI buttons (do NOT affect your video logic) -->
-<button type="button" class="pill btn" onclick="document.getElementById('t2vPrompt').value='';">
-Clear
-</button>
-<button type="button" class="pill btn" onclick="navigator.clipboard.readText().then(t=>{document.getElementById('t2vPrompt').value=t || ''});">
-Paste
-</button>
-</div>
+function $(id) {
+return document.getElementById(id);
+}
 
-<div class="tinyNote">
-Tip: Keep it short and clear. You can refine after the first clip.
-</div>
-</section>
+function setStatus(msg) {
+const empty = $("previewEmpty");
+if (empty) empty.textContent = msg;
+console.log("[T2V]", msg);
+}
 
-<!-- MIDDLE: Preview -->
-<section class="panel">
-<div class="panelTitle">Preview</div>
+function showVideo(url) {
+const video = $("previewVideo");
+const empty = $("previewEmpty");
+const download = $("downloadBtn");
 
-<video
-id="t2vVideo"
-class="result-preview"
-controls
-playsinline
-style="display:none; width:100%; border-radius:14px;"
-></video>
+if (!video) return;
 
-<div id="t2vStatus" class="help-text" style="margin-top:10px;">
-Your generated video will appear here.
-</div>
+// show video area
+if (empty) empty.style.display = "none";
+video.style.display = "block";
 
-<!-- keep these (your script may show them later) -->
-<div class="panelActions" style="margin-top:12px;">
-<button id="saveToAssetsBtn" type="button" class="pill btn" style="display:none;">
-⭐ Save to Assets
-</button>
+// IMPORTANT: force reload each time
+video.pause?.();
+video.removeAttribute("src");
+video.load();
 
-<a id="downloadBtn" class="pill btn" href="#" download style="display:none;">
-Download
-</a>
+// cache-bust to avoid 304 weirdness during testing
+const finalUrl = url + (url.includes("?") ? "&" : "?") + "cb=" + Date.now();
 
-<button id="deleteBtn" type="button" class="pill btn" style="display:none;">
-Delete
-</button>
-</div>
-</section>
+video.src = finalUrl;
+video.setAttribute("playsinline", "");
+video.muted = false;
+video.load();
 
-<!-- RIGHT: Settings + Generate -->
-<section class="panel">
-<div class="panelTitle">Settings</div>
+// optional download button
+if (download) {
+download.href = finalUrl;
+download.download = "quannaleap-text-video.mp4";
+download.style.display = "inline-flex";
+}
 
-<div class="field">
-<label for="t2vAspect">Aspect Ratio</label>
-<select id="t2vAspect">
-<option value="16:9" selected>YouTube (16:9)</option>
-<option value="9:16">YouTube Shorts (9:16)</option>
-<option value="1:1">Square (1:1)</option>
-</select>
-</div>
+// Try autoplay (may be blocked)
+video.play().catch(() => {
+// it's fine if autoplay is blocked — user can press play
+});
+}
 
-<div class="field">
-<label for="t2vDuration">Clip Length</label>
-<select id="t2vDuration">
-<option value="8" selected>8 seconds</option>
-<option value="10">10 seconds</option>
-<option value="15">15 seconds</option>
-<option value="30">30 seconds</option>
-<option value="60">60 seconds</option>
-<option value="120">2 min</option>
-<option value="300">5 min</option>
-</select>
-</div>
+async function startTextToVideoJob({ prompt, durationSeconds, aspectRatio }) {
+const res = await fetch("/api/text-to-video", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ prompt, durationSeconds, aspectRatio }),
+});
 
-<!-- optional UI only (doesn't break anything if your script ignores it) -->
-<div class="field">
-<label for="t2vQuality">Quality</label>
-<select id="t2vQuality" disabled>
-<option selected>High</option>
-</select>
-<div class="tinyNote">Quality is controlled server-side right now.</div>
-</div>
+const data = await res.json().catch(() => ({}));
+if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start video job");
+if (!data.operationName) throw new Error("Server did not return operationName");
+return data.operationName;
+}
 
-<!-- ✅ KEEP THIS ID — your script uses it -->
-<button id="t2vBtn" type="button" class="cta" style="width:100%; margin-top:14px;">
-Generate
-</button>
+async function pollTextToVideo(operationName) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const maxAttempts = 100;
 
-<!-- optional -->
-<button type="button" class="pill btn" style="width:100%; margin-top:10px; opacity:.6;" disabled>
-Next
-</button>
-</section>
+for (let i = 1; i <= maxAttempts; i++) {
+setStatus(`Generating video… (${i}/${maxAttempts})`);
+await sleep(2500);
 
-</div>
-</div>
+const res = await fetch("/api/text-to-video/status", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ operationName }),
+});
+
+const data = await res.json().catch(() => ({}));
+if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
+
+if (data.done) {
+// prefer proxyUrl (range-safe), else videoUrl
+const finalUrl = data.proxyUrl || data.videoUrl;
+if (!finalUrl) throw new Error("Video finished, but no URL returned");
+return finalUrl;
+}
+}
+
+throw new Error("Timed out waiting for the video");
+}
+
+async function onGenerateClick() {
+const promptEl = $("prompt"); // from create-video.html
+const generateBtn = $("generateBtn");
+const durationEl = $("duration");
+const aspectEl = $("aspect");
+
+const video = $("previewVideo");
+const empty = $("previewEmpty");
+const download = $("downloadBtn");
+
+const prompt = (promptEl?.value || "").trim();
+if (!prompt) return setStatus("Please enter a prompt.");
+
+// Reset UI
+if (video) {
+video.pause?.();
+video.removeAttribute("src");
+video.load();
+video.style.display = "none";
+}
+if (empty) empty.style.display = "block";
+if (download) download.style.display = "none";
+
+const durationSeconds = Number(durationEl?.value || 8);
+
+// Map your UI aspect values to backend aspect ratios
+// If your backend expects "16:9 / 9:16 / 1:1" change these here.
+const aspectUi = String(aspectEl?.value || "landscape");
+const aspectRatio =
+aspectUi === "portrait" ? "9:16" :
+aspectUi === "square" ? "1:1" :
+"16:9";
+
+try {
+if (generateBtn) generateBtn.disabled = true;
+
+setStatus("Starting video job…");
+const opName = await startTextToVideoJob({ prompt, durationSeconds, aspectRatio });
+
+const url = await pollTextToVideo(opName);
+
+setStatus("✅ Video ready");
+showVideo(url);
+} catch (err) {
+console.error(err);
+setStatus(`❌ ${err?.message || err}`);
+} finally {
+if (generateBtn) generateBtn.disabled = false;
+}
+}
+
+function initButtons() {
+const clearBtn = $("clearBtn");
+const pasteBtn = $("pasteBtn");
+const generateBtn = $("generateBtn");
+
+if (clearBtn) {
+clearBtn.addEventListener("click", () => {
+const p = $("prompt");
+if (p) p.value = "";
+setStatus("Cleared.");
+});
+}
+
+if (pasteBtn) {
+pasteBtn.addEventListener("click", async () => {
+try {
+const txt = await navigator.clipboard.readText();
+const p = $("prompt");
+if (p) p.value = (p.value ? p.value + "\n" : "") + txt;
+setStatus("Pasted from clipboard.");
+} catch {
+setStatus("Clipboard paste blocked. (Browser permissions)");
+}
+});
+}
+
+if (generateBtn) {
+generateBtn.addEventListener("click", onGenerateClick);
+}
+}
+
+/* ---------- BOOT ---------- */
+document.addEventListener("DOMContentLoaded", () => {
+applyUserUI();
+initButtons();
+setStatus("Your generated video will appear here.");
+});
