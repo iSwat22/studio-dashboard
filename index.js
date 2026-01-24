@@ -43,6 +43,19 @@ return false;
 }
 }
 
+// Build an absolute URL to THIS server (Render) for a path like "/demo.mp4"
+function absoluteSelfUrl(req, p) {
+const proto =
+req.headers["x-forwarded-proto"]?.toString().split(",")[0].trim() ||
+req.protocol ||
+"https";
+const host =
+req.headers["x-forwarded-host"]?.toString().split(",")[0].trim() ||
+req.get("host");
+const cleanPath = String(p || "").startsWith("/") ? p : `/${p}`;
+return `${proto}://${host}${cleanPath}`;
+}
+
 // VERY IMPORTANT: prevent open-proxy abuse
 const VIDEO_PROXY_ALLOWLIST = [
 "storage.googleapis.com",
@@ -199,32 +212,22 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 // ======================================================
 // TEXT → VIDEO (placeholder wiring test)
 // - returns a REAL static file so the <video> can load
-// - you MUST have: /public/demo.mp4 (or /public/mp4/demo.mp4)
+// - you MUST have: /public/demo.mp4
 // ======================================================
 const videoJobs = new Map();
-
-/** Pick the best local demo file we can serve */
-function pickLocalDemoUrl() {
-// Prefer /public/demo.mp4, fallback to /public/mp4/demo.mp4
-const p1 = path.join(__dirname, "public", "demo.mp4");
-if (fs.existsSync(p1)) return "/demo.mp4";
-
-const p2 = path.join(__dirname, "public", "mp4", "demo.mp4");
-if (fs.existsSync(p2)) return "/mp4/demo.mp4";
-
-// Last fallback (still return something predictable)
-return "/demo.mp4";
-}
 
 app.post("/api/text-to-video", async (req, res) => {
 try {
 const prompt = (req.body?.prompt || "").trim();
 if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
-// Keep the env var check visible in logs, but DO NOT block placeholder testing.
+// Keep key check, but we’re still in placeholder mode
 const API_KEY = process.env.GEMINI_API_KEY_VIDEO;
 if (!API_KEY) {
-console.warn("⚠️ GEMINI_API_KEY_VIDEO missing — running Text→Video in placeholder demo mode.");
+return res.status(500).json({
+ok: false,
+error: "Missing GEMINI_API_KEY_VIDEO in environment",
+});
 }
 
 const operationName = `veo_${Date.now()}_${Math.random().toString(36).slice(2)}`;
@@ -232,21 +235,16 @@ const operationName = `veo_${Date.now()}_${Math.random().toString(36).slice(2)}`
 videoJobs.set(operationName, {
 done: false,
 createdAt: Date.now(),
-videoUrl: null,
-proxyUrl: null,
+// store a RELATIVE path, we’ll convert to absolute on status
+videoPath: "/demo.mp4",
 });
 
-// Simulate generation; when done, point to LOCAL static file
+// Simulate generation done
 setTimeout(() => {
-const localUrl = pickLocalDemoUrl();
-
-videoJobs.set(operationName, {
-done: true,
-createdAt: Date.now(),
-// local static video served by express.static
-videoUrl: localUrl,
-proxyUrl: null,
-});
+const job = videoJobs.get(operationName);
+if (!job) return;
+job.done = true;
+videoJobs.set(operationName, job);
 }, 3000);
 
 return res.json({ ok: true, operationName });
@@ -266,20 +264,15 @@ if (!job) return res.status(404).json({ ok: false, error: "Unknown operation" })
 
 if (!job.done) return res.json({ ok: true, done: false });
 
-// If it’s a local URL (/demo.mp4 or /mp4/demo.mp4), no proxy needed.
-// If later you return an external URL, proxy it automatically.
-let videoUrl = job.videoUrl;
-let proxyUrl = job.proxyUrl;
-
-if (videoUrl && isHttpUrl(videoUrl) && isAllowedVideoHost(videoUrl)) {
-proxyUrl = `/api/video-proxy?url=${encodeURIComponent(videoUrl)}`;
-}
+// ✅ Return ABSOLUTE URL so the browser loads it from the correct host
+const abs = absoluteSelfUrl(req, job.videoPath);
+const cacheBust = `${abs}${abs.includes("?") ? "&" : "?"}cb=${Date.now()}`;
 
 return res.json({
 ok: true,
 done: true,
-videoUrl,
-proxyUrl: proxyUrl || null,
+videoUrl: cacheBust,
+proxyUrl: null,
 });
 } catch (err) {
 console.error("text-to-video status error:", err);
@@ -343,25 +336,17 @@ const stream = fs.createReadStream(outPath);
 stream.pipe(res);
 
 stream.on("close", () => {
-try {
-fs.unlinkSync(outPath);
-} catch {}
+try { fs.unlinkSync(outPath); } catch {}
 for (const f of uploaded) {
-try {
-fs.unlinkSync(f.path);
-} catch {}
+try { fs.unlinkSync(f.path); } catch {}
 }
 });
 } catch (err) {
 console.error("image-to-video error:", err);
 
-try {
-if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
-} catch {}
+try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch {}
 for (const f of uploaded) {
-try {
-fs.unlinkSync(f.path);
-} catch {}
+try { fs.unlinkSync(f.path); } catch {}
 }
 
 return res.status(500).json({ ok: false, error: err.message || "Server error" });
