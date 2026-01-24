@@ -13,10 +13,58 @@ const PORT = process.env.PORT || 3000;
 // ---- Path helpers (ES Modules) ----
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const PUBLIC_DIR = path.join(__dirname, "public");
 
 // ---- Middleware ----
 app.use(express.json({ limit: "10mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+
+// Serve static assets from /public
+app.use(
+express.static(PUBLIC_DIR, {
+// Helps avoid weird caching while debugging
+etag: true,
+lastModified: true,
+setHeaders: (res, filePath) => {
+// Ensure MP4s get correct headers
+if (filePath.endsWith(".mp4")) {
+res.setHeader("Content-Type", "video/mp4");
+res.setHeader("Accept-Ranges", "bytes");
+}
+},
+})
+);
+
+// ✅ HARD ROUTE: demo.mp4 must NEVER fall back to index.html
+app.get("/demo.mp4", (req, res) => {
+const filePath = path.join(PUBLIC_DIR, "demo.mp4");
+
+if (!fs.existsSync(filePath)) {
+return res.status(404).send("demo.mp4 not found in /public");
+}
+
+// Stream it properly
+res.setHeader("Content-Type", "video/mp4");
+res.setHeader("Accept-Ranges", "bytes");
+return res.sendFile(filePath);
+});
+
+// ✅ Debug endpoint (lets us confirm file exists + size on Render)
+app.get("/api/debug/demo", (req, res) => {
+const filePath = path.join(PUBLIC_DIR, "demo.mp4");
+const exists = fs.existsSync(filePath);
+let size = null;
+if (exists) {
+try {
+size = fs.statSync(filePath).size;
+} catch {}
+}
+res.json({
+ok: true,
+exists,
+size,
+publicDir: PUBLIC_DIR,
+});
+});
 
 // ---- Multer (uploads for image->video) ----
 const TMP_DIR = os.tmpdir();
@@ -235,11 +283,9 @@ const operationName = `veo_${Date.now()}_${Math.random().toString(36).slice(2)}`
 videoJobs.set(operationName, {
 done: false,
 createdAt: Date.now(),
-// store a RELATIVE path, we’ll convert to absolute on status
 videoPath: "/demo.mp4",
 });
 
-// Simulate generation done
 setTimeout(() => {
 const job = videoJobs.get(operationName);
 if (!job) return;
@@ -264,7 +310,7 @@ if (!job) return res.status(404).json({ ok: false, error: "Unknown operation" })
 
 if (!job.done) return res.json({ ok: true, done: false });
 
-// ✅ Return ABSOLUTE URL so the browser loads it from the correct host
+// ABSOLUTE URL so browser always hits correct host
 const abs = absoluteSelfUrl(req, job.videoPath);
 const cacheBust = `${abs}${abs.includes("?") ? "&" : "?"}cb=${Date.now()}`;
 
@@ -307,17 +353,7 @@ args.push("-loop", "1", "-t", String(secondsPerImage), "-i", f.path);
 const n = uploaded.length;
 const filter = `concat=n=${n}:v=1:a=0,format=yuv420p`;
 
-args.push(
-"-filter_complex",
-filter,
-"-r",
-"30",
-"-pix_fmt",
-"yuv420p",
-"-movflags",
-"+faststart",
-outPath
-);
+args.push("-filter_complex", filter, "-r", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath);
 
 await new Promise((resolve, reject) => {
 const ff = spawn("ffmpeg", args);
@@ -354,8 +390,13 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 });
 
 // ---- Fallback to index.html ----
+// ✅ IMPORTANT: Only serve index.html for routes WITHOUT file extensions
 app.get("*", (req, res) => {
-res.sendFile(path.join(__dirname, "public", "index.html"));
+// If it looks like a real file request (has an extension), do NOT SPA-fallback.
+if (path.extname(req.path)) {
+return res.status(404).send("Not found");
+}
+res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
 app.listen(PORT, () => {
