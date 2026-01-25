@@ -101,6 +101,7 @@ return false;
 
 // ======================================================
 // ✅ Create a REAL demo.mp4 automatically if missing/invalid
+// (So you never get black screen again)
 // ======================================================
 function createDemoMp4IfNeeded() {
 const filePath = path.join(PUBLIC_DIR, "demo.mp4");
@@ -115,7 +116,8 @@ if (size > 50_000) return; // >50KB = likely a real mp4
 // continue and regenerate
 }
 
-// If ffmpeg is available, generate a tiny, valid mp4 (2 seconds)
+// If ffmpeg is available, generate a tiny, valid mp4
+// (2 seconds, 1280x720, test pattern)
 try {
 if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 
@@ -196,42 +198,6 @@ files = fs
 res.json({ ok: true, exportsDir: EXPORTS_DIR, exists, files });
 } catch (e) {
 res.status(500).json({ ok: false, error: e?.message || "debug failed" });
-}
-});
-
-// ======================================================
-// ✅ Range-stream exports (better playback + scrub)
-// ======================================================
-app.get("/exports/:file", (req, res) => {
-try {
-const file = req.params.file;
-const filePath = path.join(EXPORTS_DIR, file);
-
-if (!fs.existsSync(filePath)) return res.status(404).send("Not found");
-
-const stat = fs.statSync(filePath);
-const range = req.headers.range;
-
-res.setHeader("Content-Type", "video/mp4");
-res.setHeader("Accept-Ranges", "bytes");
-
-if (!range) {
-res.setHeader("Content-Length", stat.size);
-return fs.createReadStream(filePath).pipe(res);
-}
-
-const [startStr, endStr] = range.replace("bytes=", "").split("-");
-const start = parseInt(startStr, 10);
-const end = endStr ? parseInt(endStr, 10) : stat.size - 1;
-
-res.status(206);
-res.setHeader("Content-Range", `bytes ${start}-${end}/${stat.size}`);
-res.setHeader("Content-Length", end - start + 1);
-
-return fs.createReadStream(filePath, { start, end }).pipe(res);
-} catch (e) {
-console.error("exports stream error:", e);
-res.status(500).send("stream error");
 }
 });
 
@@ -540,8 +506,7 @@ const videos = resp?.videos || [];
 const firstGcs = videos.find((v) => typeof v?.gcsUri === "string")?.gcsUri;
 if (firstGcs) return { done: true, gcsUri: firstGcs };
 
-const firstB64 = videos.find((v) => typeof v?.bytesBase64Encoded === "string")
-?.bytesBase64Encoded;
+const firstB64 = videos.find((v) => typeof v?.bytesBase64Encoded === "string")?.bytesBase64Encoded;
 if (firstB64) return { done: true, base64: firstB64 };
 
 return { done: true, error: "Veo finished but no video found", raw: data };
@@ -558,9 +523,7 @@ if (!Number.isFinite(durationSeconds)) durationSeconds = 8;
 durationSeconds = Math.max(1, Math.min(60, Math.round(durationSeconds)));
 
 const aspectRatioRaw = String(req.body?.aspectRatio || "16:9").trim();
-const aspectRatio = ["16:9", "9:16", "1:1"].includes(aspectRatioRaw)
-? aspectRatioRaw
-: "16:9";
+const aspectRatio = ["16:9", "9:16", "1:1"].includes(aspectRatioRaw) ? aspectRatioRaw : "16:9";
 
 const operationName = await startVeoJob({ prompt, durationSeconds, aspectRatio });
 
@@ -582,196 +545,336 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 app.post("/api/text-to-video/status", async (req, res) => {
 try {
 const { operationName } = req.body || {};
-if (!operationName)
-return res.status(400).json({ ok: false, error: "Missing operationName" });
+if (!operationName) return res.status(400).json({ ok: false, error: "Missing operationName" });
 
 const result = await pollVeoOperation(operationName);
 
 if (!result.done) return res.json({ ok: true, done: false });
 
-// ✅ If Veo returned base64 → return playable immediately
+if (result.gcsUri) {
+return res.json({
+ok: true,
+done: true,
+videoUrl: null,
+gcsUri: result.gcsUri,
+proxyUrl: null,
+note: "Video stored in GCS.",
+});
+}
+
 if (result.base64) {
 return res.json({
 ok: true,
 done: true,
-base64: result.base64,
 mimeType: "video/mp4",
-videoUrl: null,
-proxyUrl: null,
-});
-}
-
-// ✅ If Veo returned gcsUri → download to /public/exports and return URL
-if (result.gcsUri) {
-const fileName = `${safeId("veo")}.mp4`;
-const outPath = path.join(EXPORTS_DIR, fileName);
-
-await downloadGcsUriToFile(result.gcsUri, outPath);
-
-const videoUrl = `/exports/${fileName}`;
-return res.json({
-ok: true,
-done: true,
-gcsUri: result.gcsUri,
-videoUrl,
-proxyUrl: null,
-absoluteUrl: absoluteSelfUrl(req, videoUrl),
-note: "Downloaded from GCS into /public/exports for playback.",
+base64: result.base64,
 });
 }
 
 return res.status(500).json({
 ok: false,
-done: true,
-error: result.error || "Video finished but no playable output returned",
-raw: result.raw,
+error: result.error || "Veo finished but no video found",
+details: result.raw || null,
 });
 } catch (err) {
-console.error("text-to-video/status error:", err);
+console.error("text-to-video status error:", err);
 return res.status(500).json({ ok: false, error: err.message || "Server error" });
 }
 });
 
 // ======================================================
-// ✅ TEXT → VOICE (Google Cloud Text-to-Speech) ADDED ✅
-// Uses SAME service account token method as Veo
+// ✅ OPTION A: LONGER VIDEOS (BATCH CLIPS + FFmpeg CONCAT)
+// New endpoints so we do NOT break your current ones.
+// POST /api/text-to-video-batch
+// POST /api/text-to-video-batch/status
 // ======================================================
-app.post("/api/text-to-voice", async (req, res) => {
+const batchJobs = new Map();
+
+function ffmpegConcatMp4(files, outPath) {
+return new Promise((resolve, reject) => {
+const listPath = path.join(TMP_DIR, `concat_${Date.now()}_${Math.random().toString(16).slice(2)}.txt`);
+
+// concat demuxer needs: file '/abs/path'
+const lines = files.map((f) => `file '${String(f).replace(/'/g, "'\\''")}'`).join("\n");
+fs.writeFileSync(listPath, lines);
+
+const argsCopy = ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", "-movflags", "+faststart", outPath];
+const ff1 = spawn("ffmpeg", argsCopy);
+
+let errBuf = "";
+ff1.stderr.on("data", (d) => (errBuf += d.toString()));
+ff1.on("close", (code) => {
+// remove list file
+try { fs.unlinkSync(listPath); } catch {}
+
+if (code === 0) return resolve(outPath);
+
+// fallback: re-encode if stream copy fails
+const argsRe = ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath];
+const ff2 = spawn("ffmpeg", argsRe);
+let err2 = "";
+ff2.stderr.on("data", (d) => (err2 += d.toString()));
+ff2.on("close", (code2) => {
+try { fs.unlinkSync(listPath); } catch {}
+if (code2 === 0) return resolve(outPath);
+reject(new Error(`FFmpeg concat failed. copyErr: ${errBuf.slice(-500)} reErr: ${err2.slice(-500)}`));
+});
+});
+});
+}
+
+app.post("/api/text-to-video-batch", async (req, res) => {
 try {
-const text = (req.body?.text || "").trim();
-if (!text) return res.status(400).json({ ok: false, error: "Missing text" });
+const prompt = (req.body?.prompt || "").trim();
+if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
-// You can pass these from UI later
-const voiceName = String(req.body?.voiceName || "en-US-Journey-D");
-const languageCode = String(req.body?.languageCode || "en-US");
-const speakingRate = clampNum(req.body?.speakingRate, 0.7, 1.3, 1.0);
-const pitch = clampNum(req.body?.pitch, -5, 5, 0);
+// totalSeconds = how long you want overall (ex: 60)
+const totalSeconds = clampNum(req.body?.totalSeconds ?? req.body?.durationSeconds ?? 16, 8, 1800, 16);
 
-const accessToken = await getAccessToken();
+// clipSeconds = each Veo clip length (keep 8 by default)
+const clipSeconds = clampNum(req.body?.clipSeconds ?? 8, 4, 8, 8);
 
-const r = await fetch("https://texttospeech.googleapis.com/v1/text:synthesize", {
-method: "POST",
-headers: {
-Authorization: `Bearer ${accessToken}`,
-"Content-Type": "application/json",
-},
-body: JSON.stringify({
-input: { text },
-voice: { languageCode, name: voiceName },
-audioConfig: { audioEncoding: "MP3", speakingRate, pitch },
-}),
-});
+const aspectRatioRaw = String(req.body?.aspectRatio || "16:9").trim();
+const aspectRatio = ["16:9", "9:16", "1:1"].includes(aspectRatioRaw) ? aspectRatioRaw : "16:9";
 
-const j = await r.json().catch(() => ({}));
-if (!r.ok) {
-return res.status(r.status).json({
-ok: false,
-error: j?.error?.message || "TTS request failed",
-details: j,
-});
-}
+const clipsNeeded = Math.ceil(totalSeconds / clipSeconds);
+if (clipsNeeded < 1) return res.status(400).json({ ok: false, error: "Invalid clip count" });
+if (clipsNeeded > 240) return res.status(400).json({ ok: false, error: "Too many clips (max 240)" });
 
-if (!j.audioContent) {
-return res.status(500).json({ ok: false, error: "No audioContent returned" });
-}
+const batchId = safeId("batch");
 
-return res.json({ ok: true, mimeType: "audio/mpeg", base64: j.audioContent });
-} catch (err) {
-console.error("text-to-voice error:", err);
-return res.status(500).json({ ok: false, error: err.message || "Server error" });
-}
-});
+// Create job
+const job = {
+batchId,
+createdAt: Date.now(),
+prompt,
+totalSeconds,
+clipSeconds,
+aspectRatio,
+clipsNeeded,
+clipOps: [], // operationName list
+clipFiles: [], // local mp4 paths
+currentIndex: 0,
+done: false,
+finalFile: null,
+error: null,
+};
 
-// ======================================================
-// ✅ MUX VIDEO + VOICE (FFmpeg) ADDED ✅
-// Input: videoBase64 OR videoUrl + audioBase64
-// Output: mp4 saved to /public/exports and returns URL
-// ======================================================
-app.post("/api/mux-video-audio", async (req, res) => {
-try {
-const audioBase64 = String(req.body?.audioBase64 || "").trim();
-if (!audioBase64) return res.status(400).json({ ok: false, error: "Missing audioBase64" });
+// Start first clip immediately
+const op0 = await startVeoJob({ prompt, durationSeconds: clipSeconds, aspectRatio });
+job.clipOps.push(op0);
 
-const videoBase64 = String(req.body?.videoBase64 || "").trim();
-const videoUrl = String(req.body?.videoUrl || "").trim();
+batchJobs.set(batchId, job);
 
-if (!videoBase64 && !videoUrl) {
-return res.status(400).json({ ok: false, error: "Provide videoBase64 OR videoUrl" });
-}
-
-// Paths
-const inVid = path.join(TMP_DIR, `${safeId("vid")}.mp4`);
-const inAud = path.join(TMP_DIR, `${safeId("aud")}.mp3`);
-const outName = `${safeId("final")}.mp4`;
-const outVid = path.join(EXPORTS_DIR, outName);
-
-// Write audio
-fs.writeFileSync(inAud, Buffer.from(audioBase64, "base64"));
-
-// Get video bytes
-if (videoBase64) {
-fs.writeFileSync(inVid, Buffer.from(videoBase64, "base64"));
-} else {
-// videoUrl must be local (/exports/...) or absolute to your app
-const full = videoUrl.startsWith("http")
-? videoUrl
-: absoluteSelfUrl(req, videoUrl);
-
-const r = await fetch(full);
-if (!r.ok) throw new Error(`Failed to fetch videoUrl for mux (${r.status})`);
-const buf = Buffer.from(await r.arrayBuffer());
-fs.writeFileSync(inVid, buf);
-}
-
-// ffmpeg mux
-await new Promise((resolve, reject) => {
-const ff = spawn("ffmpeg", [
-"-y",
-"-i",
-inVid,
-"-i",
-inAud,
-"-map",
-"0:v:0",
-"-map",
-"1:a:0",
-"-c:v",
-"copy",
-"-c:a",
-"aac",
-"-shortest",
-"-movflags",
-"+faststart",
-outVid,
-]);
-
-ff.on("close", (code) => {
-if (code === 0) resolve();
-else reject(new Error(`FFmpeg failed with code ${code}`));
-});
-});
-
-// Cleanup temp
-try { fs.unlinkSync(inVid); } catch {}
-try { fs.unlinkSync(inAud); } catch {}
-
-const finalUrl = `/exports/${outName}`;
 return res.json({
 ok: true,
-videoUrl: finalUrl,
-absoluteUrl: absoluteSelfUrl(req, finalUrl),
+batchId,
+clipsNeeded,
+clipSeconds,
+totalSeconds,
+aspectRatio,
 });
 } catch (err) {
-console.error("mux-video-audio error:", err);
+console.error("text-to-video-batch error:", err);
 return res.status(500).json({ ok: false, error: err.message || "Server error" });
 }
 });
 
-// ======================================================
-// Server start
-// ======================================================
+app.post("/api/text-to-video-batch/status", async (req, res) => {
+try {
+const { batchId } = req.body || {};
+if (!batchId) return res.status(400).json({ ok: false, error: "Missing batchId" });
+
+const job = batchJobs.get(batchId);
+if (!job) return res.status(404).json({ ok: false, error: "Unknown batch" });
+
+if (job.error) {
+return res.status(500).json({ ok: false, done: true, error: job.error });
+}
+
+if (job.done && job.finalFile) {
+const rel = `/exports/${path.basename(job.finalFile)}`;
+const abs = absoluteSelfUrl(req, rel);
+const cacheBust = `${abs}${abs.includes("?") ? "&" : "?"}cb=${Date.now()}`;
+return res.json({ ok: true, done: true, finalVideoUrl: cacheBust, clipsDone: job.clipFiles.length, clipsNeeded: job.clipsNeeded });
+}
+
+// Poll current in-progress clips, but only one at a time to keep it simple/stable.
+const idx = job.clipFiles.length; // next file index we need to complete
+const opName = job.clipOps[idx];
+if (!opName) {
+// If we have completed some clips and need to start next op
+if (job.clipOps.length < job.clipsNeeded) {
+const nextOp = await startVeoJob({ prompt: job.prompt, durationSeconds: job.clipSeconds, aspectRatio: job.aspectRatio });
+job.clipOps.push(nextOp);
+batchJobs.set(batchId, job);
+}
+return res.json({ ok: true, done: false, stage: "starting", clipsDone: job.clipFiles.length, clipsNeeded: job.clipsNeeded });
+}
+
+const polled = await pollVeoOperation(opName);
+
+if (!polled.done) {
+return res.json({
+ok: true,
+done: false,
+stage: "generating",
+clipsDone: job.clipFiles.length,
+clipsNeeded: job.clipsNeeded,
+});
+}
+
+// Clip is done -> save it locally
+const clipOut = path.join(TMP_DIR, `${batchId}_clip_${String(idx + 1).padStart(3, "0")}.mp4`);
+
+try {
+if (polled.gcsUri) {
+await downloadGcsUriToFile(polled.gcsUri, clipOut);
+} else if (polled.base64) {
+writeBase64Mp4ToFile(polled.base64, clipOut);
+} else {
+throw new Error(polled.error || "Clip finished but no output");
+}
+} catch (e) {
+job.error = e?.message || "Failed saving clip";
+batchJobs.set(batchId, job);
+return res.status(500).json({ ok: false, done: true, error: job.error });
+}
+
+job.clipFiles.push(clipOut);
+
+// Start next clip if still needed
+if (job.clipOps.length < job.clipsNeeded) {
+const nextOp = await startVeoJob({ prompt: job.prompt, durationSeconds: job.clipSeconds, aspectRatio: job.aspectRatio });
+job.clipOps.push(nextOp);
+}
+
+// If all clips finished -> concat
+if (job.clipFiles.length >= job.clipsNeeded) {
+const finalName = `video_${batchId}.mp4`;
+const finalPath = path.join(EXPORTS_DIR, finalName);
+
+try {
+await ffmpegConcatMp4(job.clipFiles, finalPath);
+
+// cleanup tmp clips
+for (const f of job.clipFiles) {
+try { fs.unlinkSync(f); } catch {}
+}
+
+job.finalFile = finalPath;
+job.done = true;
+} catch (e) {
+job.error = e?.message || "FFmpeg concat failed";
+}
+
+batchJobs.set(batchId, job);
+
+if (job.error) {
+return res.status(500).json({ ok: false, done: true, error: job.error });
+}
+
+const rel = `/exports/${path.basename(job.finalFile)}`;
+const abs = absoluteSelfUrl(req, rel);
+const cacheBust = `${abs}${abs.includes("?") ? "&" : "?"}cb=${Date.now()}`;
+return res.json({ ok: true, done: true, finalVideoUrl: cacheBust, clipsDone: job.clipFiles.length, clipsNeeded: job.clipsNeeded });
+}
+
+batchJobs.set(batchId, job);
+
+return res.json({
+ok: true,
+done: false,
+stage: "clip_saved",
+clipsDone: job.clipFiles.length,
+clipsNeeded: job.clipsNeeded,
+});
+} catch (err) {
+console.error("text-to-video-batch status error:", err);
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
+}
+});
+
+// =========================================================
+// IMAGE -> VIDEO (FFmpeg slideshow)
+// =========================================================
+const upload = multer({
+storage: multer.diskStorage({
+destination: (req, file, cb) => cb(null, TMP_DIR),
+filename: (req, file, cb) => {
+const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+cb(null, `${Date.now()}_${Math.random().toString(16).slice(2)}_${safe}`);
+},
+}),
+limits: { fileSize: 8 * 1024 * 1024 },
+});
+
+app.post("/api/image-to-video", upload.array("images", 20), async (req, res) => {
+const uploaded = req.files || [];
+const secondsPerImage = Number(req.body?.secondsPerImage ?? 1.5);
+
+if (!uploaded.length) return res.status(400).json({ ok: false, error: "No images uploaded" });
+if (!Number.isFinite(secondsPerImage) || secondsPerImage <= 0 || secondsPerImage > 10) {
+return res.status(400).json({ ok: false, error: "secondsPerImage must be between 0 and 10" });
+}
+
+const outPath = path.join(TMP_DIR, `out_${Date.now()}_${Math.random().toString(16).slice(2)}.mp4`);
+
+try {
+const args = ["-y"];
+
+for (const f of uploaded) {
+args.push("-loop", "1", "-t", String(secondsPerImage), "-i", f.path);
+}
+
+const n = uploaded.length;
+const filter = `concat=n=${n}:v=1:a=0,format=yuv420p`;
+
+args.push("-filter_complex", filter, "-r", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath);
+
+await new Promise((resolve, reject) => {
+const ff = spawn("ffmpeg", args);
+let errBuf = "";
+ff.stderr.on("data", (d) => (errBuf += d.toString()));
+ff.on("close", (code) => {
+if (code === 0) return resolve();
+reject(new Error(`FFmpeg failed (code ${code}). ${errBuf.slice(-900)}`));
+});
+});
+
+res.setHeader("Content-Type", "video/mp4");
+res.setHeader("Content-Disposition", 'inline; filename="slideshow.mp4"');
+
+const stream = fs.createReadStream(outPath);
+stream.pipe(res);
+
+stream.on("close", () => {
+try { fs.unlinkSync(outPath); } catch {}
+for (const f of uploaded) {
+try { fs.unlinkSync(f.path); } catch {}
+}
+});
+} catch (err) {
+console.error("image-to-video error:", err);
+
+try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch {}
+for (const f of uploaded) {
+try { fs.unlinkSync(f.path); } catch {}
+}
+
+return res.status(500).json({ ok: false, error: err.message || "Server error" });
+}
+});
+
+// ---- Fallback to index.html (SPA fallback) ----
+// ✅ Only serve index.html for routes WITHOUT file extensions
+app.get("*", (req, res) => {
+if (path.extname(req.path)) return res.status(404).send("Not found");
+res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+});
+
 app.listen(PORT, () => {
-console.log(`✅ QuanneLeap API running on port ${PORT}`);
+console.log(`Server running on port ${PORT}`);
 });
 
 
