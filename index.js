@@ -185,7 +185,9 @@ headers: range ? { Range: range } : {},
 // allow 200 or 206
 if (!upstream.ok && upstream.status !== 206) {
 const txt = await upstream.text().catch(() => "");
-return res.status(upstream.status).send(txt || `Upstream error ${upstream.status}`);
+return res
+.status(upstream.status)
+.send(txt || `Upstream error ${upstream.status}`);
 }
 
 const contentType = upstream.headers.get("content-type") || "video/mp4";
@@ -300,8 +302,6 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 
 // ======================================================
 // ✅ REAL TEXT → VIDEO via Vertex AI Veo
-// Generate: ...:predictLongRunning (returns operation name) [oai_citation:4‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
-// Poll: ...:fetchPredictOperation (done + video result) [oai_citation:5‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
 // ======================================================
 const veoJobs = new Map();
 
@@ -343,26 +343,40 @@ try {
 const prompt = (req.body?.prompt || "").trim();
 if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
+// ✅ NEW: accept duration + aspect from UI (without changing anything else)
+let durationSeconds = Number(req.body?.durationSeconds ?? 8);
+if (!Number.isFinite(durationSeconds)) durationSeconds = 8;
+
+// Conservative clamp so Veo doesn't error.
+// You can raise this later once you confirm your Veo limits.
+durationSeconds = Math.max(1, Math.min(60, Math.round(durationSeconds)));
+
+const aspectRatioRaw = String(req.body?.aspectRatio || "16:9").trim();
+const aspectRatio = ["16:9", "9:16", "1:1"].includes(aspectRatioRaw)
+? aspectRatioRaw
+: "16:9";
+
 const { predictLongRunningUrl } = veoEndpointBase();
 const accessToken = await getAccessToken();
 
-// Optional output bucket (recommended). If not set, Veo may return bytesBase64Encoded. [oai_citation:6‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
+// Optional output bucket (recommended).
 const bucket = process.env.VEO_GCS_BUCKET;
 const storageUri = bucket ? `gs://${bucket}` : undefined;
 
-// Request shape based on Veo model reference. [oai_citation:7‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
-// Keep it minimal so it WORKS first.
+// Keep it minimal so it WORKS first, but forward duration/aspect.
+const params = storageUri ? { storageUri } : {};
+
+// ✅ NEW: duration + aspect forwarded to Veo parameters
+params.durationSeconds = durationSeconds;
+params.aspectRatio = aspectRatio;
+
 const body = {
 instances: [
 {
 prompt,
 },
 ],
-parameters: storageUri
-? {
-storageUri,
-}
-: {},
+parameters: params,
 };
 
 const r = await fetch(predictLongRunningUrl, {
@@ -404,6 +418,8 @@ veoJobs.set(operationName, {
 createdAt: Date.now(),
 prompt,
 storageUri: storageUri || null,
+durationSeconds,
+aspectRatio,
 });
 
 return res.json({ ok: true, operationName });
@@ -421,7 +437,6 @@ if (!operationName) return res.status(400).json({ ok: false, error: "Missing ope
 const { fetchOperationUrl } = veoEndpointBase();
 const accessToken = await getAccessToken();
 
-// Poll body per model reference. [oai_citation:8‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
 const body = {
 operationName,
 };
@@ -454,16 +469,12 @@ details: data,
 const done = Boolean(data?.done);
 if (!done) return res.json({ ok: true, done: false });
 
-// When done, response includes videos with gcsUri OR bytesBase64Encoded. [oai_citation:9‡Google Cloud Documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/veo-video-generation)
 const resp = data?.response || {};
 const videos = resp?.videos || [];
 
 // Case A: output is GCS URIs
 const firstGcs = videos.find((v) => typeof v?.gcsUri === "string")?.gcsUri;
 if (firstGcs) {
-// Client can either:
-// 1) Use a signed URL endpoint you add later
-// 2) Or you can fetch it server-side and stream it (next step)
 return res.json({
 ok: true,
 done: true,
@@ -477,7 +488,6 @@ note: "Video stored in GCS. Next step: add signed-url or stream endpoint.",
 // Case B: bytesBase64Encoded returned
 const firstB64 = videos.find((v) => typeof v?.bytesBase64Encoded === "string")?.bytesBase64Encoded;
 if (firstB64) {
-// Return base64 to client (works immediately for testing)
 return res.json({
 ok: true,
 done: true,
@@ -592,4 +602,5 @@ res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 app.listen(PORT, () => {
 console.log(`Server running on port ${PORT}`);
 });
+
 
