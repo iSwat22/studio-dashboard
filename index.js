@@ -24,130 +24,14 @@ express.static(PUBLIC_DIR, {
 etag: true,
 lastModified: true,
 setHeaders: (res, filePath) => {
-// Ensure MP4s get correct headers
+// Force correct headers for mp4
 if (filePath.endsWith(".mp4")) {
 res.setHeader("Content-Type", "video/mp4");
 res.setHeader("Accept-Ranges", "bytes");
-// while debugging:
-res.setHeader("Cache-Control", "no-store");
 }
 },
 })
 );
-
-/**
-* ✅ HARD ROUTE: /demo.mp4 with TRUE Range streaming (Safari-safe)
-* - Handles Range: bytes=...
-* - Returns 206 Partial Content when Range header exists
-* - Prevents falling back to index.html
-*/
-app.get("/demo.mp4", (req, res) => {
-try {
-const filePath = path.join(PUBLIC_DIR, "demo.mp4");
-
-if (!fs.existsSync(filePath)) {
-return res.status(404).send("demo.mp4 not found in /public");
-}
-
-const stat = fs.statSync(filePath);
-const fileSize = stat.size;
-const range = req.headers.range;
-
-res.setHeader("Content-Type", "video/mp4");
-res.setHeader("Accept-Ranges", "bytes");
-res.setHeader("Cache-Control", "no-store");
-
-// If no Range header, send entire file (200)
-if (!range) {
-res.setHeader("Content-Length", fileSize);
-const stream = fs.createReadStream(filePath);
-stream.pipe(res);
-return;
-}
-
-// Parse Range: "bytes=start-end"
-const match = /^bytes=(\d+)-(\d*)$/.exec(range);
-if (!match) {
-// Bad range format
-res.status(416).setHeader("Content-Range", `bytes */${fileSize}`).end();
-return;
-}
-
-const start = parseInt(match[1], 10);
-const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
-
-if (start >= fileSize || end >= fileSize || start > end) {
-res.status(416).setHeader("Content-Range", `bytes */${fileSize}`).end();
-return;
-}
-
-const chunkSize = end - start + 1;
-
-res.status(206);
-res.setHeader("Content-Range", `bytes ${start}-${end}/${fileSize}`);
-res.setHeader("Content-Length", chunkSize);
-
-const stream = fs.createReadStream(filePath, { start, end });
-stream.pipe(res);
-} catch (err) {
-console.error("demo.mp4 stream error:", err);
-res.status(500).send("demo.mp4 stream error");
-}
-});
-
-// ✅ Debug endpoint (lets us confirm file exists + size on Render)
-app.get("/api/debug/demo", (req, res) => {
-const filePath = path.join(PUBLIC_DIR, "demo.mp4");
-const exists = fs.existsSync(filePath);
-let size = null;
-if (exists) {
-try {
-size = fs.statSync(filePath).size;
-} catch {}
-}
-res.json({
-ok: true,
-exists,
-size,
-publicDir: PUBLIC_DIR,
-});
-});
-
-// ✅ Debug endpoint: read first bytes (to confirm it’s REALLY an MP4, not HTML)
-app.get("/api/debug/demo-bytes", (req, res) => {
-try {
-const filePath = path.join(PUBLIC_DIR, "demo.mp4");
-if (!fs.existsSync(filePath)) return res.status(404).json({ ok: false, error: "Missing demo.mp4" });
-
-const fd = fs.openSync(filePath, "r");
-const buf = Buffer.alloc(32);
-fs.readSync(fd, buf, 0, 32, 0);
-fs.closeSync(fd);
-
-res.json({
-ok: true,
-first32_hex: buf.toString("hex"),
-first32_ascii: buf.toString("ascii").replace(/[^\x20-\x7E]/g, "."),
-note: "If this is an MP4, you often see 'ftyp' in the first bytes.",
-});
-} catch (e) {
-console.error(e);
-res.status(500).json({ ok: false, error: String(e?.message || e) });
-}
-});
-
-// ---- Multer (uploads for image->video) ----
-const TMP_DIR = os.tmpdir();
-const upload = multer({
-storage: multer.diskStorage({
-destination: (req, file, cb) => cb(null, TMP_DIR),
-filename: (req, file, cb) => {
-const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-cb(null, `${Date.now()}_${Math.random().toString(16).slice(2)}_${safe}`);
-},
-}),
-limits: { fileSize: 8 * 1024 * 1024 },
-});
 
 // ======================================================
 // Helpers
@@ -196,6 +80,91 @@ return false;
 }
 
 // ======================================================
+// ✅ Create a REAL demo.mp4 automatically if missing/invalid
+// (So you never get black screen again)
+// ======================================================
+function createDemoMp4IfNeeded() {
+const filePath = path.join(PUBLIC_DIR, "demo.mp4");
+
+try {
+// If file exists and looks non-trivial, keep it
+if (fs.existsSync(filePath)) {
+const size = fs.statSync(filePath).size;
+if (size > 50_000) return; // >50KB = likely a real mp4
+}
+} catch {
+// continue and regenerate
+}
+
+// If ffmpeg is available, generate a tiny, valid mp4
+// (2 seconds, 1280x720, test pattern)
+try {
+if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+
+const args = [
+"-y",
+"-f",
+"lavfi",
+"-i",
+"testsrc=size=1280x720:rate=30",
+"-t",
+"2",
+"-pix_fmt",
+"yuv420p",
+"-movflags",
+"+faststart",
+filePath,
+];
+
+const ff = spawn("ffmpeg", args);
+ff.on("close", (code) => {
+if (code === 0) {
+console.log("✅ demo.mp4 created in /public");
+} else {
+console.log("⚠️ ffmpeg failed to create demo.mp4 (code:", code, ")");
+}
+});
+} catch (e) {
+console.log("⚠️ Could not create demo.mp4:", e?.message || e);
+}
+}
+
+createDemoMp4IfNeeded();
+
+// ======================================================
+// ✅ HARD ROUTE: /demo.mp4 must NEVER fall back to index.html
+// ======================================================
+app.get("/demo.mp4", (req, res) => {
+const filePath = path.join(PUBLIC_DIR, "demo.mp4");
+
+if (!fs.existsSync(filePath)) {
+return res.status(404).send("demo.mp4 not found in /public");
+}
+
+res.setHeader("Content-Type", "video/mp4");
+res.setHeader("Accept-Ranges", "bytes");
+return res.sendFile(filePath);
+});
+
+// ✅ Debug endpoint (confirm file exists + size on Render)
+app.get("/api/debug/demo", (req, res) => {
+const filePath = path.join(PUBLIC_DIR, "demo.mp4");
+const exists = fs.existsSync(filePath);
+let size = null;
+if (exists) {
+try {
+size = fs.statSync(filePath).size;
+} catch {}
+}
+res.json({
+ok: true,
+exists,
+size,
+publicDir: PUBLIC_DIR,
+});
+});
+
+// ======================================================
 // Video Proxy (fixes Range streaming issues when needed)
 // ======================================================
 app.get("/api/video-proxy", async (req, res) => {
@@ -227,7 +196,6 @@ res.setHeader("Content-Type", contentType);
 res.setHeader("Accept-Ranges", acceptRanges);
 if (contentLength) res.setHeader("Content-Length", contentLength);
 if (contentRange) res.setHeader("Content-Range", contentRange);
-
 if (upstream.status === 206) res.status(206);
 
 const nodeStream = Readable.fromWeb(upstream.body);
@@ -251,8 +219,7 @@ hasGeminiVideoKey: Boolean(process.env.GEMINI_API_KEY_VIDEO),
 
 // ======================================================
 // TEXT → VIDEO (placeholder wiring test)
-// - returns a REAL static file so the <video> can load
-// - you MUST have: /public/demo.mp4
+// - returns REAL demo.mp4 URL
 // ======================================================
 const videoJobs = new Map();
 
@@ -277,12 +244,13 @@ createdAt: Date.now(),
 videoPath: "/demo.mp4",
 });
 
+// Simulate async completion
 setTimeout(() => {
 const job = videoJobs.get(operationName);
 if (!job) return;
 job.done = true;
 videoJobs.set(operationName, job);
-}, 3000);
+}, 1500);
 
 return res.json({ ok: true, operationName });
 } catch (err) {
@@ -301,7 +269,7 @@ if (!job) return res.status(404).json({ ok: false, error: "Unknown operation" })
 
 if (!job.done) return res.json({ ok: true, done: false });
 
-// ABSOLUTE URL so browser always hits correct host + cache bust
+// ✅ absolute URL + cache bust
 const abs = absoluteSelfUrl(req, job.videoPath);
 const cacheBust = `${abs}${abs.includes("?") ? "&" : "?"}cb=${Date.now()}`;
 
@@ -320,6 +288,18 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 // =========================================================
 // IMAGE -> VIDEO (FFmpeg slideshow)
 // =========================================================
+const TMP_DIR = os.tmpdir();
+const upload = multer({
+storage: multer.diskStorage({
+destination: (req, file, cb) => cb(null, TMP_DIR),
+filename: (req, file, cb) => {
+const safe = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+cb(null, `${Date.now()}_${Math.random().toString(16).slice(2)}_${safe}`);
+},
+}),
+limits: { fileSize: 8 * 1024 * 1024 },
+});
+
 app.post("/api/image-to-video", upload.array("images", 20), async (req, res) => {
 const uploaded = req.files || [];
 const secondsPerImage = Number(req.body?.secondsPerImage ?? 1.5);
@@ -344,7 +324,17 @@ args.push("-loop", "1", "-t", String(secondsPerImage), "-i", f.path);
 const n = uploaded.length;
 const filter = `concat=n=${n}:v=1:a=0,format=yuv420p`;
 
-args.push("-filter_complex", filter, "-r", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath);
+args.push(
+"-filter_complex",
+filter,
+"-r",
+"30",
+"-pix_fmt",
+"yuv420p",
+"-movflags",
+"+faststart",
+outPath
+);
 
 await new Promise((resolve, reject) => {
 const ff = spawn("ffmpeg", args);
@@ -380,15 +370,14 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 }
 });
 
-// ---- Fallback to index.html ----
+// ---- Fallback to index.html (SPA fallback) ----
 // ✅ Only serve index.html for routes WITHOUT file extensions
 app.get("*", (req, res) => {
-if (path.extname(req.path)) {
-return res.status(404).send("Not found");
-}
+if (path.extname(req.path)) return res.status(404).send("Not found");
 res.sendFile(path.join(PUBLIC_DIR, "index.html"));
 });
 
 app.listen(PORT, () => {
 console.log(`Server running on port ${PORT}`);
 });
+
