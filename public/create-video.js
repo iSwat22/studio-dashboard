@@ -6,6 +6,12 @@ QuanneLeap.AI — create-video.js (Single Source of Truth)
 - proxyUrl / videoUrl (direct playback)
 - base64 mp4 (Blob playback)
 - gcsUri (shows message; next step is stream/signed-url endpoint)
+
+✅ NEW (Option A):
+- If durationSeconds > 8, it automatically uses:
+POST /api/text-to-video-batch
+POST /api/text-to-video-batch/status
+- Final result is a playable URL (/public/exports/*.mp4)
 ====================================================== */
 
 const USER = { name: "KC", role: "Admin", plan: "Platinum", stars: "∞", isAdmin: true };
@@ -174,6 +180,53 @@ throw new Error("Video finished, but no playable output returned");
 throw new Error("Timed out waiting for the video");
 }
 
+/* ======================================================
+✅ NEW: Batch (Option A) for duration > 8 seconds
+====================================================== */
+async function startTextToVideoBatchJob({ prompt, totalSeconds, aspectRatio }) {
+const res = await fetch("/api/text-to-video-batch", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+prompt,
+totalSeconds, // overall length you want
+clipSeconds: 8, // keep Veo clips at 8s
+aspectRatio,
+}),
+});
+
+const data = await res.json().catch(() => ({}));
+if (!res.ok || !data.ok) throw new Error(data.error || "Failed to start batch video job");
+if (!data.batchId) throw new Error("Server did not return batchId");
+return data.batchId;
+}
+
+async function pollTextToVideoBatch(batchId) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const maxAttempts = 600; // longer because we're generating multiple clips
+
+for (let i = 1; i <= maxAttempts; i++) {
+setStatus(`Generating long video… (${i}/${maxAttempts})`);
+await sleep(2500);
+
+const res = await fetch("/api/text-to-video-batch/status", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ batchId }),
+});
+
+const data = await res.json().catch(() => ({}));
+if (!res.ok || !data.ok) throw new Error(data.error || "Batch status check failed");
+
+if (data.done) {
+if (data.finalVideoUrl) return { type: "url", value: data.finalVideoUrl };
+throw new Error("Batch finished, but no finalVideoUrl returned");
+}
+}
+
+throw new Error("Timed out waiting for the long video");
+}
+
 async function onGenerateClick() {
 const promptEl = $("prompt"); // from create-video.html
 const generateBtn = $("generateBtn");
@@ -198,6 +251,30 @@ aspectUi === "square" ? "1:1" :
 try {
 if (generateBtn) generateBtn.disabled = true;
 
+// ✅ AUTO SWITCH:
+// <= 8 sec uses regular endpoint
+// > 8 sec uses batch endpoint (Option A)
+if (Number.isFinite(durationSeconds) && durationSeconds > 8) {
+setStatus("Starting long video job… (batch)");
+const batchId = await startTextToVideoBatchJob({
+prompt,
+totalSeconds: durationSeconds,
+aspectRatio,
+});
+
+const result = await pollTextToVideoBatch(batchId);
+
+if (result.type === "url") {
+setStatus("✅ Video ready");
+showVideo(result.value);
+return;
+}
+
+setStatus("❌ Unknown result type");
+return;
+}
+
+// ---- Normal (<= 8 sec) ----
 setStatus("Starting video job…");
 const opName = await startTextToVideoJob({ prompt, durationSeconds, aspectRatio });
 
@@ -270,3 +347,4 @@ applyUserUI();
 initButtons();
 setStatus("Your generated video will appear here.");
 });
+
