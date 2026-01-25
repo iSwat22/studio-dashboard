@@ -2,10 +2,16 @@
 QuanneLeap.AI — create-video.js (Single Source of Truth)
 - Uses ONLY create-video.html IDs
 - Calls /api/text-to-video then polls /api/text-to-video/status
-- Sets previewVideo src to proxyUrl || videoUrl
+- Supports:
+- proxyUrl / videoUrl (direct playback)
+- base64 mp4 (Blob playback)
+- gcsUri (shows message; next step is stream/signed-url endpoint)
 ====================================================== */
 
 const USER = { name: "KC", role: "Admin", plan: "Platinum", stars: "∞", isAdmin: true };
+
+// Track Blob URLs so we can revoke them and avoid memory leaks
+let lastBlobUrl = null;
 
 function applyUserUI() {
 const planPill = document.getElementById("planPill");
@@ -31,6 +37,28 @@ if (empty) empty.textContent = msg;
 console.log("[T2V]", msg);
 }
 
+function resetVideoElement() {
+const video = $("previewVideo");
+const empty = $("previewEmpty");
+const download = $("downloadBtn");
+
+if (video) {
+video.pause?.();
+video.removeAttribute("src");
+video.load();
+video.style.display = "none";
+}
+
+if (empty) empty.style.display = "block";
+if (download) download.style.display = "none";
+
+// Revoke any previous blob url to avoid memory leak
+if (lastBlobUrl) {
+try { URL.revokeObjectURL(lastBlobUrl); } catch {}
+lastBlobUrl = null;
+}
+}
+
 function showVideo(url) {
 const video = $("previewVideo");
 const empty = $("previewEmpty");
@@ -47,8 +75,11 @@ video.pause?.();
 video.removeAttribute("src");
 video.load();
 
-// cache-bust to avoid 304 weirdness during testing
-const finalUrl = url + (url.includes("?") ? "&" : "?") + "cb=" + Date.now();
+// cache-bust to avoid 304 weirdness during testing (only for http urls)
+const finalUrl =
+url.startsWith("blob:")
+? url
+: url + (url.includes("?") ? "&" : "?") + "cb=" + Date.now();
 
 video.src = finalUrl;
 video.setAttribute("playsinline", "");
@@ -64,8 +95,27 @@ download.style.display = "inline-flex";
 
 // Try autoplay (may be blocked)
 video.play().catch(() => {
-// it's fine if autoplay is blocked — user can press play
+// fine if blocked — user can press play
 });
+}
+
+function base64ToBlobUrl(base64, mimeType = "video/mp4") {
+// base64 could be plain or data-url-like; normalize
+const cleaned = String(base64).includes(",")
+? String(base64).split(",").pop()
+: String(base64);
+
+const byteChars = atob(cleaned);
+const byteNums = new Array(byteChars.length);
+for (let i = 0; i < byteChars.length; i++) {
+byteNums[i] = byteChars.charCodeAt(i);
+}
+const byteArray = new Uint8Array(byteNums);
+const blob = new Blob([byteArray], { type: mimeType });
+
+const blobUrl = URL.createObjectURL(blob);
+lastBlobUrl = blobUrl;
+return blobUrl;
 }
 
 async function startTextToVideoJob({ prompt, durationSeconds, aspectRatio }) {
@@ -99,10 +149,25 @@ const data = await res.json().catch(() => ({}));
 if (!res.ok || !data.ok) throw new Error(data.error || "Status check failed");
 
 if (data.done) {
-// prefer proxyUrl (range-safe), else videoUrl
+// ✅ Case 1: URL playback
 const finalUrl = data.proxyUrl || data.videoUrl;
-if (!finalUrl) throw new Error("Video finished, but no URL returned");
-return finalUrl;
+if (finalUrl) return { type: "url", value: finalUrl };
+
+// ✅ Case 2: Base64 playback
+if (data.base64) {
+return {
+type: "base64",
+value: data.base64,
+mimeType: data.mimeType || "video/mp4",
+};
+}
+
+// ✅ Case 3: GCS URI (needs streaming/signed URL endpoint)
+if (data.gcsUri) {
+return { type: "gcs", value: data.gcsUri };
+}
+
+throw new Error("Video finished, but no playable output returned");
 }
 }
 
@@ -115,27 +180,15 @@ const generateBtn = $("generateBtn");
 const durationEl = $("duration");
 const aspectEl = $("aspect");
 
-const video = $("previewVideo");
-const empty = $("previewEmpty");
-const download = $("downloadBtn");
-
 const prompt = (promptEl?.value || "").trim();
 if (!prompt) return setStatus("Please enter a prompt.");
 
 // Reset UI
-if (video) {
-video.pause?.();
-video.removeAttribute("src");
-video.load();
-video.style.display = "none";
-}
-if (empty) empty.style.display = "block";
-if (download) download.style.display = "none";
+resetVideoElement();
 
 const durationSeconds = Number(durationEl?.value || 8);
 
 // Map your UI aspect values to backend aspect ratios
-// If your backend expects "16:9 / 9:16 / 1:1" change these here.
 const aspectUi = String(aspectEl?.value || "landscape");
 const aspectRatio =
 aspectUi === "portrait" ? "9:16" :
@@ -148,10 +201,29 @@ if (generateBtn) generateBtn.disabled = true;
 setStatus("Starting video job…");
 const opName = await startTextToVideoJob({ prompt, durationSeconds, aspectRatio });
 
-const url = await pollTextToVideo(opName);
+const result = await pollTextToVideo(opName);
 
+if (result.type === "url") {
 setStatus("✅ Video ready");
-showVideo(url);
+showVideo(result.value);
+return;
+}
+
+if (result.type === "base64") {
+setStatus("✅ Video ready");
+const blobUrl = base64ToBlobUrl(result.value, result.mimeType);
+showVideo(blobUrl);
+return;
+}
+
+if (result.type === "gcs") {
+// This is expected if Veo stored output in Google Cloud Storage.
+// Next step: add a server endpoint that streams/signed-urls the gcs object.
+setStatus(`✅ Veo finished. Output is in GCS: ${result.value}\nNext step: add a stream/signed-url endpoint so the preview can play it.`);
+return;
+}
+
+setStatus("❌ Unknown result type");
 } catch (err) {
 console.error(err);
 setStatus(`❌ ${err?.message || err}`);
@@ -169,6 +241,7 @@ if (clearBtn) {
 clearBtn.addEventListener("click", () => {
 const p = $("prompt");
 if (p) p.value = "";
+resetVideoElement();
 setStatus("Cleared.");
 });
 }
