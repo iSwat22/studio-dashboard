@@ -21,7 +21,6 @@ app.use(express.json({ limit: "10mb" }));
 // Serve static assets from /public
 app.use(
 express.static(PUBLIC_DIR, {
-// Helps avoid weird caching while debugging
 etag: true,
 lastModified: true,
 setHeaders: (res, filePath) => {
@@ -29,23 +28,71 @@ setHeaders: (res, filePath) => {
 if (filePath.endsWith(".mp4")) {
 res.setHeader("Content-Type", "video/mp4");
 res.setHeader("Accept-Ranges", "bytes");
+// while debugging:
+res.setHeader("Cache-Control", "no-store");
 }
 },
 })
 );
 
-// ✅ HARD ROUTE: demo.mp4 must NEVER fall back to index.html
+/**
+* ✅ HARD ROUTE: /demo.mp4 with TRUE Range streaming (Safari-safe)
+* - Handles Range: bytes=...
+* - Returns 206 Partial Content when Range header exists
+* - Prevents falling back to index.html
+*/
 app.get("/demo.mp4", (req, res) => {
+try {
 const filePath = path.join(PUBLIC_DIR, "demo.mp4");
 
 if (!fs.existsSync(filePath)) {
 return res.status(404).send("demo.mp4 not found in /public");
 }
 
-// Stream it properly
+const stat = fs.statSync(filePath);
+const fileSize = stat.size;
+const range = req.headers.range;
+
 res.setHeader("Content-Type", "video/mp4");
 res.setHeader("Accept-Ranges", "bytes");
-return res.sendFile(filePath);
+res.setHeader("Cache-Control", "no-store");
+
+// If no Range header, send entire file (200)
+if (!range) {
+res.setHeader("Content-Length", fileSize);
+const stream = fs.createReadStream(filePath);
+stream.pipe(res);
+return;
+}
+
+// Parse Range: "bytes=start-end"
+const match = /^bytes=(\d+)-(\d*)$/.exec(range);
+if (!match) {
+// Bad range format
+res.status(416).setHeader("Content-Range", `bytes */${fileSize}`).end();
+return;
+}
+
+const start = parseInt(match[1], 10);
+const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+
+if (start >= fileSize || end >= fileSize || start > end) {
+res.status(416).setHeader("Content-Range", `bytes */${fileSize}`).end();
+return;
+}
+
+const chunkSize = end - start + 1;
+
+res.status(206);
+res.setHeader("Content-Range", `bytes ${start}-${end}/${fileSize}`);
+res.setHeader("Content-Length", chunkSize);
+
+const stream = fs.createReadStream(filePath, { start, end });
+stream.pipe(res);
+} catch (err) {
+console.error("demo.mp4 stream error:", err);
+res.status(500).send("demo.mp4 stream error");
+}
 });
 
 // ✅ Debug endpoint (lets us confirm file exists + size on Render)
@@ -64,6 +111,29 @@ exists,
 size,
 publicDir: PUBLIC_DIR,
 });
+});
+
+// ✅ Debug endpoint: read first bytes (to confirm it’s REALLY an MP4, not HTML)
+app.get("/api/debug/demo-bytes", (req, res) => {
+try {
+const filePath = path.join(PUBLIC_DIR, "demo.mp4");
+if (!fs.existsSync(filePath)) return res.status(404).json({ ok: false, error: "Missing demo.mp4" });
+
+const fd = fs.openSync(filePath, "r");
+const buf = Buffer.alloc(32);
+fs.readSync(fd, buf, 0, 32, 0);
+fs.closeSync(fd);
+
+res.json({
+ok: true,
+first32_hex: buf.toString("hex"),
+first32_ascii: buf.toString("ascii").replace(/[^\x20-\x7E]/g, "."),
+note: "If this is an MP4, you often see 'ftyp' in the first bytes.",
+});
+} catch (e) {
+console.error(e);
+res.status(500).json({ ok: false, error: String(e?.message || e) });
+}
 });
 
 // ---- Multer (uploads for image->video) ----
@@ -160,7 +230,6 @@ if (contentRange) res.setHeader("Content-Range", contentRange);
 
 if (upstream.status === 206) res.status(206);
 
-// Convert Web ReadableStream -> Node stream
 const nodeStream = Readable.fromWeb(upstream.body);
 nodeStream.pipe(res);
 } catch (err) {
@@ -180,83 +249,6 @@ hasGeminiVideoKey: Boolean(process.env.GEMINI_API_KEY_VIDEO),
 });
 });
 
-// =========================================================
-// TEXT -> IMAGE (Gemini 3 Pro Image via API KEY)
-// Needs: GOOGLE_API_KEY in Render env vars
-// =========================================================
-app.post("/api/text-to-image", async (req, res) => {
-try {
-const prompt = (req.body?.prompt || "").trim();
-if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
-
-const API_KEY = process.env.GOOGLE_API_KEY;
-if (!API_KEY) {
-return res.status(500).json({
-ok: false,
-error: "Missing GOOGLE_API_KEY in Render Environment.",
-});
-}
-
-const url =
-"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent";
-
-const payload = {
-contents: [{ parts: [{ text: prompt }] }],
-generationConfig: {
-imageConfig: { aspectRatio: "1:1", imageSize: "1024" },
-},
-};
-
-const apiRes = await fetch(url, {
-method: "POST",
-headers: {
-"Content-Type": "application/json",
-"x-goog-api-key": API_KEY,
-},
-body: JSON.stringify(payload),
-});
-
-const text = await apiRes.text();
-let data;
-try {
-data = JSON.parse(text);
-} catch {
-return res.status(500).json({
-ok: false,
-error: "Gemini returned non-JSON response",
-raw: text.slice(0, 500),
-});
-}
-
-if (!apiRes.ok) {
-return res.status(apiRes.status).json({
-ok: false,
-error: data?.error?.message || "Gemini request failed",
-details: data,
-});
-}
-
-const parts = data?.candidates?.[0]?.content?.parts || [];
-const imagePart = parts.find((p) => p.inlineData && p.inlineData.data);
-
-if (!imagePart) {
-return res.status(500).json({
-ok: false,
-error: "No image returned from model",
-details: data,
-});
-}
-
-const mimeType = imagePart.inlineData.mimeType || "image/png";
-const base64 = imagePart.inlineData.data;
-
-return res.json({ ok: true, mimeType, base64 });
-} catch (err) {
-console.error("text-to-image error:", err);
-return res.status(500).json({ ok: false, error: err.message || "Server error" });
-}
-});
-
 // ======================================================
 // TEXT → VIDEO (placeholder wiring test)
 // - returns a REAL static file so the <video> can load
@@ -269,7 +261,6 @@ try {
 const prompt = (req.body?.prompt || "").trim();
 if (!prompt) return res.status(400).json({ ok: false, error: "Missing prompt" });
 
-// Keep key check, but we’re still in placeholder mode
 const API_KEY = process.env.GEMINI_API_KEY_VIDEO;
 if (!API_KEY) {
 return res.status(500).json({
@@ -310,7 +301,7 @@ if (!job) return res.status(404).json({ ok: false, error: "Unknown operation" })
 
 if (!job.done) return res.json({ ok: true, done: false });
 
-// ABSOLUTE URL so browser always hits correct host
+// ABSOLUTE URL so browser always hits correct host + cache bust
 const abs = absoluteSelfUrl(req, job.videoPath);
 const cacheBust = `${abs}${abs.includes("?") ? "&" : "?"}cb=${Date.now()}`;
 
@@ -390,9 +381,8 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 });
 
 // ---- Fallback to index.html ----
-// ✅ IMPORTANT: Only serve index.html for routes WITHOUT file extensions
+// ✅ Only serve index.html for routes WITHOUT file extensions
 app.get("*", (req, res) => {
-// If it looks like a real file request (has an extension), do NOT SPA-fallback.
 if (path.extname(req.path)) {
 return res.status(404).send("Not found");
 }
