@@ -252,7 +252,7 @@ node: process.version,
 hasGoogleApiKey: Boolean(process.env.GOOGLE_API_KEY),
 hasVeoConfig: Boolean(process.env.GCP_PROJECT_ID),
 veoLocation: process.env.GCP_LOCATION || "us-central1",
-veoModel: process.env.VEO_MODEL_ID || "veo-2.0-generate-exp",
+veoModel: process.env.VEO_MODEL_ID || "veo-3.1-generate-exp",
 hasVeoBucket: Boolean(process.env.VEO_GCS_BUCKET),
 hasExportsDir: fs.existsSync(EXPORTS_DIR),
 });
