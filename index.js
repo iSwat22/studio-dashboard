@@ -252,7 +252,7 @@ node: process.version,
 hasGoogleApiKey: Boolean(process.env.GOOGLE_API_KEY),
 hasVeoConfig: Boolean(process.env.GCP_PROJECT_ID),
 veoLocation: process.env.GCP_LOCATION || "us-central1",
-veoModel: process.env.VEO_MODEL_ID || "veo-2.0-generate-exp",
+veoModel: process.env.VEO_MODEL_ID || "veo-2.1-generate-exp",
 hasVeoBucket: Boolean(process.env.VEO_GCS_BUCKET),
 hasExportsDir: fs.existsSync(EXPORTS_DIR),
 });
@@ -363,7 +363,7 @@ return accessToken;
 function veoEndpointBase() {
 const projectId = process.env.GCP_PROJECT_ID;
 const location = process.env.GCP_LOCATION || "us-central1";
-const modelId = process.env.VEO_MODEL_ID || "veo-2.0-generate-exp";
+const modelId = process.env.VEO_MODEL_ID || "veo-2.1-generate-exp";
 if (!projectId) throw new Error("Missing GCP_PROJECT_ID env var");
 return {
 location,
