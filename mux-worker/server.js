@@ -63,4 +63,4 @@ res.status(500).json({ error: err.message || "Mux failed" });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () => console.log("✅ listening on", PORT);
+app.listen(PORT, "0.0.0.0", () => console.log("✅ listening on", PORT));
