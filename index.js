@@ -42,7 +42,7 @@ res.setHeader("Accept-Ranges", "bytes");
 },
 })
 );
-app.use("/exports",express.static(EXPORTS_DIR));
+app.use("/exports", express.static(EXPORTS_DIR));
 
 // ======================================================
 // Helpers
@@ -102,7 +102,6 @@ return false;
 
 // ======================================================
 // ✅ Create a REAL demo.mp4 automatically if missing/invalid
-// (So you never get black screen again)
 // ======================================================
 function createDemoMp4IfNeeded() {
 const filePath = path.join(PUBLIC_DIR, "demo.mp4");
@@ -261,7 +260,6 @@ hasExportsDir: fs.existsSync(EXPORTS_DIR),
 
 // =========================================================
 // TEXT -> IMAGE (Gemini 3 Pro Image via API KEY)
-// Needs: GOOGLE_API_KEY in Render env vars
 // =========================================================
 app.post("/api/text-to-image", async (req, res) => {
 try {
@@ -360,27 +358,20 @@ const accessToken = token?.token || token; // google-auth-lib varies by version
 if (!accessToken) throw new Error("Could not get Google access token");
 return accessToken;
 }
+
 // ======================================================
 // ✅ TEXT → SPEECH (Google Cloud Text-to-Speech via Service Account)
-// Uses SAME service account + getAccessToken() you already have.
-// Output: MP3 buffer (no API key needed)
 // ======================================================
-
 async function ttsSynthesizeToMp3Buffer({ text, voiceName, speakingRate, pitch }) {
 if (!text || !String(text).trim()) throw new Error("Missing TTS text");
 
-// Use your existing token helper
 const accessToken = await getAccessToken();
-
-// If you have GCP_PROJECT_ID set, use it; otherwise it still works without it.
-// Text-to-Speech REST endpoint does NOT require project in the URL.
 const url = "https://texttospeech.googleapis.com/v1/text:synthesize";
 
 const body = {
 input: { text: String(text).trim() },
 voice: {
 languageCode: "en-US",
-// Optional: set a specific voice (example: "en-US-Neural2-D")
 ...(voiceName ? { name: voiceName } : {}),
 },
 audioConfig: {
@@ -401,7 +392,11 @@ body: JSON.stringify(body),
 
 const txt = await r.text();
 let data;
-try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
+try {
+data = JSON.parse(txt);
+} catch {
+data = { raw: txt };
+}
 
 if (!r.ok) {
 throw new Error(data?.error?.message || `TTS request failed (${r.status})`);
@@ -417,6 +412,7 @@ function writeMp3BufferToFile(mp3Buffer, outPath) {
 fs.writeFileSync(outPath, mp3Buffer);
 return outPath;
 }
+
 app.post("/api/text-to-speech", async (req, res) => {
 try {
 const text = String(req.body?.text || "").trim();
@@ -435,6 +431,106 @@ console.error("text-to-speech error:", err);
 return res.status(500).json({ ok: false, error: err.message || "TTS error" });
 }
 });
+
+// =========================================================
+// ✅ NEW: MUX integration (safe additions only)
+// Requires env: MUX_WORKER_URL = https://<your-railway-domain>
+// =========================================================
+function muxWorkerUrl() {
+const base = String(process.env.MUX_WORKER_URL || "").trim();
+if (!base) throw new Error("Missing MUX_WORKER_URL in Render Environment Variables");
+return `${base.replace(/\/$/, "")}/mux`;
+}
+
+async function muxVideoAndAudioToMp4Buffer({ videoUrl, audioUrl }) {
+const url = muxWorkerUrl();
+
+const r = await fetch(url, {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ videoUrl, audioUrl }),
+});
+
+if (!r.ok) {
+const txt = await r.text().catch(() => "");
+throw new Error(`Mux worker failed (${r.status}): ${txt.slice(0, 400)}`);
+}
+
+const ab = await r.arrayBuffer();
+return Buffer.from(ab);
+}
+
+function writeMp4BufferToExports(mp4Buffer, filename) {
+const outPath = path.join(EXPORTS_DIR, filename);
+fs.writeFileSync(outPath, mp4Buffer);
+return outPath;
+}
+
+/**
+* ✅ NEW: POST /api/mux-final
+* Input: { videoUrl, audioUrl }
+* Output: { ok:true, finalVideoUrl }
+*/
+app.post("/api/mux-final", async (req, res) => {
+try {
+const videoUrl = String(req.body?.videoUrl || "").trim();
+const audioUrl = String(req.body?.audioUrl || "").trim();
+if (!videoUrl || !audioUrl) {
+return res.status(400).json({ ok: false, error: "videoUrl and audioUrl required" });
+}
+
+const mp4 = await muxVideoAndAudioToMp4Buffer({ videoUrl, audioUrl });
+
+const fileName = `mux_${Date.now()}_${Math.random().toString(16).slice(2)}.mp4`;
+writeMp4BufferToExports(mp4, fileName);
+
+const finalVideoUrl = absoluteSelfUrl(req, `/exports/${fileName}`);
+return res.json({ ok: true, finalVideoUrl });
+} catch (err) {
+console.error("mux-final error:", err);
+return res.status(500).json({ ok: false, error: err.message || "Mux failed" });
+}
+});
+
+/**
+* ✅ NEW: POST /api/text-to-video-narrated
+* Input: { videoUrl, text, voiceName?, speakingRate?, pitch? }
+* Output: { ok:true, audioUrl, finalVideoUrl }
+*/
+app.post("/api/text-to-video-narrated", async (req, res) => {
+try {
+const videoUrl = String(req.body?.videoUrl || "").trim();
+const text = String(req.body?.text || "").trim();
+const voiceName = req.body?.voiceName ? String(req.body.voiceName).trim() : undefined;
+const speakingRate = req.body?.speakingRate;
+const pitch = req.body?.pitch;
+
+if (!videoUrl) return res.status(400).json({ ok: false, error: "Missing videoUrl" });
+if (!text) return res.status(400).json({ ok: false, error: "Missing text (narration script)" });
+
+// 1) Generate MP3
+const mp3Buffer = await ttsSynthesizeToMp3Buffer({ text, voiceName, speakingRate, pitch });
+
+const audioFile = `tts_${Date.now()}_${Math.random().toString(16).slice(2)}.mp3`;
+const audioPath = path.join(EXPORTS_DIR, audioFile);
+fs.writeFileSync(audioPath, mp3Buffer);
+
+const audioUrl = absoluteSelfUrl(req, `/exports/${audioFile}`);
+
+// 2) Mux with Railway worker
+const mp4 = await muxVideoAndAudioToMp4Buffer({ videoUrl, audioUrl });
+
+const outFile = `narrated_${Date.now()}_${Math.random().toString(16).slice(2)}.mp4`;
+writeMp4BufferToExports(mp4, outFile);
+
+const finalVideoUrl = absoluteSelfUrl(req, `/exports/${outFile}`);
+return res.json({ ok: true, audioUrl, finalVideoUrl });
+} catch (err) {
+console.error("text-to-video-narrated error:", err);
+return res.status(500).json({ ok: false, error: err.message || "Narration failed" });
+}
+});
+
 function veoEndpointBase() {
 const projectId = process.env.GCP_PROJECT_ID;
 const location = process.env.GCP_LOCATION || "us-central1";
@@ -581,7 +677,8 @@ const videos = resp?.videos || [];
 const firstGcs = videos.find((v) => typeof v?.gcsUri === "string")?.gcsUri;
 if (firstGcs) return { done: true, gcsUri: firstGcs };
 
-const firstB64 = videos.find((v) => typeof v?.bytesBase64Encoded === "string")?.bytesBase64Encoded;
+const firstB64 = videos.find((v) => typeof v?.bytesBase64Encoded === "string")
+?.bytesBase64Encoded;
 if (firstB64) return { done: true, base64: firstB64 };
 
 return { done: true, error: "Veo finished but no video found", raw: data };
@@ -598,7 +695,9 @@ if (!Number.isFinite(durationSeconds)) durationSeconds = 8;
 durationSeconds = Math.max(1, Math.min(60, Math.round(durationSeconds)));
 
 const aspectRatioRaw = String(req.body?.aspectRatio || "16:9").trim();
-const aspectRatio = ["16:9", "9:16", "1:1"].includes(aspectRatioRaw) ? aspectRatioRaw : "16:9";
+const aspectRatio = ["16:9", "9:16", "1:1"].includes(aspectRatioRaw)
+? aspectRatioRaw
+: "16:9";
 
 const operationName = await startVeoJob({ prompt, durationSeconds, aspectRatio });
 
@@ -659,40 +758,76 @@ return res.status(500).json({ ok: false, error: err.message || "Server error" })
 
 // ======================================================
 // ✅ OPTION A: LONGER VIDEOS (BATCH CLIPS + FFmpeg CONCAT)
-// New endpoints so we do NOT break your current ones.
-// POST /api/text-to-video-batch
-// POST /api/text-to-video-batch/status
 // ======================================================
 const batchJobs = new Map();
 
 function ffmpegConcatMp4(files, outPath) {
 return new Promise((resolve, reject) => {
-const listPath = path.join(TMP_DIR, `concat_${Date.now()}_${Math.random().toString(16).slice(2)}.txt`);
+const listPath = path.join(
+TMP_DIR,
+`concat_${Date.now()}_${Math.random().toString(16).slice(2)}.txt`
+);
 
 // concat demuxer needs: file '/abs/path'
 const lines = files.map((f) => `file '${String(f).replace(/'/g, "'\\''")}'`).join("\n");
 fs.writeFileSync(listPath, lines);
 
-const argsCopy = ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", "-movflags", "+faststart", outPath];
+const argsCopy = [
+"-y",
+"-f",
+"concat",
+"-safe",
+"0",
+"-i",
+listPath,
+"-c",
+"copy",
+"-movflags",
+"+faststart",
+outPath,
+];
 const ff1 = spawn("ffmpeg", argsCopy);
 
 let errBuf = "";
 ff1.stderr.on("data", (d) => (errBuf += d.toString()));
 ff1.on("close", (code) => {
 // remove list file
-try { fs.unlinkSync(listPath); } catch {}
+try {
+fs.unlinkSync(listPath);
+} catch {}
 
 if (code === 0) return resolve(outPath);
 
 // fallback: re-encode if stream copy fails
-const argsRe = ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", outPath];
+const argsRe = [
+"-y",
+"-f",
+"concat",
+"-safe",
+"0",
+"-i",
+listPath,
+"-c:v",
+"libx264",
+"-pix_fmt",
+"yuv420p",
+"-movflags",
+"+faststart",
+outPath,
+];
 const ff2 = spawn("ffmpeg", argsRe);
 let err2 = "";
 ff2.stderr.on("data", (d) => (err2 += d.toString()));
 ff2.on("close", (code2) => {
-try { fs.unlinkSync(listPath); } catch {}
+try {
+fs.unlinkSync(listPath);
+} catch {}
 if (code2 === 0) return resolve(outPath);
-reject(new Error(`FFmpeg concat failed. copyErr: ${errBuf.slice(-500)} reErr: ${err2.slice(-500)}`));
+reject(
+new Error(
+`FFmpeg concat failed. copyErr: ${errBuf.slice(-500)} reErr: ${err2.slice(-500)}`
+)
+);
 });
 });
 });
@@ -771,7 +906,13 @@ if (job.done && job.finalFile) {
 const rel = `/exports/${path.basename(job.finalFile)}`;
 const abs = absoluteSelfUrl(req, rel);
 const cacheBust = `${abs}${abs.includes("?") ? "&" : "?"}cb=${Date.now()}`;
-return res.json({ ok: true, done: true, finalVideoUrl: cacheBust, clipsDone: job.clipFiles.length, clipsNeeded: job.clipsNeeded });
+return res.json({
+ok: true,
+done: true,
+finalVideoUrl: cacheBust,
+clipsDone: job.clipFiles.length,
+clipsNeeded: job.clipsNeeded,
+});
 }
 
 // Poll current in-progress clips, but only one at a time to keep it simple/stable.
@@ -780,11 +921,21 @@ const opName = job.clipOps[idx];
 if (!opName) {
 // If we have completed some clips and need to start next op
 if (job.clipOps.length < job.clipsNeeded) {
-const nextOp = await startVeoJob({ prompt: job.prompt, durationSeconds: job.clipSeconds, aspectRatio: job.aspectRatio });
+const nextOp = await startVeoJob({
+prompt: job.prompt,
+durationSeconds: job.clipSeconds,
+aspectRatio: job.aspectRatio,
+});
 job.clipOps.push(nextOp);
 batchJobs.set(batchId, job);
 }
-return res.json({ ok: true, done: false, stage: "starting", clipsDone: job.clipFiles.length, clipsNeeded: job.clipsNeeded });
+return res.json({
+ok: true,
+done: false,
+stage: "starting",
+clipsDone: job.clipFiles.length,
+clipsNeeded: job.clipsNeeded,
+});
 }
 
 const polled = await pollVeoOperation(opName);
@@ -820,7 +971,11 @@ job.clipFiles.push(clipOut);
 
 // Start next clip if still needed
 if (job.clipOps.length < job.clipsNeeded) {
-const nextOp = await startVeoJob({ prompt: job.prompt, durationSeconds: job.clipSeconds, aspectRatio: job.aspectRatio });
+const nextOp = await startVeoJob({
+prompt: job.prompt,
+durationSeconds: job.clipSeconds,
+aspectRatio: job.aspectRatio,
+});
 job.clipOps.push(nextOp);
 }
 
@@ -834,7 +989,9 @@ await ffmpegConcatMp4(job.clipFiles, finalPath);
 
 // cleanup tmp clips
 for (const f of job.clipFiles) {
-try { fs.unlinkSync(f); } catch {}
+try {
+fs.unlinkSync(f);
+} catch {}
 }
 
 job.finalFile = finalPath;
@@ -852,7 +1009,13 @@ return res.status(500).json({ ok: false, done: true, error: job.error });
 const rel = `/exports/${path.basename(job.finalFile)}`;
 const abs = absoluteSelfUrl(req, rel);
 const cacheBust = `${abs}${abs.includes("?") ? "&" : "?"}cb=${Date.now()}`;
-return res.json({ ok: true, done: true, finalVideoUrl: cacheBust, clipsDone: job.clipFiles.length, clipsNeeded: job.clipsNeeded });
+return res.json({
+ok: true,
+done: true,
+finalVideoUrl: cacheBust,
+clipsDone: job.clipFiles.length,
+clipsNeeded: job.clipsNeeded,
+});
 }
 
 batchJobs.set(batchId, job);
@@ -924,17 +1087,25 @@ const stream = fs.createReadStream(outPath);
 stream.pipe(res);
 
 stream.on("close", () => {
-try { fs.unlinkSync(outPath); } catch {}
+try {
+fs.unlinkSync(outPath);
+} catch {}
 for (const f of uploaded) {
-try { fs.unlinkSync(f.path); } catch {}
+try {
+fs.unlinkSync(f.path);
+} catch {}
 }
 });
 } catch (err) {
 console.error("image-to-video error:", err);
 
-try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch {}
+try {
+if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+} catch {}
 for (const f of uploaded) {
-try { fs.unlinkSync(f.path); } catch {}
+try {
+fs.unlinkSync(f.path);
+} catch {}
 }
 
 return res.status(500).json({ ok: false, error: err.message || "Server error" });
