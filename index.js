@@ -359,7 +359,81 @@ const accessToken = token?.token || token; // google-auth-lib varies by version
 if (!accessToken) throw new Error("Could not get Google access token");
 return accessToken;
 }
+// ======================================================
+// ✅ TEXT → SPEECH (Google Cloud Text-to-Speech via Service Account)
+// Uses SAME service account + getAccessToken() you already have.
+// Output: MP3 buffer (no API key needed)
+// ======================================================
 
+async function ttsSynthesizeToMp3Buffer({ text, voiceName, speakingRate, pitch }) {
+if (!text || !String(text).trim()) throw new Error("Missing TTS text");
+
+// Use your existing token helper
+const accessToken = await getAccessToken();
+
+// If you have GCP_PROJECT_ID set, use it; otherwise it still works without it.
+// Text-to-Speech REST endpoint does NOT require project in the URL.
+const url = "https://texttospeech.googleapis.com/v1/text:synthesize";
+
+const body = {
+input: { text: String(text).trim() },
+voice: {
+languageCode: "en-US",
+// Optional: set a specific voice (example: "en-US-Neural2-D")
+...(voiceName ? { name: voiceName } : {}),
+},
+audioConfig: {
+audioEncoding: "MP3",
+speakingRate: Number.isFinite(Number(speakingRate)) ? Number(speakingRate) : 1.0,
+pitch: Number.isFinite(Number(pitch)) ? Number(pitch) : 0.0,
+},
+};
+
+const r = await fetch(url, {
+method: "POST",
+headers: {
+Authorization: `Bearer ${accessToken}`,
+"Content-Type": "application/json; charset=utf-8",
+},
+body: JSON.stringify(body),
+});
+
+const txt = await r.text();
+let data;
+try { data = JSON.parse(txt); } catch { data = { raw: txt }; }
+
+if (!r.ok) {
+throw new Error(data?.error?.message || `TTS request failed (${r.status})`);
+}
+
+const b64 = data?.audioContent;
+if (!b64) throw new Error("TTS succeeded but no audioContent returned");
+
+return Buffer.from(b64, "base64");
+}
+
+function writeMp3BufferToFile(mp3Buffer, outPath) {
+fs.writeFileSync(outPath, mp3Buffer);
+return outPath;
+}
+app.post("/api/text-to-speech", async (req, res) => {
+try {
+const text = String(req.body?.text || "").trim();
+if (!text) return res.status(400).json({ ok: false, error: "Missing text" });
+
+const mp3Buffer = await ttsSynthesizeToMp3Buffer({ text });
+
+const fileName = `tts_${Date.now()}_${Math.random().toString(16).slice(2)}.mp3`;
+const outPath = path.join(EXPORTS_DIR, fileName);
+writeMp3BufferToFile(mp3Buffer, outPath);
+
+const audioUrl = absoluteSelfUrl(req, `/exports/${fileName}`);
+return res.json({ ok: true, audioUrl });
+} catch (err) {
+console.error("text-to-speech error:", err);
+return res.status(500).json({ ok: false, error: err.message || "TTS error" });
+}
+});
 function veoEndpointBase() {
 const projectId = process.env.GCP_PROJECT_ID;
 const location = process.env.GCP_LOCATION || "us-central1";
