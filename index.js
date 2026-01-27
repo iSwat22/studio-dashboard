@@ -42,6 +42,7 @@ res.setHeader("Accept-Ranges", "bytes");
 },
 })
 );
+app.use("/exports",express.static(EXPORTS_DIR));
 
 // ======================================================
 // Helpers
