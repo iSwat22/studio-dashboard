@@ -12,6 +12,12 @@ QuanneLeap.AI — create-video.js (Single Source of Truth)
 POST /api/text-to-video-batch
 POST /api/text-to-video-batch/status
 - Final result is a playable URL (/public/exports/*.mp4)
+
+✅ NEW (VOICE):
+- After we have a playable video URL, we call:
+POST /api/text-to-video-narrated
+{ videoUrl, text }
+- Result: finalVideoUrl that includes audio
 ====================================================== */
 
 const USER = { name: "KC", role: "Admin", plan: "Platinum", stars: "∞", isAdmin: true };
@@ -122,6 +128,47 @@ const blob = new Blob([byteArray], { type: mimeType });
 const blobUrl = URL.createObjectURL(blob);
 lastBlobUrl = blobUrl;
 return blobUrl;
+}
+
+/* ======================================================
+Helpers for narrated mux step
+====================================================== */
+function stripCb(url) {
+// remove repeated cb params (and anything after if it got glued wrong)
+// keeps the real video URL clean for the backend
+try {
+const u = new URL(url, window.location.origin);
+u.searchParams.delete("cb");
+return u.toString();
+} catch {
+// if it's not parseable, do a basic split
+return String(url).split("&cb=")[0].split("?cb=")[0];
+}
+}
+
+async function makeNarratedVideo({ videoUrl, text }) {
+const res = await fetch("/api/text-to-video-narrated", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({
+videoUrl: stripCb(videoUrl),
+text: String(text || "").trim(),
+}),
+});
+
+const data = await res.json().catch(() => ({}));
+if (!res.ok || !data.ok) {
+throw new Error(data.error || "Failed to mux narration into video");
+}
+if (!data.finalVideoUrl) throw new Error("Mux succeeded but finalVideoUrl missing");
+return data.finalVideoUrl;
+}
+
+function getNarrationTextFallbackToPrompt(prompt) {
+// If you add a narration textbox in HTML later, use id="narration"
+const narrationEl = $("narration");
+const narrationText = (narrationEl?.value || "").trim();
+return narrationText || prompt; // fallback = prompt
 }
 
 async function startTextToVideoJob({ prompt, durationSeconds, aspectRatio }) {
@@ -251,6 +298,9 @@ aspectUi === "square" ? "1:1" :
 try {
 if (generateBtn) generateBtn.disabled = true;
 
+// Narration text (if no narration field exists, uses prompt)
+const narrationText = getNarrationTextFallbackToPrompt(prompt);
+
 // ✅ AUTO SWITCH:
 // <= 8 sec uses regular endpoint
 // > 8 sec uses batch endpoint (Option A)
@@ -265,8 +315,14 @@ aspectRatio,
 const result = await pollTextToVideoBatch(batchId);
 
 if (result.type === "url") {
-setStatus("✅ Video ready");
-showVideo(result.value);
+setStatus("Adding voice…");
+const narratedUrl = await makeNarratedVideo({
+videoUrl: result.value,
+text: narrationText,
+});
+
+setStatus("✅ Video + Voice ready");
+showVideo(narratedUrl);
 return;
 }
 
@@ -280,23 +336,32 @@ const opName = await startTextToVideoJob({ prompt, durationSeconds, aspectRatio 
 
 const result = await pollTextToVideo(opName);
 
+// We need a URL to mux. If we got base64, we can still PLAY it,
+// but we cannot mux it on the server without uploading it.
 if (result.type === "url") {
-setStatus("✅ Video ready");
-showVideo(result.value);
+setStatus("Adding voice…");
+const narratedUrl = await makeNarratedVideo({
+videoUrl: result.value,
+text: narrationText,
+});
+
+setStatus("✅ Video + Voice ready");
+showVideo(narratedUrl);
 return;
 }
 
 if (result.type === "base64") {
-setStatus("✅ Video ready");
+// Still show video (no voice mux for this case)
+setStatus("✅ Video ready (base64). Voice mux needs a URL output, not base64.");
 const blobUrl = base64ToBlobUrl(result.value, result.mimeType);
 showVideo(blobUrl);
 return;
 }
 
 if (result.type === "gcs") {
-// This is expected if Veo stored output in Google Cloud Storage.
-// Next step: add a server endpoint that streams/signed-urls the gcs object.
-setStatus(`✅ Veo finished. Output is in GCS: ${result.value}\nNext step: add a stream/signed-url endpoint so the preview can play it.`);
+setStatus(
+`✅ Veo finished. Output is in GCS: ${result.value}\nNext step: add a stream/signed-url endpoint so the preview can play it.`
+);
 return;
 }
 
@@ -347,4 +412,5 @@ applyUserUI();
 initButtons();
 setStatus("Your generated video will appear here.");
 });
+
 
