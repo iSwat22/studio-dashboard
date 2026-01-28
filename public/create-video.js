@@ -156,6 +156,23 @@ text: String(text || "").trim(),
 }),
 });
 
+// 🔽 ADD EVERYTHING BELOW THIS LINE 🔽
+const data = await res.json();
+
+if (!res.ok || !data.ok) {
+throw new Error(data?.error || "Narration failed");
+}
+
+// ✅ THIS is the muxed video WITH AUDIO
+if (data.finalVideoUrl) {
+showVideo(data.finalVideoUrl);
+setStatus("✅ Video with narration ready");
+return;
+}
+
+throw new Error("Narration finished but no finalVideoUrl returned");
+}
+
 const data = await res.json().catch(() => ({}));
 if (!res.ok || !data.ok) {
 throw new Error(data.error || "Failed to mux narration into video");
